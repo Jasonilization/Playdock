@@ -1,0 +1,28 @@
+{
+  "id": "014-focus-js-data-id-and-match",
+  "title": "JS: cards carry their real id, focus ring matches by id",
+  "description": "The shared click() helper (every skin's card markup) now also emits data-id, and window.PlaydockSetFocus matches by that id instead of position - fixes the stale doc comment that already claimed data-id existed, and lays the real groundwork for a focus ring that survives a filtered card list.",
+  "category": "controller",
+  "commit_message": "Match PlaydockSetFocus by data-id instead of index",
+  "files": [
+    "Sources/ExeDock/Resources/SkinTemplate/skins.js"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.751793+00:00",
+    "original_patch_sha1": "1536a639caca06ec9f727cb733edb068c9a75bda",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

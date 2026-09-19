@@ -1,0 +1,15 @@
+diff --git a/Sources/ExeDock/Views/SetupView.swift b/Sources/ExeDock/Views/SetupView.swift
+index e73c05675375d9df918dcec780b00563d4d2249c..982eba22424fbc12a6b0702c251826c2d1672dc0 100644
+--- a/Sources/ExeDock/Views/SetupView.swift
++++ b/Sources/ExeDock/Views/SetupView.swift
+@@ -20,9 +20,7 @@ struct SetupView: View {
+             Image(systemName: iconName)
+                 .font(.system(size: 52))
+                 .foregroundStyle(iconColor)
+-            Text(title)
+-                .font(.title2)
+-                .bold()
++            SkinTitleText(text: title, size: 22)
+             Text(subtitle)
+                 .font(.body)
+                 .foregroundStyle(.secondary)

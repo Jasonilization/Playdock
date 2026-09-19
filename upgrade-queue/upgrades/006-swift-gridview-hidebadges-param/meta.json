@@ -1,0 +1,30 @@
+{
+  "id": "006-swift-gridview-hidebadges-param",
+  "title": "Swift: SkinWebGridView accepts a hideBadges flag",
+  "description": "SkinWebGridView (Grid's own WKWebView wrapper) gains a `hideBadges: Bool = false` param, threaded through its Coordinator's render(...) and a new WebMeta.hideBadges field, into the real window.PlaydockRender call. Defaulted/backward-compatible; nothing passes true yet.",
+  "category": "labels",
+  "commit_message": "Add hideBadges param to SkinWebGridView",
+  "files": [
+    "Sources/ExeDock/Support/SkinWebGridView.swift"
+  ],
+  "dependencies": [
+    "004-badge-js-hide-attribute"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "004-badge-js-hide-attribute",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.746682+00:00",
+    "original_patch_sha1": "c07870f726c5fd0f13333f2e43d71696ef7dc82e",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

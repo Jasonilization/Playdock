@@ -1,0 +1,13 @@
+diff --git a/Sources/ExeDock/Resources/SkinTemplate/skins.css b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+index 98cc4fab06b8d7dcbfdfecf1eae8055dd67d7f7a..30723fd95e663b4c3de8826ea414456a6be6914c 100644
+--- a/Sources/ExeDock/Resources/SkinTemplate/skins.css
++++ b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+@@ -68,7 +68,7 @@ input.search::placeholder{color:inherit;opacity:0.6;}
+ .brut .topbar{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:stretch;border-bottom:4px solid var(--line);}
+ .brut .who{padding:18px 26px;font-family:'Archivo Black';font-size:20px;border-right:4px solid var(--line);}
+ .brut .count{padding:18px 26px;font-size:13px;border-right:4px solid var(--line);display:flex;align-items:center;}
+-.brut .search{flex:1;padding:18px 26px;font-size:13px;background:var(--accent2);color:#fff;font-weight:700;}
++.brut .search{flex:1;padding:18px 26px;font-size:13px;background:var(--accent2);color:var(--bg);font-weight:700;}
+ .brut main{padding:32px;max-width:1400px;margin:0 auto;}
+ .brut h1{font-family:'Archivo Black';font-size:44px;margin:0 0 26px;text-transform:uppercase;letter-spacing:-.01em;}
+ .brut .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:26px;}

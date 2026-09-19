@@ -1,0 +1,20 @@
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+index 6e4b129a80d33e887bd00b05c64c3c26219617d9..91ec61824e20d57a8f6116e40b5c4d21918932be 100644
+--- a/CONTRIBUTING.md
++++ b/CONTRIBUTING.md
+@@ -67,6 +67,15 @@ swift test
+   `./Scripts/build_app.sh` (no Xcode preview available on this toolchain, so testing means an
+   actual rebuild + relaunch).
+ 
++## Shipping small changes (maintainer workflow)
++
++Real, independently-reviewable changes get prepared as small "upgrades" under `upgrade-queue/`
++(each one is `meta.json` + a real `patch.diff` + `notes.md`) rather than committed straight to
++`main`. `./Scripts/ship_manager.sh` launches a local dashboard (`http://127.0.0.1:8765`) to
++browse/search them, dry-run one in an isolated `git worktree` (build + test, main tree untouched),
++and ship one for real - a two-phase apply → build → test → review-the-diff → confirm-commit flow,
++never a silent auto-commit. See `upgrade-queue/ship_manager/README.md` for the full contract.
++
+ ## Pull requests
+ 
+ - Keep PRs focused - one fix or one feature, not a grab-bag.

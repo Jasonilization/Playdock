@@ -1,0 +1,28 @@
+{
+  "id": "037-cdrive-row-hover-highlight",
+  "title": "CDriveView: rows get real hover feedback",
+  "description": "A real, confirmed gap: with no List(selection:) binding (focusedIndex already owns keyboard/controller selection separately), AppKit's own row hover/pressed feedback never engaged - a row gave zero visual response to the mouse at all, unlike every other tappable row/tile in the app (LibraryEntryTile has had its own .onHover all along). Adds a real onHover-driven background highlight.",
+  "category": "polish",
+  "commit_message": "Add real hover highlight to C: Drive rows",
+  "files": [
+    "Sources/ExeDock/Views/CDriveView.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.812061+00:00",
+    "original_patch_sha1": "beb1eaa04fc2fe6a8cf5139812a932006a01b660",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

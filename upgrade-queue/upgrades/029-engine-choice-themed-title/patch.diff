@@ -1,0 +1,24 @@
+diff --git a/Sources/ExeDock/Views/SetupView.swift b/Sources/ExeDock/Views/SetupView.swift
+index e73c05675375d9df918dcec780b00563d4d2249c..e89dbfec20dae65cb6d65b4e31972ebdcae002c0 100644
+--- a/Sources/ExeDock/Views/SetupView.swift
++++ b/Sources/ExeDock/Views/SetupView.swift
+@@ -196,6 +196,8 @@ private struct EngineChoiceView: View {
+     let options: [String]
+     let recommended: String?
+     let onChoose: (String) -> Void
++    @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
++    private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
+ 
+     var body: some View {
+         VStack(spacing: 16) {
+@@ -203,9 +205,7 @@ private struct EngineChoiceView: View {
+             Image(systemName: "gamecontroller.fill")
+                 .font(.system(size: 44))
+                 .foregroundStyle(.secondary)
+-            Text("Choose a Wine engine")
+-                .font(.title2)
+-                .bold()
++            SkinTitleText(text: "Choose a Wine engine", size: 22)
+             Text("Sikarugir Creator has more than one engine ready to go. Recommended is the safest bet for most games - you can always change this later.")
+                 .font(.body)
+                 .foregroundStyle(.secondary)

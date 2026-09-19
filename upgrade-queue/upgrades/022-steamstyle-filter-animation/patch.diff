@@ -1,0 +1,13 @@
+diff --git a/Sources/ExeDock/Views/LibraryLayouts.swift b/Sources/ExeDock/Views/LibraryLayouts.swift
+index d855d5341785e3e67a7675e166d56d8743801d74..b004d6c93ccf2d292493b1a4cb4872c0756c168d 100644
+--- a/Sources/ExeDock/Views/LibraryLayouts.swift
++++ b/Sources/ExeDock/Views/LibraryLayouts.swift
+@@ -420,7 +420,7 @@ struct LibrarySteamStyleLayout: View {
+                         .padding(.horizontal, 14).padding(.vertical, 6).frame(maxWidth: .infinity, alignment: .leading)
+                         .background(f == filter ? Color.accentColor.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 7))
+                         .contentShape(Rectangle())
+-                        .onTapGesture { filter = f }
++                        .onTapGesture { withAnimation(.easeInOut(duration: 0.15)) { filter = f } }
+                 }
+                 Spacer()
+             }

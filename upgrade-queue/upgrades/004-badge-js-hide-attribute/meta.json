@@ -1,0 +1,30 @@
+{
+  "id": "004-badge-js-hide-attribute",
+  "title": "JS: read a hideBadges flag and set the hide attribute",
+  "description": "window.PlaydockRender and window.PlaydockRenderGridFragment both now read a hideBadges field from their meta/theme JSON and set data-hide-badges on <html>, pairing with the CSS rule from a separate piece. Nothing on the Swift side sends a non-default value yet.",
+  "category": "labels",
+  "commit_message": "Wire hideBadges flag into PlaydockRender/RenderGridFragment",
+  "files": [
+    "Sources/ExeDock/Resources/SkinTemplate/skins.js"
+  ],
+  "dependencies": [
+    "002-badge-css-hide-rule"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "002-badge-css-hide-rule",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.745141+00:00",
+    "original_patch_sha1": "4ecc35ffa02a7d6678eb2fdc7a6a7e7cd8574cc4",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

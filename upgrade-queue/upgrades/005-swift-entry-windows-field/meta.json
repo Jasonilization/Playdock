@@ -1,0 +1,30 @@
+{
+  "id": "005-swift-entry-windows-field",
+  "title": "Swift: SkinWebGridEntry learns a windows field",
+  "description": "Adds `windows: Bool = false` to SkinWebGridEntry (defaulted, so this stays independently buildable before anything sets it). Pairs with the JS badge() case from a separate piece once a later piece actually sets it per-game.",
+  "category": "labels",
+  "commit_message": "Add defaulted windows field to SkinWebGridEntry",
+  "files": [
+    "Sources/ExeDock/Support/SkinWebGridView.swift"
+  ],
+  "dependencies": [
+    "003-badge-js-windows-case"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "003-badge-js-windows-case",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.746125+00:00",
+    "original_patch_sha1": "3bcabdb46e897313669062000aec3eb02df31ccf",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

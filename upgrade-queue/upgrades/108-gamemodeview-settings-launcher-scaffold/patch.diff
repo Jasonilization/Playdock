@@ -1,0 +1,153 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index f550b9706addab5f31832843c164c90ab18d00aa..41dfc7010bc4bebd45f50e558a429787b3b1b914 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -39,6 +39,14 @@ private struct LeftRoundedRect: Shape {
+     }
+ }
+ 
++/// Storage key for the floating Settings launcher's shown/minimized state - namespaced here rather
++/// than on `GameModeView` (which owns the launcher view) so `SettingsPanelView`'s own
++/// "Show Floating Settings Button" toggle can bind the same `@AppStorage` without importing the
++/// whole dashboard view.
++enum SettingsLauncher {
++    static let showLauncherKey = "com.exedock.showSettingsButton"
++}
++
+ struct GameModeView: View {
+     @EnvironmentObject private var model: AppModel
+     @ObservedObject private var runningTracker = RunningGameTracker.shared
+@@ -61,8 +69,14 @@ struct GameModeView: View {
+     /// display sites.
+     static let hideBadgesKey = "com.exedock.hideLibraryBadges"
+     @AppStorage(GameModeView.hideBadgesKey) private var hideLibraryBadges = false
++    /// The floating Settings launcher's shown/minimized state - `true` is the full pill, `false`
++    /// collapses it to an edge tab, exactly the way `showSteamIcon` works for the Steam icon.
++    @AppStorage(SettingsLauncher.showLauncherKey) private var showSettingsLauncher = true
+     @LocalState private var search = ""
+     @LocalState private var showingSettingsSheet = false
++    /// Drives the full-window `SettingsPanelView` overlay (it used to be a small `.sheet`). Added
++    /// alongside the old flag for now - the launcher/overlay below aren't wired into `body` yet.
++    @LocalState private var showingSettings = false
+     @LocalState private var showingAddGameSheet = false
+     @LocalState private var sortOption: GameSortOption = .name
+     @LocalState private var launchOverlayGame: SteamGame?
+@@ -743,6 +757,118 @@ struct GameModeView: View {
+         }
+     }
+ 
++    // MARK: - Floating corner controls
++
++    /// Neither floating control should take clicks while any full-screen overlay (a game's detail
++    /// view, a launch overlay, Controller Mode) is up over the dashboard.
++    private var noDashboardOverlayActive: Bool {
++        detailGame == nil && detailCustomGame == nil && launchOverlayGame == nil
++            && launchOverlayCustomGame == nil && !showingControllerMode
++    }
++
++    /// The Steam icon and the Settings launcher, both docked bottom-right, kept in their own
++    /// container so the main `body` ZStack stays inside the Swift type-checker's budget. Not wired
++    /// into `body` yet - see the follow-up commit that replaces the old `steamFloatingIcon` call
++    /// site with this.
++    private var cornerFloaters: some View {
++        ZStack(alignment: .bottomTrailing) {
++            steamFloatingIcon
++                .allowsHitTesting(noDashboardOverlayActive)
++            settingsFloatingLauncher
++                .allowsHitTesting(noDashboardOverlayActive && !showingSettings)
++        }
++        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
++        .animation(.easeInOut(duration: 0.3), value: showSteamIcon)
++        .animation(.easeInOut(duration: 0.3), value: showSettingsLauncher)
++    }
++
++    @ViewBuilder
++    private var settingsOverlay: some View {
++        if showingSettings {
++            SettingsPanelView {
++                withAnimation(.easeInOut(duration: 0.25)) { showingSettings = false }
++            }
++            .transition(.opacity)
++            .zIndex(3)
++        }
++    }
++
++    private func openSettings() {
++        withAnimation(.easeInOut(duration: 0.25)) { showingSettings = true }
++    }
++
++    /// A floating Settings launcher that mirrors `steamFloatingIcon`: one continuous view that is
++    /// either a full pill (gear + "Settings") or, minimized, a small tab docked flush to the
++    /// window's right edge - "a button that can be minimalized, just like the launch steam icon,"
++    /// per live feedback. Tapping the pill opens the full-window `SettingsPanelView`; the chevron
++    /// tucks it to the edge; the edge tab brings it back. Sits above the Steam icon so the two
++    /// stack in the same corner without overlapping, in whichever state each one is in.
++    private var settingsFloatingLauncher: some View {
++        let collapsed = !showSettingsLauncher
++        let width: CGFloat = collapsed ? 30 : 148
++        let height: CGFloat = collapsed ? 92 : 46
++        // Clear the Steam icon whatever state it's in: expanded it's a 200pt icon 24pt off the
++        // bottom, collapsed a 116pt edge tab starting 40pt up. Sit just above either.
++        let bottomInset: CGFloat = showSteamIcon ? (24 + 200 + 14) : (40 + 116 + 12)
++        let shape: AnyShape = collapsed ? AnyShape(LeftRoundedRect(radius: 14)) : AnyShape(Capsule())
++
++        return ZStack(alignment: .topLeading) {
++            Button {
++                openSettings()
++            } label: {
++                HStack(spacing: 8) {
++                    Image(systemName: "gearshape.fill")
++                    Text(L("Settings")).fontWeight(.semibold).lineLimit(1)
++                }
++                .font(.callout)
++                .foregroundStyle(skin.accent)
++                .frame(width: width, height: height)
++            }
++            .buttonStyle(.plain)
++            .opacity(collapsed ? 0 : 1)
++            .allowsHitTesting(!collapsed)
++            .help(L("Settings"))
++
++            if !collapsed {
++                Button {
++                    showSettingsLauncher = false
++                } label: {
++                    Image(systemName: "chevron.right")
++                        .font(.system(size: 9, weight: .bold))
++                        .foregroundStyle(skin.accent)
++                        .frame(width: 17, height: 17)
++                        .background(skin.accent.opacity(0.16), in: Circle())
++                }
++                .buttonStyle(.plain)
++                .padding(4)
++                .help(L("Show Floating Settings Button"))
++            }
++
++            Button {
++                showSettingsLauncher = true
++            } label: {
++                VStack(spacing: 6) {
++                    Image(systemName: "chevron.left").font(.system(size: 9, weight: .bold))
++                    Image(systemName: "gearshape.fill").font(.body)
++                }
++                .foregroundStyle(skin.accent)
++                .frame(width: width, height: height)
++            }
++            .buttonStyle(.plain)
++            .opacity(collapsed ? 1 : 0)
++            .allowsHitTesting(collapsed)
++            .help(L("Settings"))
++        }
++        .frame(width: width, height: height)
++        .background(.regularMaterial, in: shape)
++        .overlay(shape.stroke(skin.accent.opacity(0.35), lineWidth: skin.borderWidth))
++        .clipShape(shape)
++        .shadow(color: .black.opacity(0.28), radius: collapsed ? 10 : 16, x: collapsed ? -2 : 0, y: collapsed ? 0 : 6)
++        .padding(.trailing, collapsed ? 0 : 22)
++        .padding(.bottom, bottomInset)
++        .animation(.easeInOut(duration: 0.3), value: showSettingsLauncher)
++    }
++
+     private var profileAvatar: some View {
+         Group {
+             if let avatarPath = model.steamProfile?.avatarPath, let image = LocalImageCache.image(atPath: avatarPath) {

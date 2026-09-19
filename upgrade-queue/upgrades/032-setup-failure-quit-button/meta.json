@@ -1,0 +1,30 @@
+{
+  "id": "032-setup-failure-quit-button",
+  "title": "Boot UI: a real Quit option when setup fails",
+  "description": "Someone stuck on a genuine setup failure (offline, GitHub unreachable, no fallback Sikarugir Creator install) previously had only 'Check Again' - no on-screen way out at all, only the undiscoverable Cmd+Q. Adds a plain, deliberately understated 'Quit Playdock' link under the real retry button.",
+  "category": "polish",
+  "commit_message": "Add a Quit button to the setup-failure screen",
+  "files": [
+    "Sources/ExeDock/Views/SetupView.swift"
+  ],
+  "dependencies": [
+    "027-setup-boot-themed-retry-button"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "027-setup-boot-themed-retry-button",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.763855+00:00",
+    "original_patch_sha1": "9de678f80aa781f0fa4c74b7776def390061993a",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

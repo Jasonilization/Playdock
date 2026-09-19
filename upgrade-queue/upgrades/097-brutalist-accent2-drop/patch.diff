@@ -1,0 +1,17 @@
+diff --git a/Sources/ExeDock/Support/DesignSystem.swift b/Sources/ExeDock/Support/DesignSystem.swift
+index 3c4a4e08c6c2c9a9e752444be8e9847c3275bc19..0cabf3dfa80178b53605e3f98e55b34d01dedacc 100644
+--- a/Sources/ExeDock/Support/DesignSystem.swift
++++ b/Sources/ExeDock/Support/DesignSystem.swift
+@@ -112,7 +112,11 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
+     /// their own just repeat `accent`, so every call site can use this unconditionally.
+     var accent2: Color {
+         switch self {
+-        case .brutalist: return Color(red: 0.227, green: 0.525, blue: 1.0) // #3a86ff - no light-mode override exists for Brutalist at all
++        // Brutalist's old second color was #3a86ff electric blue - only ever used for the Grid
++        // WebView's full-bleed search bar (skins.css), and the single worst offender in "the
++        // colour scheme looks very bad": a hot-blue slab next to a hot-pink accent on cream. Gone
++        // now - Brutalist collapses to its single red accent here, and the CSS search bar is an
++        // ink block instead (see .brut in skins.css).
+         case .cyber: return Self.dynamicAccent(light: (0.761, 0.090, 0.439), dark: (1.0, 0.18, 0.53)) // #ff2e88 / #c21770
+         case .pixel: return Self.dynamicAccent(light: (0.851, 0.314, 0.184), dark: (0.937, 0.490, 0.341)) // #ef7d57 / #d9502f
+         default: return accent

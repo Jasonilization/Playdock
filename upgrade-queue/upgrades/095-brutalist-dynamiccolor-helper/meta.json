@@ -1,0 +1,28 @@
+{
+  "id": "095-brutalist-dynamiccolor-helper",
+  "title": "DesignSystem: add file-scope dynamicColor() helper",
+  "description": "A live light/dark-resolving Color, a file-scope twin of PlaydockSkin.dynamicAccent, for the skin tokens defined outside the enum. Used next by the Brutalist hard-shadow retune.",
+  "category": "appearance",
+  "commit_message": "DesignSystem: add file-scope dynamicColor() helper",
+  "files": [
+    "Sources/ExeDock/Support/DesignSystem.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.790010+00:00",
+    "original_patch_sha1": "ad39876c93ca2a24757b64fe5caba84ae4480107",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

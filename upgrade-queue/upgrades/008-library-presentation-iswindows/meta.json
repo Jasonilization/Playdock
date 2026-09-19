@@ -1,0 +1,28 @@
+{
+  "id": "008-library-presentation-iswindows",
+  "title": "Swift: LibraryPresentation learns isWindows",
+  "description": "The native (non-WebView) layouts' shared LibraryPresentation struct gains isWindows, set from game.source == .wineBottle - the native-layout equivalent of SkinWebGridEntry.windows. Not yet displayed anywhere.",
+  "category": "labels",
+  "commit_message": "Add isWindows to LibraryPresentation",
+  "files": [
+    "Sources/ExeDock/Views/LibraryLayouts.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.747698+00:00",
+    "original_patch_sha1": "990636e66220b3c563f2d5670257bf4156f49aa7",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

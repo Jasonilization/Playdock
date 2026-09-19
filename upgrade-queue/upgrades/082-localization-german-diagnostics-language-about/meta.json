@@ -1,0 +1,30 @@
+{
+  "id": "082-localization-german-diagnostics-language-about",
+  "title": "German translations \u2014 diagnostics, language picker & about",
+  "description": "Adds the diagnostics, language picker & about strings (10 keys) to the german table.",
+  "category": "settings",
+  "commit_message": "Add German translations: diagnostics, language picker & about",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "081-localization-german-games-data-and-engine"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "081-localization-german-games-data-and-engine",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.783000+00:00",
+    "original_patch_sha1": "aa3f961eda5cbdb46d480e7f8b515e565da8c32c",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

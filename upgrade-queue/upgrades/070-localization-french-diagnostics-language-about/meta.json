@@ -1,0 +1,30 @@
+{
+  "id": "070-localization-french-diagnostics-language-about",
+  "title": "French translations \u2014 diagnostics, language picker & about",
+  "description": "Adds the diagnostics, language picker & about strings (10 keys) to the french table.",
+  "category": "settings",
+  "commit_message": "Add French translations: diagnostics, language picker & about",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "069-localization-french-games-data-and-engine"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "069-localization-french-games-data-and-engine",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.777217+00:00",
+    "original_patch_sha1": "d6ec4fe1ab0bbe7b5cdd61b4bb8707d4167e3988",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

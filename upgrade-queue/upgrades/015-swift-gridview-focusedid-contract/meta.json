@@ -1,0 +1,31 @@
+{
+  "id": "015-swift-gridview-focusedid-contract",
+  "title": "Swift: SkinWebGridView.focusedIndex becomes focusedID",
+  "description": "Grid's own WKWebView wrapper switches its focus contract from a positional Int index to the real game id, matching the JS-side change in a separate piece. Grid always renders its full unfiltered list, so this was previously correct 'by luck' - now correct by construction.",
+  "category": "controller",
+  "commit_message": "Change SkinWebGridView's focus contract from index to id",
+  "files": [
+    "Sources/ExeDock/Support/SkinWebGridView.swift"
+  ],
+  "dependencies": [
+    "006-swift-gridview-hidebadges-param",
+    "014-focus-js-data-id-and-match"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "014-focus-js-data-id-and-match",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.752174+00:00",
+    "original_patch_sha1": "c7e9e623e40b85105fae1c2d3bce5aa5f519256e",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

@@ -1,0 +1,28 @@
+{
+  "id": "099-brutalist-skinbackground-dark-ground",
+  "title": "Brutalist page background: same dark-ground lift",
+  "description": "SkinBackground's Brutalist dark ground #171410 \u2192 #1b1712, matching the top bar so the native page background and the top bar agree.",
+  "category": "appearance",
+  "commit_message": "Brutalist: lift SkinBackground dark ground #171410 \u2192 #1b1712",
+  "files": [
+    "Sources/ExeDock/Support/SkinBackgrounds.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.792957+00:00",
+    "original_patch_sha1": "0548ec63da10dc121fd7d3d4fa158d3a44ba79ea",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

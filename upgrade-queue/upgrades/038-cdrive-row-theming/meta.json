@@ -1,0 +1,28 @@
+{
+  "id": "038-cdrive-row-theming",
+  "title": "CDriveView: rows use the real skin accent/font",
+  "description": "CDriveRow's 'Run' label used the generic system Color.accentColor (same inconsistency as the breadcrumb, separate unit) and the row's own name text never applied the active skin's font design at all, unlike every other themed text in the app. Threads skin through to CDriveRow and fixes both.",
+  "category": "polish",
+  "commit_message": "Use skin.accent/fontDesign in C: Drive rows",
+  "files": [
+    "Sources/ExeDock/Views/CDriveView.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.812612+00:00",
+    "original_patch_sha1": "c4a6d51efb722302cf507b01036fb92884af01d2",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

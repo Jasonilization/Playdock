@@ -1,0 +1,28 @@
+{
+  "id": "012-controller-extract-dpad-helper",
+  "title": "Refactor: extract wireDirectionPad helper (D-pad only, zero behavior change)",
+  "description": "Pure extraction: ControllerObserver's D-pad up/down/left/right wiring moves into a new private wireDirectionPad(_:label:log:) method, called once for the real D-pad. Identical behavior - this is scaffolding for a later piece to reuse the same method for the analog thumbsticks, not a feature by itself.",
+  "category": "controller",
+  "commit_message": "Extract wireDirectionPad helper from D-pad wiring",
+  "files": [
+    "Sources/ExeDock/Engine/ControllerObserver.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.750862+00:00",
+    "original_patch_sha1": "31ff46ea48e8fd054a310dc5470b1e4871877d37",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

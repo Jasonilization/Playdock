@@ -1,0 +1,28 @@
+diff --git a/Sources/ExeDock/Views/LibraryLayouts.swift b/Sources/ExeDock/Views/LibraryLayouts.swift
+index d855d5341785e3e67a7675e166d56d8743801d74..8aec35bff9c84b4152897138908ea5826d64d41e 100644
+--- a/Sources/ExeDock/Views/LibraryLayouts.swift
++++ b/Sources/ExeDock/Views/LibraryLayouts.swift
+@@ -187,7 +187,13 @@ struct LibraryShelvesLayout: View {
+     private func cycleFeatured(by delta: Int) {
+         guard let featured, let currentIndex = entries.firstIndex(where: { $0.id == featured.id }), !entries.isEmpty else { return }
+         let newIndex = (currentIndex + delta + entries.count) % entries.count
+-        manualFeaturedID = entries[newIndex].id
++        // A real, previously-missing cross-fade - switching the featured hero (LT/RT, the nav
++        // chevrons) used to snap the art/title/description straight to the new game with no
++        // transition at all. `.id(featured.id)` + `.transition(.opacity)` below is what makes this
++        // withAnimation actually have something to animate.
++        withAnimation(.easeInOut(duration: 0.28)) {
++            manualFeaturedID = entries[newIndex].id
++        }
+     }
+ 
+     var body: some View {
+@@ -218,6 +224,8 @@ struct LibraryShelvesLayout: View {
+                             .frame(maxWidth: .infinity, maxHeight: 300)
+                         }
+                     }
++                    .id(featured.id)
++                    .transition(.opacity)
+                     .task(id: featured.id) {
+                         featuredPresentation = await LibraryPresentation.resolve(featured)
+                         if let path = featuredPresentation?.artPath { featuredAccent = await GameArtColor.dominantColor(forImagePath: path) }

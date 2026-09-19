@@ -1,0 +1,28 @@
+{
+  "id": "020-spotlight-hero-crossfade",
+  "title": "Animation: Spotlight's featured hero cross-fades instead of snapping",
+  "description": "Same real gap and same fix as Shelves' own featured hero (separate unit) - Spotlight's hero swapped instantly on LT/RT or the nav chevrons.",
+  "category": "polish",
+  "commit_message": "Cross-fade Spotlight's featured hero on change",
+  "files": [
+    "Sources/ExeDock/Views/LibraryLayouts.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.758067+00:00",
+    "original_patch_sha1": "e863b17f9de94cfaa0993cf88e3bc49697213f5f",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

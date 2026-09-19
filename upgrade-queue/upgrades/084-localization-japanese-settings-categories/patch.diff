@@ -1,0 +1,18 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index d92a8e818a8eec3431ba7468ea0496bdab1e9cff..f72e628cb1c3e710d83a617ae440390e0c3bb539 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -429,5 +429,13 @@ enum Localization {
+         "No games installed": "インストール済みのゲームがありません",
+         "%lld game": "%lld 本のゲーム",
+         "%lld games": "%lld 本のゲーム",
++        "General": "一般",
++        "Appearance": "外観",
++        "Personalization": "パーソナライズ",
++        "Library": "ライブラリ",
++        "Games & Data": "ゲームとデータ",
++        "Language": "言語",
++        "Diagnostics": "診断",
++        "About": "情報",
+     ]
+ }

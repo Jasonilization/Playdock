@@ -1,0 +1,88 @@
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 0752712b6d37b6ec089dce4b8b7b004471884337..75686abb4b82aff40ce8865b44d8939cf563fb8d 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -24,7 +24,7 @@ struct SettingsPanelView: View {
+     private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
+ 
+     enum Category: String, CaseIterable, Identifiable {
+-        case general, appearance, personalization
++        case general, appearance, personalization, games
+         var id: String { rawValue }
+ 
+         var titleKey: String {
+@@ -32,6 +32,7 @@ struct SettingsPanelView: View {
+             case .general: return "General"
+             case .appearance: return "Appearance"
+             case .personalization: return "Personalization"
++            case .games: return "Games & Data"
+             }
+         }
+ 
+@@ -40,6 +41,7 @@ struct SettingsPanelView: View {
+             case .general: return "gearshape"
+             case .appearance: return "paintpalette"
+             case .personalization: return "slider.horizontal.3"
++            case .games: return "gamecontroller"
+             }
+         }
+     }
+@@ -139,6 +141,7 @@ struct SettingsPanelView: View {
+         case .general: generalTab
+         case .appearance: appearanceTab
+         case .personalization: personalizationTab
++        case .games: gamesTab
+         }
+     }
+ 
+@@ -268,6 +271,50 @@ struct SettingsPanelView: View {
+         }
+     }
+ 
++    // MARK: Games & Data
++
++    private var gamesTab: some View {
++        VStack(alignment: .leading, spacing: 18) {
++            tabHeader(.games)
++
++            SettingsCard(skin: skin, title: L("Hard Refresh Game Info")) {
++                VStack(alignment: .leading, spacing: 12) {
++                    Text(L("Re-downloads every game's art, description, and details from Steam. Use this if a game shows the wrong or missing art."))
++                        .font(.callout)
++                        .foregroundStyle(.secondary)
++                        .fixedSize(horizontal: false, vertical: true)
++                    HStack(spacing: 12) {
++                        Button {
++                            model.hardRefreshGameInfo()
++                        } label: {
++                            if model.isHardRefreshingGameInfo {
++                                HStack(spacing: 8) {
++                                    ProgressView().controlSize(.small)
++                                    Text(L("Refreshing…"))
++                                }
++                            } else {
++                                Label(L("Hard Refresh Game Info"), systemImage: "arrow.clockwise.circle")
++                            }
++                        }
++                        .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
++                        .disabled(model.isHardRefreshingGameInfo)
++                        Text(lastRefreshText)
++                            .font(.caption)
++                            .foregroundStyle(.secondary)
++                    }
++                }
++            }
++        }
++    }
++
++    private var lastRefreshText: String {
++        guard let date = model.lastGameInfoRefresh else { return L("Never refreshed") }
++        let formatter = DateFormatter()
++        formatter.dateStyle = .medium
++        formatter.timeStyle = .short
++        return LF("Last refreshed %@", formatter.string(from: date))
++    }
++
+     // MARK: - Shared bits
+ 
+     private func tabHeader(_ item: Category) -> some View {

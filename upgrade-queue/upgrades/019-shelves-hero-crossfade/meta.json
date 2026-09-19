@@ -1,0 +1,28 @@
+{
+  "id": "019-shelves-hero-crossfade",
+  "title": "Animation: Shelves' featured hero cross-fades instead of snapping",
+  "description": "Cycling the featured hero (LT/RT, or the nav chevrons) in Shelves used to swap art/title/description with zero transition - a real, confirmed gap in the 'Animation + Visual Polish' pass. Fixed with .id(featured.id) + .transition(.opacity) on the hero content plus withAnimation around the state change.",
+  "category": "polish",
+  "commit_message": "Cross-fade Shelves' featured hero on change",
+  "files": [
+    "Sources/ExeDock/Views/LibraryLayouts.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.757305+00:00",
+    "original_patch_sha1": "4d4f79284d3f3c0e742683974e24d31f966c3d03",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "018-steamstyle-spotlight-focus-ring",
+  "title": "Real controller focus ring on Steam-style/Spotlight's card grids",
+  "description": "Closes the actual disclosed gap: Steam-style's poster grid and Spotlight's 'Also In Your Collection' section never showed a focus ring at all, even though the D-pad state tracking it needed was already correct - just never passed through. Wires focusedID from GameModeView into both LibrarySteamStyleLayout and LibrarySpotlightLayout, which pass it straight to their own SkinWebGridFragmentView. Id-matching (not position) means it stays correct even though both views render a *filtered* subset of the full library. Not yet confirmed live with real controller hardware - see notes.md.",
+  "category": "controller",
+  "commit_message": "Wire focusedID through Steam-style/Spotlight's card grids",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift",
+    "Sources/ExeDock/Views/LibraryLayouts.swift"
+  ],
+  "dependencies": [
+    "016-swift-fragmentview-focusedid-param",
+    "017-gamemodeview-focusedcardid"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "medium",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "017-gamemodeview-focusedcardid",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.756471+00:00",
+    "original_patch_sha1": "44faf8e784ac90b700cfc5c54e4d295a350f67d4",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

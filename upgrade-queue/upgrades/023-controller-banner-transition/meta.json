@@ -1,0 +1,29 @@
+{
+  "id": "023-controller-banner-transition",
+  "title": "Animation: the controller-connected banner slides in/out",
+  "description": "The 'Controller connected' banner (and its dismiss button) used to pop in/out with a bare SwiftUI if-condition and no transition. Added .transition(.move(edge:.top).combined(with:.opacity)) on the banner and wrapped both real triggers (ControllerObserver.refresh(), fired on real connect/disconnect notifications - and the banner's own dismiss button) in withAnimation so the transition actually fires both ways, not just one.",
+  "category": "polish",
+  "commit_message": "Animate the controller-connected banner in/out",
+  "files": [
+    "Sources/ExeDock/Engine/ControllerObserver.swift",
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.759778+00:00",
+    "original_patch_sha1": "4a1badb9700eaefbf3c797c336f6fbd2de491b9d",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

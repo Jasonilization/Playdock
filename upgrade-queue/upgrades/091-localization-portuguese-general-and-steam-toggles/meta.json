@@ -1,0 +1,30 @@
+{
+  "id": "091-localization-portuguese-general-and-steam-toggles",
+  "title": "Portuguese translations \u2014 General tab & floating-icon toggles",
+  "description": "Adds the General tab & floating-icon toggles strings (6 keys) to the portuguese table.",
+  "category": "settings",
+  "commit_message": "Add Portuguese translations: General tab & floating-icon toggles",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "090-localization-portuguese-settings-categories"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "090-localization-portuguese-settings-categories",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.787470+00:00",
+    "original_patch_sha1": "ec877e2f8ba902d78eb925148d57bf462d017633",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

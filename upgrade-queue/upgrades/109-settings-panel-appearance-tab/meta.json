@@ -1,0 +1,30 @@
+{
+  "id": "109-settings-panel-appearance-tab",
+  "title": "SettingsPanelView: Appearance tab + MiniSkinTile",
+  "description": "Adds the Appearance category: a 3-up grid of live MiniSkinTile swatches (each rendered as its own candidate skin) that switch the whole panel's look, plus a 'Run Setup Wizard Again' button.",
+  "category": "settings",
+  "commit_message": "SettingsPanelView: Appearance tab + MiniSkinTile",
+  "files": [
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [
+    "107-settings-panel-scaffold"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "107-settings-panel-scaffold",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.797118+00:00",
+    "original_patch_sha1": "ed18258927087431d0efd1c939f4af0aa31e5ccb",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "054-hard-refresh-cache-reset-engine",
+  "title": "Add GameInfoCacheReset engine",
+  "description": "The engine behind \"Hard Refresh Game Info\": wipes Playdock's own downloadable game metadata + art (in memory via the three new clear() calls, on disk by removing its two cache folders). Deliberately never touches Steam's own appcache/librarycache.",
+  "category": "settings",
+  "commit_message": "Add GameInfoCacheReset engine for Hard Refresh Game Info",
+  "files": [
+    "Sources/ExeDock/Engine/GameInfoCacheReset.swift"
+  ],
+  "dependencies": [
+    "051-hard-refresh-steamstoreinfo-clear-memory",
+    "052-hard-refresh-localimage-clear",
+    "053-hard-refresh-gameartcolor-clear-cache"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "053-hard-refresh-gameartcolor-clear-cache",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.768331+00:00",
+    "original_patch_sha1": "42f9c2e47473279d2903d8f1b83647548ac99d73",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

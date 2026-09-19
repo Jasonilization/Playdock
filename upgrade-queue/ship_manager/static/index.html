@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ship Manager</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1>Ship Manager</h1>
+    <span class="repo-path" id="repo-path"></span>
+    <span class="progress-summary" id="progress-summary"></span>
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="Search upgrades…" autocomplete="off">
+    </div>
+  </header>
+
+  <div id="up-next-banner" class="up-next-banner" hidden></div>
+  <div id="pending-banner" class="up-next-banner pending" hidden></div>
+  <div id="tools-banner" class="up-next-banner tools" hidden></div>
+
+  <div class="layout">
+    <aside class="list-pane">
+      <div class="filters" id="filters"></div>
+      <div class="upgrade-list" id="upgrade-list"></div>
+    </aside>
+
+    <main class="detail-pane" id="detail-pane">
+      <div class="empty-state">Pick an upgrade on the left.</div>
+    </main>
+  </div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

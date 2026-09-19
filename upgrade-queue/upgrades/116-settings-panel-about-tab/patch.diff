@@ -1,0 +1,77 @@
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 9143b94b9e81049e1258666bdbd77571c34ea2b2..744538da4c316071b76011ac1af45f2b3a11eeaf 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -27,7 +27,7 @@ struct SettingsPanelView: View {
+     private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
+ 
+     enum Category: String, CaseIterable, Identifiable {
+-        case general, appearance, personalization, games, language, diagnostics
++        case general, appearance, personalization, games, language, diagnostics, about
+         var id: String { rawValue }
+ 
+         var titleKey: String {
+@@ -38,6 +38,7 @@ struct SettingsPanelView: View {
+             case .games: return "Games & Data"
+             case .language: return "Language"
+             case .diagnostics: return "Diagnostics"
++            case .about: return "About"
+             }
+         }
+ 
+@@ -49,6 +50,7 @@ struct SettingsPanelView: View {
+             case .games: return "gamecontroller"
+             case .language: return "globe"
+             case .diagnostics: return "stethoscope"
++            case .about: return "info.circle"
+             }
+         }
+     }
+@@ -151,6 +153,7 @@ struct SettingsPanelView: View {
+         case .games: gamesTab
+         case .language: languageTab
+         case .diagnostics: diagnosticsTab
++        case .about: aboutTab
+         }
+     }
+ 
+@@ -438,6 +441,39 @@ struct SettingsPanelView: View {
+         }
+     }
+ 
++    // MARK: About
++
++    private var aboutTab: some View {
++        VStack(alignment: .leading, spacing: 18) {
++            tabHeader(.about)
++
++            SettingsCard(skin: skin, title: "Playdock") {
++                VStack(alignment: .leading, spacing: 8) {
++                    SkinTitleText(text: "Playdock", size: 26, lineLimit: 1)
++                    Text(LF("Version %@", appVersion))
++                        .font(.callout)
++                        .foregroundStyle(.secondary)
++                    Text(L("A Mac dashboard for the Windows games you run through Wine."))
++                        .font(.callout)
++                        .fixedSize(horizontal: false, vertical: true)
++                    Text(L("Built on the Sikarugir engine."))
++                        .font(.caption)
++                        .foregroundStyle(.secondary)
++                    Divider().overlay(skin.accent.opacity(0.1)).padding(.vertical, 4)
++                    HStack(spacing: 6) {
++                        Text(L("Contact")).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
++                        Text("thesuperjasonprocoolisplay@hotmail.com").font(.caption).textSelection(.enabled)
++                    }
++                }
++            }
++        }
++    }
++
++    private var appVersion: String {
++        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
++        return short ?? "—"
++    }
++
+     // MARK: - Shared bits
+ 
+     private func tabHeader(_ item: Category) -> some View {

@@ -1,0 +1,13 @@
+diff --git a/Sources/ExeDock/Resources/SkinTemplate/skins.css b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+index 98cc4fab06b8d7dcbfdfecf1eae8055dd67d7f7a..e1b6ac68ae18cd85e7eb16fefd6c7c54525b189b 100644
+--- a/Sources/ExeDock/Resources/SkinTemplate/skins.css
++++ b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+@@ -80,7 +80,7 @@ input.search::placeholder{color:inherit;opacity:0.6;}
+ .brut .title{font-family:'Archivo Black';font-size:17px;margin:0 0 6px;text-transform:uppercase;}
+ .brut .genre{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;text-transform:uppercase;margin-bottom:10px;}
+ .brut .desc{font-size:12px;line-height:1.5;margin:0 0 14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+-.brut .cta,.brut .run{display:block;width:100%;text-align:center;padding:10px 0;border:3px solid var(--line);font-family:'Space Mono';font-weight:700;font-size:12px;text-transform:uppercase;cursor:pointer;background:#111;color:#fff;}
++.brut .cta,.brut .run{display:block;width:100%;text-align:center;padding:10px 0;border:3px solid var(--line);font-family:'Space Mono';font-weight:700;font-size:12px;text-transform:uppercase;cursor:pointer;background:var(--fg);color:var(--bg);}
+ .brut .cta:active{transform:translate(2px,2px);}
+ .brut .run{background:#06d6a0;color:#111;}
+ 

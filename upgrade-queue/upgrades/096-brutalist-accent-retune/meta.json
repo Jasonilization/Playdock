@@ -1,0 +1,28 @@
+{
+  "id": "096-brutalist-accent-retune",
+  "title": "Brutalist accent: shrill pink \u2192 controlled vermilion",
+  "description": "#ff4d6d vibrated against both Brutalist grounds and clashed with the old blue search bar. Replaced with a dynamic vermilion red (#da2e22 light / #f2483b dark).",
+  "category": "appearance",
+  "commit_message": "Brutalist: retune accent from #ff4d6d to a dynamic vermilion",
+  "files": [
+    "Sources/ExeDock/Support/DesignSystem.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.790812+00:00",
+    "original_patch_sha1": "e03838d808fc6c76ecfa545f1b06078e7b706a01",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

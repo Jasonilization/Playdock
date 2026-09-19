@@ -1,0 +1,28 @@
+{
+  "id": "034-addgame-stale-error-clear",
+  "title": "Bug: Add Game's error message survived a retry",
+  "description": "errorMessage is a sibling of the isDiscovering/candidatePicker/methodChooser switch in AddGameSheet, not scoped inside any one state - so a failure from a previous attempt (a bad import, a discovery error) stayed on screen underneath the new 'Discovering game details...' spinner on retry, never actually cleared until success. Fixed by clearing it at the top of beginDiscovery(), the one real entry point every retry path (button, drop, candidate pick) already funnels through.",
+  "category": "bugfix",
+  "commit_message": "Clear AddGameSheet's stale error message on retry",
+  "files": [
+    "Sources/ExeDock/Views/AddGameSheet.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.766131+00:00",
+    "original_patch_sha1": "8774f8278acc294266b414431275bc0b5c809f02",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

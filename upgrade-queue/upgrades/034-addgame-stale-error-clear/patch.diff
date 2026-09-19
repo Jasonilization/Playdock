@@ -1,0 +1,17 @@
+diff --git a/Sources/ExeDock/Views/AddGameSheet.swift b/Sources/ExeDock/Views/AddGameSheet.swift
+index 6b0e904331db4a9ab61ce9e201730fd3912fd167..f3c381df49dd5f0afd01dc0c563926a69cb7d31e 100644
+--- a/Sources/ExeDock/Views/AddGameSheet.swift
++++ b/Sources/ExeDock/Views/AddGameSheet.swift
+@@ -233,7 +233,12 @@ struct AddGameSheet: View {
+     /// Playdock's own data), so it runs off the main thread with its own status text, same as
+     /// discovery itself already does.
+     private func beginDiscovery(exePath: String, folderName: String?, pickedFolderPath: String?) {
++        // A real, confirmed bug: `errorMessage` is a sibling of the isDiscovering/methodChooser/
++        // candidatePicker switch, not scoped inside any one of them - so a failure from a *previous*
++        // attempt (import error, metadata discovery error) stayed on screen underneath the new
++        // "Discovering game details…" spinner on a retry, never actually cleared until success.
+         isDiscovering = true
++        errorMessage = nil
+         discoveringStatus = "Discovering game details…"
+         Task {
+             let discovered = await CustomGameMetadataDiscovery.discover(exePath: exePath, folderName: folderName)

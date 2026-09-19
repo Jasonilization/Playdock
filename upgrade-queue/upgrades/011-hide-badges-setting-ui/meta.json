@@ -1,0 +1,28 @@
+{
+  "id": "011-hide-badges-setting-ui",
+  "title": "UI: a 'Hide Library Badges' setting, wired to itself",
+  "description": "Adds the com.exedock.hideLibraryBadges AppStorage flag and a real 'Hide Library Badges' toggle in DefaultSettingsSheet, with full controller D-pad/A-button focus wiring matching the existing Show Floating Steam Icon toggle. The flag exists and is user-controllable now; nothing reads it to actually hide anything yet - that's a separate, later piece.",
+  "category": "settings",
+  "commit_message": "Add Hide Library Badges setting (flag + toggle UI)",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.750508+00:00",
+    "original_patch_sha1": "1752131af1afd2a3202e27f4fcdd51b4a1004b8f",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

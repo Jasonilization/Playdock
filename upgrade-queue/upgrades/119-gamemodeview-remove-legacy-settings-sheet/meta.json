@@ -1,0 +1,30 @@
+{
+  "id": "119-gamemodeview-remove-legacy-settings-sheet",
+  "title": "GameModeView: remove the legacy .sheet settings and its Form views",
+  "description": "Drops showingSettingsSheet, the .sheet(isPresented:) modifier, and the now-unused DefaultSettingsSheet / SettingsRow / EngineUpdateSection Form views (superseded by SettingsPanelView).",
+  "category": "settings",
+  "commit_message": "GameModeView: remove the legacy .sheet settings and its Form views",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "118-gamemodeview-redirect-settings-triggers"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "medium",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "118-gamemodeview-redirect-settings-triggers",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.809177+00:00",
+    "original_patch_sha1": "d0cad9911a8730f13658b0f126a0273bed10d4d1",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

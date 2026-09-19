@@ -1,0 +1,31 @@
+{
+  "id": "110-settings-panel-personalization-tab",
+  "title": "SettingsPanelView: Personalization tab",
+  "description": "Adds the Personalization category: library layout + card-art pickers, and the two floating-control toggles (Steam icon, Settings button - the latter binds SettingsLauncher.showLauncherKey from unit 096).",
+  "category": "settings",
+  "commit_message": "SettingsPanelView: Personalization tab",
+  "files": [
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [
+    "108-gamemodeview-settings-launcher-scaffold",
+    "109-settings-panel-appearance-tab"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "109-settings-panel-appearance-tab",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.797742+00:00",
+    "original_patch_sha1": "07f2d5cd9efd46d67b981437aca9701cb04e0e49",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

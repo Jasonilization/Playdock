@@ -1,0 +1,30 @@
+{
+  "id": "067-localization-french-general-and-steam-toggles",
+  "title": "French translations \u2014 General tab & floating-icon toggles",
+  "description": "Adds the General tab & floating-icon toggles strings (6 keys) to the french table.",
+  "category": "settings",
+  "commit_message": "Add French translations: General tab & floating-icon toggles",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "066-localization-french-settings-categories"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "066-localization-french-settings-categories",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.774790+00:00",
+    "original_patch_sha1": "d41e0d01cef52640c117df0853db8f25c01b2bc6",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

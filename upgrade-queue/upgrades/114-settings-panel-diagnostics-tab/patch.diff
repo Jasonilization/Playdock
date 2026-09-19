@@ -1,0 +1,73 @@
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index ca3b54a7acc2b8f1fd8c8961825f91f6ddfeaf75..b61530e461f79935ecda3caa05424af0958425f0 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -27,7 +27,7 @@ struct SettingsPanelView: View {
+     private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
+ 
+     enum Category: String, CaseIterable, Identifiable {
+-        case general, appearance, personalization, games, language
++        case general, appearance, personalization, games, language, diagnostics
+         var id: String { rawValue }
+ 
+         var titleKey: String {
+@@ -37,6 +37,7 @@ struct SettingsPanelView: View {
+             case .personalization: return "Personalization"
+             case .games: return "Games & Data"
+             case .language: return "Language"
++            case .diagnostics: return "Diagnostics"
+             }
+         }
+ 
+@@ -47,6 +48,7 @@ struct SettingsPanelView: View {
+             case .personalization: return "slider.horizontal.3"
+             case .games: return "gamecontroller"
+             case .language: return "globe"
++            case .diagnostics: return "stethoscope"
+             }
+         }
+     }
+@@ -148,6 +150,7 @@ struct SettingsPanelView: View {
+         case .personalization: personalizationTab
+         case .games: gamesTab
+         case .language: languageTab
++        case .diagnostics: diagnosticsTab
+         }
+     }
+ 
+@@ -373,6 +376,35 @@ struct SettingsPanelView: View {
+         .buttonStyle(.plain)
+     }
+ 
++    // MARK: Diagnostics
++
++    private var diagnosticsTab: some View {
++        VStack(alignment: .leading, spacing: 18) {
++            tabHeader(.diagnostics)
++
++            SettingsCard(skin: skin, title: L("Diagnostics")) {
++                VStack(alignment: .leading, spacing: 12) {
++                    Button {
++                        model.revealInFinder(ExeRunner.logsDir)
++                    } label: {
++                        Label(L("Open Logs Folder"), systemImage: "doc.text.magnifyingglass")
++                    }
++                    .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
++                    Button {
++                        model.revealInFinder(("~/Library/Logs/DiagnosticReports" as NSString).expandingTildeInPath)
++                    } label: {
++                        Label(L("Open Crash Reports"), systemImage: "exclamationmark.triangle")
++                    }
++                    .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
++                    Text(L("Every launch writes its own log here, plus a record of background checks. If something's not working, look here first."))
++                        .font(.caption)
++                        .foregroundStyle(.secondary)
++                        .fixedSize(horizontal: false, vertical: true)
++                }
++            }
++        }
++    }
++
+     // MARK: - Shared bits
+ 
+     private func tabHeader(_ item: Category) -> some View {

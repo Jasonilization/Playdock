@@ -1,0 +1,32 @@
+{
+  "id": "083-localization-japanese-nav-and-actions",
+  "title": "Japanese translations \u2014 navigation labels & common actions",
+  "description": "Registers the japanese table and fills in the navigation labels & common actions strings (15 keys). Remaining Japanese strings follow in the next units; anything absent falls back to English.",
+  "category": "settings",
+  "commit_message": "Add Japanese translations: navigation labels & common actions",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "058-localization-engine",
+    "077-localization-german-nav-and-actions",
+    "082-localization-german-diagnostics-language-about"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "082-localization-german-diagnostics-language-about",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.783386+00:00",
+    "original_patch_sha1": "a9a126a5757b4dcd013fae70cd6f2e5382d5e05f",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

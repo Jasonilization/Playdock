@@ -1,0 +1,30 @@
+{
+  "id": "064-localization-chinese-diagnostics-language-about",
+  "title": "Simplified Chinese translations \u2014 diagnostics, language picker & about",
+  "description": "Adds the diagnostics, language picker & about strings (10 keys) to the chineseSimplified table.",
+  "category": "settings",
+  "commit_message": "Add Simplified Chinese translations: diagnostics, language picker & about",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "063-localization-chinese-games-data-and-engine"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "063-localization-chinese-games-data-and-engine",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.771757+00:00",
+    "original_patch_sha1": "84b5c10dd29188bd3947828052b0666a047feb3e",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

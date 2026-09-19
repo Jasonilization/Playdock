@@ -1,0 +1,30 @@
+{
+  "id": "066-localization-french-settings-categories",
+  "title": "French translations \u2014 settings category names",
+  "description": "Adds the settings category names strings (8 keys) to the french table.",
+  "category": "settings",
+  "commit_message": "Add French translations: settings category names",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "065-localization-french-nav-and-actions"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "065-localization-french-nav-and-actions",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.774141+00:00",
+    "original_patch_sha1": "de99170d49ab83fb14cd56366277708676375f06",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

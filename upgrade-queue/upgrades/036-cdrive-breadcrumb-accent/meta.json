@@ -1,0 +1,28 @@
+{
+  "id": "036-cdrive-breadcrumb-accent",
+  "title": "CDriveView: breadcrumb uses the real skin accent",
+  "description": "The breadcrumb row sits directly under the header's own real per-skin theming (topBarBackground/topBarBorderColor) but its own path links still used the generic system Color.accentColor instead of the actual active skin's own accent - a real, confirmed inconsistency.",
+  "category": "polish",
+  "commit_message": "Use skin.accent in the C: Drive breadcrumb",
+  "files": [
+    "Sources/ExeDock/Views/CDriveView.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.767045+00:00",
+    "original_patch_sha1": "e6418e6184633471ff9b404cc13b9ba64bbf0d72",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

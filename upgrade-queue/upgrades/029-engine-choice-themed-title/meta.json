@@ -1,0 +1,28 @@
+{
+  "id": "029-engine-choice-themed-title",
+  "title": "Boot UI: the multi-engine choice screen's title is themed",
+  "description": "EngineChoiceView (shown when Sikarugir Creator has more than one engine ready) gets the same SkinTitleText treatment as the rest of the boot flow - separate unit since it's a distinct struct/screen.",
+  "category": "polish",
+  "commit_message": "Use SkinTitleText on the engine-choice screen",
+  "files": [
+    "Sources/ExeDock/Views/SetupView.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.762823+00:00",
+    "original_patch_sha1": "0c4d25f9010fd5d6ea058c5329638b97b43cb83a",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

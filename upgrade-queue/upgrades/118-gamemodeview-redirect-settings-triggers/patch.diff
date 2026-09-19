@@ -1,0 +1,22 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index c756cb285003b0829c51173071644f2cee422f8e..f3613a57aa60753110cd854200fbf3eacd637328 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -533,7 +533,7 @@ struct GameModeView: View {
+                 .disabled(model.isLoadingSteamGames)
+ 
+                 headerIconButton(systemImage: "gearshape", help: "Settings", isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(2)) {
+-                    showingSettingsSheet = true
++                    openSettings()
+                 }
+             }
+             .padding(.horizontal, 8)
+@@ -1058,7 +1058,7 @@ struct GameModeView: View {
+             model.refreshSteamGames()
+             model.refreshSteamProfile()
+         case .toolbar:
+-            showingSettingsSheet = true
++            openSettings()
+         case .card(let index):
+             guard libraryEntries.indices.contains(index) else { return }
+             switch libraryEntries[index] {

@@ -1,0 +1,30 @@
+{
+  "id": "114-settings-panel-diagnostics-tab",
+  "title": "SettingsPanelView: Diagnostics tab",
+  "description": "Adds the Diagnostics category: open-logs-folder and open-crash-reports buttons plus the 'look here first' explainer.",
+  "category": "settings",
+  "commit_message": "SettingsPanelView: Diagnostics tab",
+  "files": [
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [
+    "113-settings-panel-language-tab"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "113-settings-panel-language-tab",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.805499+00:00",
+    "original_patch_sha1": "de6cfe8dfc097988598f8a476d0c4763739d15c0",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

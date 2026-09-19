@@ -1,0 +1,28 @@
+{
+  "id": "101-brutalist-button-fill-invert",
+  "title": "Brutalist button: invert to a theme-aware solid fill",
+  "description": "The fixed #111 fill was near-invisible on Brutalist's own dark ground - the button read as a hollow outline. Inverted to var(--fg)/var(--bg) the way Luxury's real .cta already is, keeping every other Brutalist button trait.",
+  "category": "appearance",
+  "commit_message": "Brutalist: invert button fill to theme-aware var(--fg)/var(--bg)",
+  "files": [
+    "Sources/ExeDock/Support/DesignSystem.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.793765+00:00",
+    "original_patch_sha1": "6b25ea859af90daf6eb802aab6059e81727fbd58",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "017-gamemodeview-focusedcardid",
+  "title": "Swift: GameModeView resolves the focused card to a real id",
+  "description": "GameModeView.focusedCardIndex becomes focusedCardID (resolves the D-pad-focused array index to that entry's real id) and Grid's own SkinWebGridView call site is updated to pass it. Steam-style/Spotlight aren't wired yet - separate piece.",
+  "category": "controller",
+  "commit_message": "Resolve GameModeView's focused card to an id, wire into Grid",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "015-swift-gridview-focusedid-contract"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "015-swift-gridview-focusedid-contract",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.753700+00:00",
+    "original_patch_sha1": "ecc071cf819a6254265bb45c62a09c964e0b641e",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

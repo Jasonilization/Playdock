@@ -1,0 +1,27 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index e9ecbd11a23a9bcd69235571e43eb153e397e77a..61d4c1c8db2e4df137fd9e2cc827ab03c96f9d0f 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -161,5 +161,22 @@ enum Localization {
+         "Steam": "Steam",
+         "C: Drive": "C: 盘",
+         "Which screen Playdock opens to.": "Playdock 启动时打开的页面。",
++        "Hard Refresh Game Info": "强制刷新游戏信息",
++        "Re-downloads every game's art, description, and details from Steam. Use this if a game shows the wrong or missing art.": "从 Steam 重新下载每个游戏的封面、简介和详情。若游戏封面错误或缺失，请使用此功能。",
++        "Refreshing…": "正在刷新…",
++        "Refresh complete.": "刷新完成。",
++        "Last refreshed %@": "上次刷新：%@",
++        "Never refreshed": "从未刷新",
++        "Check for Engine Updates": "检查引擎更新",
++        "Checking…": "正在检查…",
++        "Downloading…": "正在下载…",
++        "Download Update": "下载更新",
++        "Engine": "引擎",
++        "Graphics": "图形",
++        "Sync": "同步",
++        "Wine engine": "Wine 引擎",
++        "These are the same engines already downloaded by Sikarugir Creator.": "这些引擎与 Sikarugir Creator 已下载的引擎相同。",
++        "Fast Sync (ESYNC + MSYNC)": "快速同步（ESYNC + MSYNC）",
++        "Playdock's Wine engine comes from Sikarugir's public releases. Checking never downloads anything by itself.": "Playdock 的 Wine 引擎来自 Sikarugir 的公开发布。检查本身不会下载任何内容。",
+     ]
+ }

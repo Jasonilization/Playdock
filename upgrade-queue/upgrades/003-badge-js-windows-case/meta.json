@@ -1,0 +1,30 @@
+{
+  "id": "003-badge-js-windows-case",
+  "title": "JS: badge() helper learns a third case",
+  "description": "skins.js's shared badge(gm, customLabel) helper (used by every skin's card markup) gains a third branch for gm.windows, matching the existing gm.custom/gm.mac pattern and pairing with the .badge-windows CSS color from a separate piece.",
+  "category": "labels",
+  "commit_message": "Add windows case to badge() JS helper",
+  "files": [
+    "Sources/ExeDock/Resources/SkinTemplate/skins.js"
+  ],
+  "dependencies": [
+    "001-badge-css-windows-color"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "001-badge-css-windows-color",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.740221+00:00",
+    "original_patch_sha1": "75290a5ed2f6d037ecc16bedaedc75e592dbcf44",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

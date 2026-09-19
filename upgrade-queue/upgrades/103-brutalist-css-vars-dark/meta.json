@@ -1,0 +1,30 @@
+{
+  "id": "103-brutalist-css-vars-dark",
+  "title": "skins.css: give Brutalist dark its own accent pair",
+  "description": "[data-stage-theme=\"dark\"] .brut{}: ground #171410 \u2192 #1b1712, plus explicit dark --accent #f2483b and --accent2 #f4ecdd so dark mode isn't stuck with the light values.",
+  "category": "appearance",
+  "commit_message": "skins.css: add dark-mode --accent / --accent2 to .brut",
+  "files": [
+    "Sources/ExeDock/Resources/SkinTemplate/skins.css"
+  ],
+  "dependencies": [
+    "102-brutalist-css-vars-light"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "102-brutalist-css-vars-light",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.794546+00:00",
+    "original_patch_sha1": "d073e28b3f3563cce6254840614f3d17c41efdea",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

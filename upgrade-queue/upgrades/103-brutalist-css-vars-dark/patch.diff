@@ -1,0 +1,13 @@
+diff --git a/Sources/ExeDock/Resources/SkinTemplate/skins.css b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+index ddb319331a8547b5f4f41a14d8ca58fa3f53031e..ee2ef6a10923ed0031797d444c7e9b638300c923 100644
+--- a/Sources/ExeDock/Resources/SkinTemplate/skins.css
++++ b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+@@ -63,7 +63,7 @@ input.search::placeholder{color:inherit;opacity:0.6;}
+ 
+ /* ================= 3. Brutalist ================= */
+ .brut{ --bg:#fef6e4; --fg:#111; --accent:#da2e22; --accent2:#211c17; --line:#111; }
+-[data-stage-theme="dark"] .brut{ --bg:#171410; --fg:#fefbf3; --line:#fefbf3; }
++[data-stage-theme="dark"] .brut{ --bg:#1b1712; --fg:#fefbf3; --line:#fefbf3; --accent:#f2483b; --accent2:#f4ecdd; }
+ .brut{font-family:'Space Mono',monospace;background:var(--bg);color:var(--fg);min-height:100vh;}
+ .brut .topbar{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:stretch;border-bottom:4px solid var(--line);}
+ .brut .who{padding:18px 26px;font-family:'Archivo Black';font-size:20px;border-right:4px solid var(--line);}

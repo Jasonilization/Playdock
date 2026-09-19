@@ -1,0 +1,28 @@
+{
+  "id": "051-hard-refresh-steamstoreinfo-clear-memory",
+  "title": "Add SteamStoreInfoCache.clearMemoryCache()",
+  "description": "Drops every in-memory store-info result so the next info(for:) re-reads disk (or, once the on-disk cache is also wiped, re-fetches from Steam). First foundation piece for Settings' \"Hard Refresh Game Info\".",
+  "category": "settings",
+  "commit_message": "Add SteamStoreInfoCache.clearMemoryCache()",
+  "files": [
+    "Sources/ExeDock/Engine/SteamStoreInfoCache.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.767374+00:00",
+    "original_patch_sha1": "a21d9fe3a3312de7d61a1481819fedc05d2fdbf2",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "113-settings-panel-language-tab",
+  "title": "SettingsPanelView: Language tab",
+  "description": "Adds the Language category: a selectable list of every AppLanguage (endonym + English name), writing the language @AppStorage, plus the 'applies immediately' / 'some text stays English' notes.",
+  "category": "settings",
+  "commit_message": "SettingsPanelView: Language tab",
+  "files": [
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [
+    "058-localization-engine",
+    "112-settings-panel-games-tab"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "112-settings-panel-games-tab",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.804136+00:00",
+    "original_patch_sha1": "447a60afaaf76bf0ba09cb76a6df4c1180c2615b",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

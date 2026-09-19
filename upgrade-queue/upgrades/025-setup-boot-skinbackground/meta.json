@@ -1,0 +1,28 @@
+{
+  "id": "025-setup-boot-skinbackground",
+  "title": "Boot UI: the first-launch engine setup screen gets a real theme",
+  "description": "SetupView (shown while SetupCoordinator downloads/extracts the Sikarugir engine on a brand-new install - the literal first thing a new user sees) previously used zero skin theming at all - plain system chrome while the rest of the app is richly per-skin themed. Adds a real SkinBackground behind it, reading the already-saved (or default) skin, since the skin-picker wizard hasn't run yet at this point in the flow.",
+  "category": "polish",
+  "commit_message": "Add SkinBackground to the boot/setup screen",
+  "files": [
+    "Sources/ExeDock/Views/SetupView.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.761224+00:00",
+    "original_patch_sha1": "fdb21136d62731e7584efd216af09ec7573f9253",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

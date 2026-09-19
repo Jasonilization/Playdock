@@ -1,0 +1,30 @@
+{
+  "id": "063-localization-chinese-games-data-and-engine",
+  "title": "Simplified Chinese translations \u2014 Games & Data tab and engine updates",
+  "description": "Adds the Games & Data tab and engine updates strings (17 keys) to the chineseSimplified table.",
+  "category": "settings",
+  "commit_message": "Add Simplified Chinese translations: Games & Data tab and engine updates",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "062-localization-chinese-appearance-and-personalization"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "062-localization-chinese-appearance-and-personalization",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.771355+00:00",
+    "original_patch_sha1": "9cc0b61d4494eff88c6de117b69c642c8fe67d92",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

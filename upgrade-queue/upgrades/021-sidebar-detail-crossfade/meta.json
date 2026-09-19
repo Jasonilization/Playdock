@@ -1,0 +1,28 @@
+{
+  "id": "021-sidebar-detail-crossfade",
+  "title": "Animation: Sidebar's detail pane cross-fades on selection",
+  "description": "Clicking a row or D-pad-navigating Sidebar's list used to snap the big detail pane's art/title/description to the new game instantly. Fixed the same way as the two hero cross-fades (separate units): .id(selected.id) + .transition(.opacity), withAnimation around both mutation sites (tap and D-pad).",
+  "category": "polish",
+  "commit_message": "Cross-fade Sidebar's detail pane on selection change",
+  "files": [
+    "Sources/ExeDock/Views/LibraryLayouts.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.758516+00:00",
+    "original_patch_sha1": "006fcb7197a140f4d454923e239bc0e8e686e130",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

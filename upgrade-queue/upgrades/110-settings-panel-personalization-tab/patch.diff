@@ -1,0 +1,89 @@
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 5d0a47937d54be85b5079531a0b929dbdf53d5ce..0752712b6d37b6ec089dce4b8b7b004471884337 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -24,13 +24,14 @@ struct SettingsPanelView: View {
+     private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
+ 
+     enum Category: String, CaseIterable, Identifiable {
+-        case general, appearance
++        case general, appearance, personalization
+         var id: String { rawValue }
+ 
+         var titleKey: String {
+             switch self {
+             case .general: return "General"
+             case .appearance: return "Appearance"
++            case .personalization: return "Personalization"
+             }
+         }
+ 
+@@ -38,6 +39,7 @@ struct SettingsPanelView: View {
+             switch self {
+             case .general: return "gearshape"
+             case .appearance: return "paintpalette"
++            case .personalization: return "slider.horizontal.3"
+             }
+         }
+     }
+@@ -136,6 +138,7 @@ struct SettingsPanelView: View {
+         switch category {
+         case .general: generalTab
+         case .appearance: appearanceTab
++        case .personalization: personalizationTab
+         }
+     }
+ 
+@@ -219,6 +222,52 @@ struct SettingsPanelView: View {
+         .sheet(isPresented: $showingWizard) { SetupWizardView() }
+     }
+ 
++    // MARK: Personalization
++
++    @AppStorage(LibraryLayoutStyle.storageKey) private var libraryLayoutRaw = LibraryLayoutStyle.grid.rawValue
++    @AppStorage(PlaydockArtSource.storageKey) private var artSourceRaw = PlaydockArtSource.banner.rawValue
++    @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = true
++    @AppStorage(SettingsLauncher.showLauncherKey) private var showSettingsButton = true
++
++    private var personalizationTab: some View {
++        VStack(alignment: .leading, spacing: 18) {
++            tabHeader(.personalization)
++
++            SettingsCard(skin: skin, title: L("Library")) {
++                VStack(alignment: .leading, spacing: 14) {
++                    labeledPicker(L("Layout"), selection: $libraryLayoutRaw) {
++                        ForEach(LibraryLayoutStyle.allCases) { style in
++                            Text(style.displayName).tag(style.rawValue)
++                        }
++                    }
++                    labeledPicker(L("Card Art"), selection: $artSourceRaw) {
++                        ForEach(PlaydockArtSource.allCases) { source in
++                            Text(source.displayName).tag(source.rawValue)
++                        }
++                    }
++                }
++            }
++
++            SettingsCard(skin: skin, title: L("Show Floating Steam Icon")) {
++                VStack(spacing: 12) {
++                    SettingsToggle(
++                        skin: skin,
++                        title: L("Show Floating Steam Icon"),
++                        subtitle: L("The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way)."),
++                        isOn: $showSteamIcon
++                    )
++                    Divider().overlay(skin.accent.opacity(0.1))
++                    SettingsToggle(
++                        skin: skin,
++                        title: L("Show Floating Settings Button"),
++                        subtitle: nil,
++                        isOn: $showSettingsButton
++                    )
++                }
++            }
++        }
++    }
++
+     // MARK: - Shared bits
+ 
+     private func tabHeader(_ item: Category) -> some View {

@@ -1,0 +1,31 @@
+{
+  "id": "057-hard-refresh-appmodel-action",
+  "title": "AppModel: hardRefreshGameInfo() action",
+  "description": "The user-facing action: guards against re-entry, runs GameInfoCacheReset, stamps the timestamp, bumps gameInfoGeneration, then re-scans the library and profile so every card and detail view re-fetches straight from Steam.",
+  "category": "settings",
+  "commit_message": "AppModel: add hardRefreshGameInfo() action",
+  "files": [
+    "Sources/ExeDock/AppModel.swift"
+  ],
+  "dependencies": [
+    "054-hard-refresh-cache-reset-engine",
+    "056-hard-refresh-appmodel-last-refresh-accessor"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "056-hard-refresh-appmodel-last-refresh-accessor",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.769300+00:00",
+    "original_patch_sha1": "eae6482f689a8a18c9e1b2070fb3b13fe598d459",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

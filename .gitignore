@@ -4,3 +4,8 @@ dist/
 .DS_Store
 *.xcodeproj
 .vscode/
+
+# Ship Manager runtime state (local only)
+upgrade-queue/ship_manager/.state.json
+upgrade-queue/ship_manager/.sessions.json
+__pycache__/

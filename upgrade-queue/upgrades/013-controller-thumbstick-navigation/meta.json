@@ -1,0 +1,30 @@
+{
+  "id": "013-controller-thumbstick-navigation",
+  "title": "Analog stick (thumbstick) navigation support",
+  "description": "Wires both analog thumbsticks (GCInputLeftThumbstick, GCInputRightThumbstick) through the same wireDirectionPad helper the D-pad uses (previous piece) - both are the identical GCControllerDirectionPad type in Apple's own API, so every existing D-pad-driven navigation loop picks up stick support for free. Satisfies 'add joystick (wobbly thing) support.' Not yet confirmed with real controller hardware - see notes.md.",
+  "category": "controller",
+  "commit_message": "Wire analog thumbsticks into direction-press pipeline",
+  "files": [
+    "Sources/ExeDock/Engine/ControllerObserver.swift"
+  ],
+  "dependencies": [
+    "012-controller-extract-dpad-helper"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "medium",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "012-controller-extract-dpad-helper",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.751327+00:00",
+    "original_patch_sha1": "2105b89a80ffce8475d32ee638495eec7d97729c",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

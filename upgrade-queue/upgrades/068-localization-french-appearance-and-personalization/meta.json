@@ -1,0 +1,30 @@
+{
+  "id": "068-localization-french-appearance-and-personalization",
+  "title": "French translations \u2014 appearance & personalization controls",
+  "description": "Adds the appearance & personalization controls strings (14 keys) to the french table.",
+  "category": "settings",
+  "commit_message": "Add French translations: appearance & personalization controls",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "067-localization-french-general-and-steam-toggles"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "067-localization-french-general-and-steam-toggles",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.775347+00:00",
+    "original_patch_sha1": "89305dfac96ffedf4c89cfcdeb6f2fcd0c0ddae6",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

@@ -1,0 +1,16 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index 7affd1ac7a949dde0c6b049488f552991c9f06fa..8bb82e574cb3d36af010174390f81e1ace298a6f 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -215,5 +215,11 @@ enum Localization {
+         "Language": "Langue",
+         "Diagnostics": "Diagnostics",
+         "About": "À propos",
++        "Advanced Mode": "Mode avancé",
++        "Adds a settings button to each game so you can fine-tune its engine and graphics settings individually. Most people never need this.": "Ajoute un bouton de réglages à chaque jeu pour ajuster individuellement son moteur et ses options graphiques. La plupart des gens n'en ont pas besoin.",
++        "Show Floating Steam Icon": "Afficher l'icône Steam flottante",
++        "The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way).": "L'icône dans le coin de la grille qui ouvre Steam d'un double-clic. Désactivez-la pour la réduire à un petit onglet sur le bord (toujours là, mais discret).",
++        "Preview With Sample Games": "Aperçu avec des jeux d'exemple",
++        "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "Ajoute des jeux connus (vraies jaquettes et notes, rien d'installé) pour voir le rendu de la grille. Désactivez pour les retirer.",
+     ]
+ }

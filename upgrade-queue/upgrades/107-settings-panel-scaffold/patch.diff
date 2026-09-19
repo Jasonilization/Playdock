@@ -1,0 +1,259 @@
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..ba8d7303f1769580620245850eba3e0e6897cc30
+--- /dev/null
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -0,0 +1,253 @@
++import SwiftUI
++import AppKit
++
++/// Playdock's settings surface: a full-window panel with a category sidebar and a detail pane, the
++/// shape a real desktop app's settings take (System Settings, Music.app, Steam's own) rather than
++/// a cramped modal `Form`. Every control here is drawn with the same skin primitives the dashboard
++/// uses - `SkinBackground`, `SkinTitleText`, `PlaydockButtonStyle`, `.cardSurface()`, the active
++/// accent on every toggle and picker - so the panel is itself a live, one-to-one preview of
++/// whatever appearance is selected, and switching skins on the Appearance tab restyles the panel
++/// you're standing in.
++///
++/// Presented as an in-window overlay by `GameModeView` (not a `.sheet`), opened from the floating
++/// settings launcher or the header gear, dismissed with Done / Esc / the launcher's own control.
++///
++/// Built one category at a time (see the other commits in this unit) - this first cut is just the
++/// shell plus General, enough to be a working (if minimal) panel on its own.
++struct SettingsPanelView: View {
++    var onClose: () -> Void
++
++    @EnvironmentObject private var model: AppModel
++    @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
++    @LocalState private var category: Category = .general
++
++    private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
++
++    enum Category: String, CaseIterable, Identifiable {
++        case general
++        var id: String { rawValue }
++
++        var titleKey: String {
++            switch self {
++            case .general: return "General"
++            }
++        }
++
++        var icon: String {
++            switch self {
++            case .general: return "gearshape"
++            }
++        }
++    }
++
++    var body: some View {
++        ZStack {
++            SkinBackground(skin: skin).ignoresSafeArea()
++
++            VStack(spacing: 0) {
++                headerBar
++                skinnedDivider
++                HStack(spacing: 0) {
++                    sidebar
++                        .frame(width: 236)
++                    skinnedDivider.frame(width: 1).frame(maxHeight: .infinity)
++                    ScrollView {
++                        content
++                            .padding(28)
++                            .frame(maxWidth: 660, alignment: .leading)
++                            .frame(maxWidth: .infinity, alignment: .leading)
++                    }
++                }
++            }
++        }
++        .fontDesign(skin.fontDesign)
++        .tint(skin.accent)
++        .transition(.opacity)
++        .onExitCommand(perform: onClose)
++    }
++
++    private var skinnedDivider: some View {
++        Rectangle()
++            .fill(skin.accent.opacity(0.16))
++            .frame(height: 1)
++    }
++
++    // MARK: - Header
++
++    private var headerBar: some View {
++        HStack(spacing: 12) {
++            Image(systemName: "gearshape.fill")
++                .font(.title2)
++                .foregroundStyle(skin.accent)
++            SkinTitleText(text: L("Settings"), size: 22, lineLimit: 1)
++            Spacer()
++            Button(L("Done")) { onClose() }
++                .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
++                .keyboardShortcut(.defaultAction)
++        }
++        .padding(.horizontal, 24)
++        .padding(.vertical, 16)
++    }
++
++    // MARK: - Sidebar
++
++    private var sidebar: some View {
++        VStack(alignment: .leading, spacing: 4) {
++            ForEach(Category.allCases) { item in
++                sidebarRow(item)
++            }
++            Spacer()
++        }
++        .padding(12)
++        .frame(maxHeight: .infinity, alignment: .top)
++    }
++
++    private func sidebarRow(_ item: Category) -> some View {
++        let isSelected = category == item
++        let shape = PlaydockCardShape(skin: skin, cornerRadius: min(skin.cardRadius, 12))
++        return Button {
++            category = item
++        } label: {
++            HStack(spacing: 11) {
++                Image(systemName: item.icon)
++                    .font(.body)
++                    .frame(width: 22)
++                Text(L(item.titleKey))
++                    .font(.callout.weight(isSelected ? .semibold : .regular))
++                Spacer(minLength: 0)
++            }
++            .padding(.horizontal, 12)
++            .padding(.vertical, 9)
++            .contentShape(Rectangle())
++        }
++        .buttonStyle(.plain)
++        .foregroundStyle(isSelected ? skin.accent : Color.primary)
++        .background(isSelected ? skin.accent.opacity(0.14) : Color.clear, in: shape)
++        .overlay(isSelected ? shape.strokeBorder(skin.accent.opacity(0.35), lineWidth: skin.borderWidth) : nil)
++        .animation(.easeOut(duration: 0.15), value: isSelected)
++    }
++
++    // MARK: - Detail pane
++
++    @ViewBuilder
++    private var content: some View {
++        switch category {
++        case .general: generalTab
++        }
++    }
++
++    // MARK: General
++
++    @AppStorage("com.exedock.advancedMode") private var isAdvancedMode = false
++    @AppStorage("com.exedock.uiScale") private var uiScale = 1.0
++
++    private var generalTab: some View {
++        VStack(alignment: .leading, spacing: 18) {
++            tabHeader(.general)
++
++            SettingsCard(skin: skin, title: L("Advanced Mode")) {
++                SettingsToggle(
++                    skin: skin,
++                    title: L("Advanced Mode"),
++                    subtitle: L("Adds a settings button to each game so you can fine-tune its engine and graphics settings individually. Most people never need this."),
++                    isOn: $isAdvancedMode
++                )
++            }
++
++            SettingsCard(skin: skin, title: L("UI Size")) {
++                VStack(alignment: .leading, spacing: 10) {
++                    HStack {
++                        Image(systemName: "textformat.size.smaller").foregroundStyle(.secondary)
++                        Slider(value: $uiScale, in: 0.75...1.5)
++                        Image(systemName: "textformat.size.larger").foregroundStyle(.secondary)
++                        Text("\(Int(uiScale * 100))%")
++                            .font(.callout.monospacedDigit())
++                            .foregroundStyle(.secondary)
++                            .frame(width: 46, alignment: .trailing)
++                    }
++                }
++            }
++
++            SettingsCard(skin: skin, title: L("Preview With Sample Games")) {
++                SettingsToggle(
++                    skin: skin,
++                    title: L("Preview With Sample Games"),
++                    subtitle: L("Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them."),
++                    isOn: Binding(
++                        get: { model.isPreviewingSampleGames },
++                        set: { _ in model.togglePreviewSampleGames() }
++                    )
++                )
++            }
++        }
++    }
++
++    // MARK: - Shared bits
++
++    private func tabHeader(_ item: Category) -> some View {
++        SkinTitleText(text: L(item.titleKey), size: 19, lineLimit: 1)
++            .padding(.bottom, 2)
++    }
++
++    private func labeledPicker<SelectionValue: Hashable, Options: View>(
++        _ label: String,
++        selection: Binding<SelectionValue>,
++        @ViewBuilder options: () -> Options
++    ) -> some View {
++        HStack {
++            Text(label).font(.callout)
++            Spacer()
++            Picker(label, selection: selection, content: options)
++                .labelsHidden()
++                .pickerStyle(.menu)
++                .tint(skin.accent)
++                .frame(maxWidth: 240)
++        }
++    }
++}
++
++// MARK: - Reusable card + rows
++
++/// A titled panel section drawn with the active skin's real `cardSurface()` treatment, so a
++/// settings card reads exactly like a game card under the same skin.
++private struct SettingsCard<Content: View>: View {
++    let skin: PlaydockSkin
++    let title: String
++    @ViewBuilder var content: () -> Content
++
++    var body: some View {
++        VStack(alignment: .leading, spacing: 12) {
++            Text(title.uppercased())
++                .font(.caption.weight(.semibold))
++                .tracking(0.6)
++                .foregroundStyle(.secondary)
++            content()
++        }
++        .padding(18)
++        .frame(maxWidth: .infinity, alignment: .leading)
++        .cardSurface(skinOverride: skin)
++    }
++}
++
++private struct SettingsToggle: View {
++    let skin: PlaydockSkin
++    let title: String
++    let subtitle: String?
++    @Binding var isOn: Bool
++
++    var body: some View {
++        VStack(alignment: .leading, spacing: 4) {
++            Toggle(isOn: $isOn) {
++                Text(title).font(.callout)
++            }
++            .toggleStyle(.switch)
++            .tint(skin.accent)
++            if let subtitle {
++                Text(subtitle)
++                    .font(.caption)
++                    .foregroundStyle(.secondary)
++                    .fixedSize(horizontal: false, vertical: true)
++            }
++        }
++    }
++}

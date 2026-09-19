@@ -1,0 +1,30 @@
+{
+  "id": "118-gamemodeview-redirect-settings-triggers",
+  "title": "GameModeView: point the gear button and controller at openSettings()",
+  "description": "The header gear button and the controller 'toolbar' action now open the full-window panel instead of setting the old sheet flag.",
+  "category": "settings",
+  "commit_message": "GameModeView: point the gear button and controller at openSettings()",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "117-gamemodeview-wire-launcher-into-body"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "117-gamemodeview-wire-launcher-into-body",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.807692+00:00",
+    "original_patch_sha1": "7bd9e9982db7a2da6e2a68feb9d3334ef80d59bb",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

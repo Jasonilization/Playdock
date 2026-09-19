@@ -1,0 +1,24 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index f1fa0b6aaa63bc4e80737c96e51fd787b31495ec..e9ecbd11a23a9bcd69235571e43eb153e397e77a 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -147,5 +147,19 @@ enum Localization {
+         "The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way).": "网格角落中双击打开 Steam 的图标。关闭后会收拢为边缘的小标签（仍然可用，只是不碍事）。",
+         "Preview With Sample Games": "使用示例游戏预览",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "添加一些知名游戏（真实封面和评分，并未实际安装），以便查看网格效果。关闭即可移除。",
++        "UI Size": "界面大小",
++        "Look": "风格",
++        "Layout": "布局",
++        "Card Art": "卡片封面",
++        "Banner": "横幅",
++        "Box Art": "竖版封面",
++        "Follows your Mac's light or dark appearance automatically.": "自动跟随系统的浅色或深色外观。",
++        "Run Setup Wizard Again": "重新运行设置向导",
++        "Every control here is drawn in the look you pick, so this screen is a live preview of it.": "此处的每个控件都会以所选风格绘制，因此本页即为其实时预览。",
++        "Default Sort": "默认排序",
++        "Opening Screen": "启动页面",
++        "Steam": "Steam",
++        "C: Drive": "C: 盘",
++        "Which screen Playdock opens to.": "Playdock 启动时打开的页面。",
+     ]
+ }

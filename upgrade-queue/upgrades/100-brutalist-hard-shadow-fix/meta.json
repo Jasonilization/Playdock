@@ -1,0 +1,30 @@
+{
+  "id": "100-brutalist-hard-shadow-fix",
+  "title": "Brutalist hard shadow: stop being white in dark mode",
+  "description": "hardShadowColor was `.primary` - near-white in dark mode, so every card/button sat on a hard white slab. Now a dynamicColor: near-black ink on paper, warm charcoal on the dark ground.",
+  "category": "appearance",
+  "commit_message": "Brutalist: hard shadow ink \u2192 dynamicColor (was white in dark mode)",
+  "files": [
+    "Sources/ExeDock/Support/DesignSystem.swift"
+  ],
+  "dependencies": [
+    "095-brutalist-dynamiccolor-helper"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "095-brutalist-dynamiccolor-helper",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.793423+00:00",
+    "original_patch_sha1": "34fbaa72bd34c187fcefc1c2c8b8128e2c07d952",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

@@ -1,0 +1,28 @@
+{
+  "id": "058-localization-engine",
+  "title": "Add the L(_:) localization engine",
+  "description": "Playdock's hand-rolled localization layer: AppLanguage (system + 7 locales, endonyms), the free L(_:)/LF(_:_:) lookup functions, and Localization (selected/active resolution, English-key fallback, a two-form plural helper). Ships with an empty table set - each language is added on top, one at a time.",
+  "category": "settings",
+  "commit_message": "Add the L(_:) localization engine (no translations yet)",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.769653+00:00",
+    "original_patch_sha1": "912121f2d08aaf62e8613a52eeb2d2c78be959ac",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

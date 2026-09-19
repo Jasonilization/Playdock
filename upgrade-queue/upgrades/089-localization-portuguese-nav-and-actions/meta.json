@@ -1,0 +1,32 @@
+{
+  "id": "089-localization-portuguese-nav-and-actions",
+  "title": "Portuguese translations \u2014 navigation labels & common actions",
+  "description": "Registers the portuguese table and fills in the navigation labels & common actions strings (15 keys). Remaining Portuguese strings follow in the next units; anything absent falls back to English.",
+  "category": "settings",
+  "commit_message": "Add Portuguese translations: navigation labels & common actions",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "058-localization-engine",
+    "083-localization-japanese-nav-and-actions",
+    "088-localization-japanese-diagnostics-language-about"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "088-localization-japanese-diagnostics-language-about",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.786429+00:00",
+    "original_patch_sha1": "a4e79937e7d47ad73d2b835557e1f5e21b13c3e2",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

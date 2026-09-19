@@ -1,0 +1,32 @@
+{
+  "id": "108-gamemodeview-settings-launcher-scaffold",
+  "title": "GameModeView: floating Settings launcher + overlay (scaffold)",
+  "description": "Adds the SettingsLauncher storage-key namespace, the showSettingsLauncher / showingSettings state, and the not-yet-wired pieces: noDashboardOverlayActive, cornerFloaters, settingsOverlay (which instantiates SettingsPanelView), openSettings(), and the minimizable settingsFloatingLauncher pill (mirrors the Steam floating icon).",
+  "category": "settings",
+  "commit_message": "GameModeView: floating Settings launcher + overlay (scaffold)",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "011-hide-badges-setting-ui",
+    "058-localization-engine",
+    "107-settings-panel-scaffold"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "107-settings-panel-scaffold",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.796620+00:00",
+    "original_patch_sha1": "2508107fbaadd6dd0342e1f28d1e449b9e1cd147",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

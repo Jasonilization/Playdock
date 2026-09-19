@@ -1,0 +1,28 @@
+{
+  "id": "031-boot-to-dashboard-transition",
+  "title": "Boot UI: setup finishing and the dashboard appearing now cross-fades",
+  "description": "The single most jarring beat in the whole first-launch experience: RootView's Group{if setup.stage == .ready {ContentView()} else {SetupView()}} had zero animation at all - the boot screen cut instantly to the dashboard with no transition. Fixed with .transition(.opacity) on both branches and .animation(value: setup.stage) - no withAnimation needed anywhere else since Stage is already Equatable.",
+  "category": "polish",
+  "commit_message": "Cross-fade from the boot screen into the dashboard",
+  "files": [
+    "Sources/ExeDock/Views/RootView.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.763517+00:00",
+    "original_patch_sha1": "a8d0579a05edb68172086324bb85095d67ddf12d",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

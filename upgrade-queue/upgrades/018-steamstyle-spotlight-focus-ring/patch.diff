@@ -1,0 +1,50 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 0c714444a81215aec6cbabe32e4d7935e2cb7350..824532a3327a9098ce26fa7c208846f8bf2af40e 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -1026,9 +1026,9 @@ struct GameModeView: View {
+         case .grid: EmptyView() // unreachable - handled above
+         case .shelves: LibraryShelvesLayout(entries: libraryEntries, onOpenDetail: openDetail)
+         case .sidebar: LibrarySidebarLayout(entries: libraryEntries, onOpenDetail: openDetail)
+-        case .steam: LibrarySteamStyleLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, onOpenDetail: openDetail)
++        case .steam: LibrarySteamStyleLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, focusedID: focusedCardID, onOpenDetail: openDetail)
+         case .carousel: LibraryCarouselLayout(entries: libraryEntries, onOpenDetail: openDetail)
+-        case .spotlight: LibrarySpotlightLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, onOpenDetail: openDetail)
++        case .spotlight: LibrarySpotlightLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, focusedID: focusedCardID, onOpenDetail: openDetail)
+         }
+     }
+ 
+diff --git a/Sources/ExeDock/Views/LibraryLayouts.swift b/Sources/ExeDock/Views/LibraryLayouts.swift
+index d855d5341785e3e67a7675e166d56d8743801d74..5f7012a561da1e43c03a00d61ca06842f0b64eae 100644
+--- a/Sources/ExeDock/Views/LibraryLayouts.swift
++++ b/Sources/ExeDock/Views/LibraryLayouts.swift
+@@ -392,6 +392,10 @@ struct LibrarySteamStyleLayout: View {
+     let webGridEntries: [SkinWebGridEntry]
+     let skin: PlaydockSkin
+     let isDark: Bool
++    /// See `SkinWebGridFragmentView.focusedID`'s identical contract - passed straight through
++    /// unchanged, no local re-indexing needed even though `filteredWebEntries` below is a real
++    /// subset of `webGridEntries` (an id genuinely not in the current filter just shows no ring).
++    var focusedID: String? = nil
+     let onOpenDetail: (LibraryEntry) -> Void
+     @LocalState private var filter = "All Games"
+     private let filters = ["All Games", "Custom Games"]
+@@ -432,7 +436,7 @@ struct LibrarySteamStyleLayout: View {
+             // SkinWebGridView already needs. The page's own real content scrolls natively inside
+             // the WebView, same as Grid.
+             GeometryReader { geo in
+-                SkinWebGridFragmentView(skin: skin, entries: filteredWebEntries, isDark: isDark, onOpen: openByID)
++                SkinWebGridFragmentView(skin: skin, entries: filteredWebEntries, isDark: isDark, focusedID: focusedID, onOpen: openByID)
+                     .frame(width: geo.size.width, height: geo.size.height)
+             }
+         }
+@@ -554,6 +558,9 @@ struct LibrarySpotlightLayout: View {
+     let webGridEntries: [SkinWebGridEntry]
+     let skin: PlaydockSkin
+     let isDark: Bool
++    /// See `LibrarySteamStyleLayout.focusedID` - identical reasoning, used for the "Also In Your
++    /// Collection" grid section, which excludes whatever's currently featured.
++    var focusedID: String? = nil
+     let onOpenDetail: (LibraryEntry) -> Void
+     @ObservedObject private var runningTracker = RunningGameTracker.shared
+     @ObservedObject private var controllerObserver = ControllerObserver.shared

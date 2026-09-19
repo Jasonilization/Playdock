@@ -1,0 +1,30 @@
+{
+  "id": "010-sidebar-windows-badge",
+  "title": "UI: Windows badge on Sidebar's detail pane",
+  "description": "LibrarySidebarLayout's detail-pane label (already showing CUSTOM GAME/MAC GAME) gains a third WINDOWS GAME case, same color as the WebView badge.",
+  "category": "labels",
+  "commit_message": "Add Windows badge to Sidebar detail pane",
+  "files": [
+    "Sources/ExeDock/Views/LibraryLayouts.swift"
+  ],
+  "dependencies": [
+    "008-library-presentation-iswindows"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "008-library-presentation-iswindows",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.750167+00:00",
+    "original_patch_sha1": "d37ca34b75112949ad3f8f6f660149fb40399c94",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

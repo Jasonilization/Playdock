@@ -1,0 +1,46 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index f7ecab56833d35917835a418d3fd6fb4b242aebd..888e1f7c41f904f52af79d63b64f8e9ddbd0981e 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -572,9 +572,9 @@ struct GameModeView: View {
+                     sortOption = option
+                 } label: {
+                     if option == sortOption {
+-                        Label(option.rawValue, systemImage: "checkmark")
++                        Label(L(option.rawValue), systemImage: "checkmark")
+                     } else {
+-                        Text(option.rawValue)
++                        Text(L(option.rawValue))
+                     }
+                 }
+             }
+@@ -582,7 +582,7 @@ struct GameModeView: View {
+             HStack(spacing: 6) {
+                 Image(systemName: "arrow.up.arrow.down")
+                     .font(.caption.weight(.semibold))
+-                Text(sortOption.rawValue)
++                Text(L(sortOption.rawValue))
+                     .font(.callout.weight(.medium))
+                 Image(systemName: "chevron.down")
+                     .font(.caption2.weight(.bold))
+@@ -880,7 +880,7 @@ struct GameModeView: View {
+         HStack(spacing: 12) {
+             HStack(spacing: 8) {
+                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+-                TextField("Search your games", text: $search)
++                TextField(L("Search your games"), text: $search)
+                     .textFieldStyle(.plain)
+                     .font(.title3)
+                 if !search.isEmpty {
+@@ -901,9 +901,9 @@ struct GameModeView: View {
+                     .strokeBorder(Color.primary.opacity(0.06))
+             )
+ 
+-            Picker("Sort", selection: $sortOption) {
++            Picker(L("Sort"), selection: $sortOption) {
+                 ForEach(GameSortOption.allCases) { option in
+-                    Text(option.rawValue).tag(option)
++                    Text(L(option.rawValue)).tag(option)
+                 }
+             }
+             .frame(maxWidth: 220)

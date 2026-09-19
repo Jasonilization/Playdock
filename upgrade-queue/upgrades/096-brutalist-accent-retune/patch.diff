@@ -1,0 +1,17 @@
+diff --git a/Sources/ExeDock/Support/DesignSystem.swift b/Sources/ExeDock/Support/DesignSystem.swift
+index 3c4a4e08c6c2c9a9e752444be8e9847c3275bc19..d0ff633fc27852b94bb16778dd97d3dab9a836b0 100644
+--- a/Sources/ExeDock/Support/DesignSystem.swift
++++ b/Sources/ExeDock/Support/DesignSystem.swift
+@@ -95,7 +95,11 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
+     var accent: Color {
+         switch self {
+         case .luxury: return Color(red: 0.69, green: 0.55, blue: 0.34)
+-        case .brutalist: return Color(red: 1.0, green: 0.30, blue: 0.42)
++        // Was #ff4d6d - a shrill cotton-candy pink that vibrated against both the cream and the
++        // near-black Brutalist grounds, and clashed head-on with the old #3a86ff search bar.
++        // Brutalism on the web is ink + paper + one loud signal color: a controlled vermilion red
++        // (#da2e22), a touch brighter in dark mode (#f2483b) so it doesn't sink into the charcoal.
++        case .brutalist: return Self.dynamicAccent(light: (0.855, 0.180, 0.133), dark: (0.949, 0.282, 0.231))
+         // --accent:#00f0ff (dark) / #0092a3 (light) - a bright neon cyan reads fine glowing in
+         // the dark but washes out on white, so the real light-mode CSS commits to a deeper teal.
+         case .cyber: return Self.dynamicAccent(light: (0.0, 0.573, 0.639), dark: (0.0, 0.94, 1.0))

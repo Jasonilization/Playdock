@@ -1,0 +1,28 @@
+{
+  "id": "052-hard-refresh-localimage-clear",
+  "title": "Add LocalImageCache.clear()",
+  "description": "Drops every decoded bitmap so re-downloaded art at the same file path isn't masked by the previous decode still sitting in memory. Foundation piece for \"Hard Refresh Game Info\".",
+  "category": "settings",
+  "commit_message": "Add LocalImageCache.clear()",
+  "files": [
+    "Sources/ExeDock/Support/LocalImageCache.swift"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.767727+00:00",
+    "original_patch_sha1": "6e6e8661bcbddce0aa5ed249127ddafd3842c324",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

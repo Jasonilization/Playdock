@@ -1,0 +1,300 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index f3613a57aa60753110cd854200fbf3eacd637328..90eff021742b2aef9ccb8d88c76154d38a386da9 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -73,9 +73,7 @@ struct GameModeView: View {
+     /// collapses it to an edge tab, exactly the way `showSteamIcon` works for the Steam icon.
+     @AppStorage(SettingsLauncher.showLauncherKey) private var showSettingsLauncher = true
+     @LocalState private var search = ""
+-    @LocalState private var showingSettingsSheet = false
+-    /// Drives the full-window `SettingsPanelView` overlay (it used to be a small `.sheet`). Added
+-    /// alongside the old flag for now - the launcher/overlay below aren't wired into `body` yet.
++    /// Drives the full-window `SettingsPanelView` overlay (it used to be a small `.sheet`).
+     @LocalState private var showingSettings = false
+     @LocalState private var showingAddGameSheet = false
+     @LocalState private var sortOption: GameSortOption = .name
+@@ -421,9 +419,9 @@ struct GameModeView: View {
+         // feedback - every skin's `SkinBackground` and card border/shadow logic is genuinely
+         // light/dark-aware on its own now (see `SkinBackground.swift`), so the dashboard just
+         // follows the Mac's real current appearance like everything else in the app already does.
+-        .sheet(isPresented: $showingSettingsSheet) {
+-            DefaultSettingsSheet(isAdvancedMode: $isAdvancedMode)
+-        }
++        // Settings is no longer a small `.sheet` - it's the full-window `SettingsPanelView`
++        // overlay added inside the ZStack above, opened from the floating launcher or the header
++        // gear.
+         .sheet(isPresented: $showingAddGameSheet) {
+             AddGameSheet()
+         }
+@@ -1953,270 +1951,7 @@ struct GameSettingsFields: View {
+     }
+ }
+ 
+-/// "Check for Engine Updates" - queries the real `Sikarugir-App/Engines` GitHub release
+-/// (`SikarugirEnginesRemote`) for the currently-recommended build and compares it against what's
+-/// already downloaded. Checking is free/instant; the actual (potentially ~160MB) download only
+-/// happens on an explicit tap.
+-private struct EngineUpdateSection: View {
+-    @LocalState private var isChecking = false
+-    @LocalState private var isDownloading = false
+-    @LocalState private var updateAvailable: RemoteEngineAsset?
+-    @LocalState private var statusText: String?
+-
+-    var body: some View {
+-        Section {
+-            if let updateAvailable {
+-                Text("A newer engine is available: \(updateAvailable.name)")
+-                    .font(.callout)
+-                Button {
+-                    downloadUpdate(updateAvailable)
+-                } label: {
+-                    if isDownloading {
+-                        HStack(spacing: 6) {
+-                            ProgressView().controlSize(.small)
+-                            Text("Downloading…")
+-                        }
+-                    } else {
+-                        Text("Download Update")
+-                    }
+-                }
+-                .buttonStyle(.borderedProminent)
+-                .disabled(isDownloading)
+-            } else {
+-                Button {
+-                    checkForUpdates()
+-                } label: {
+-                    if isChecking {
+-                        HStack(spacing: 6) {
+-                            ProgressView().controlSize(.small)
+-                            Text("Checking…")
+-                        }
+-                    } else {
+-                        Label("Check for Engine Updates", systemImage: "arrow.triangle.2.circlepath")
+-                    }
+-                }
+-                .disabled(isChecking)
+-            }
+-            if let statusText {
+-                Text(statusText)
+-                    .font(.caption)
+-                    .foregroundStyle(.secondary)
+-            }
+-        } header: {
+-            Text("Engine")
+-        } footer: {
+-            Text("Playdock's Wine engine comes from Sikarugir's public releases. Checking never downloads anything by itself.")
+-                .font(.caption)
+-                .foregroundStyle(.secondary)
+-        }
+-    }
+-
+-    private func checkForUpdates() {
+-        isChecking = true
+-        statusText = nil
+-        Task {
+-            do {
+-                let assets = try await SikarugirEnginesRemote.fetchAvailableAssets()
+-                guard let recommended = SikarugirEnginesRemote.recommendedAsset(among: assets) else {
+-                    isChecking = false
+-                    statusText = "No engines found."
+-                    return
+-                }
+-                let alreadyHave = Set(SikarugirEngine.availableEngineNames()).contains(recommended.name)
+-                isChecking = false
+-                if alreadyHave {
+-                    statusText = "You already have the latest recommended engine (\(recommended.name))."
+-                } else {
+-                    updateAvailable = recommended
+-                }
+-            } catch {
+-                isChecking = false
+-                statusText = error.localizedDescription
+-            }
+-        }
+-    }
+-
+-    private func downloadUpdate(_ asset: RemoteEngineAsset) {
+-        isDownloading = true
+-        Task {
+-            do {
+-                try await SikarugirEnginesRemote.download(asset) { message in
+-                    Task { @MainActor in statusText = message }
+-                }
+-                isDownloading = false
+-                updateAvailable = nil
+-                statusText = "Downloaded \(asset.name) - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing."
+-            } catch {
+-                isDownloading = false
+-                statusText = error.localizedDescription
+-            }
+-        }
+-    }
+-}
+-
+-/// The top-level rows in `DefaultSettingsSheet` that a controller can navigate directly - the two
+-/// toggles, the two diagnostics buttons, and Done. `GameSettingsFields`/`EngineUpdateSection`'s own
+-/// nested controls (sliders, pickers) aren't part of this focus loop yet - a smaller follow-up,
+-/// same as the header/search/sort scope boundary on the main dashboard.
+-private enum SettingsRow: Int, CaseIterable {
+-    case advancedMode, showSteamIcon, hideBadges, sampleGames, openLogs, openCrashReports, done
+-}
+-
+-private struct DefaultSettingsSheet: View {
+-    @EnvironmentObject private var model: AppModel
+-    @Environment(\.dismiss) private var dismiss
+-    @ObservedObject private var controllerObserver = ControllerObserver.shared
+-    @Binding var isAdvancedMode: Bool
+-    @LocalState private var focusedRow: SettingsRow?
+-    @LocalState private var showingWizard = false
+-    @AppStorage(LibraryLayoutStyle.storageKey) private var libraryLayoutRaw = LibraryLayoutStyle.grid.rawValue
+-    @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
+-    @AppStorage(PlaydockArtSource.storageKey) private var artSourceRaw = PlaydockArtSource.banner.rawValue
+-    @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = true
+-    @AppStorage(GameModeView.hideBadgesKey) private var hideLibraryBadges = false
+-
+-    private func isFocused(_ row: SettingsRow) -> Bool {
+-        controllerObserver.isConnected && focusedRow == row
+-    }
+-
+-    var body: some View {
+-        VStack(spacing: 0) {
+-            HStack {
+-                Text("Game Mode Settings").font(.title3).bold()
+-                Spacer()
+-                Button("Done") { dismiss() }
+-                    .buttonStyle(.borderedProminent)
+-                    .focusRing(isFocused(.done))
+-            }
+-            .padding(16)
+-            Divider()
+-
+-            Form {
+-                Section {
+-                    Toggle("Advanced Mode", isOn: $isAdvancedMode)
+-                        .focusRing(isFocused(.advancedMode))
+-                } footer: {
+-                    Text("Adds a settings button to each game so you can fine-tune its engine and graphics settings individually. Most people never need this.")
+-                        .font(.caption)
+-                        .foregroundStyle(.secondary)
+-                }
+-
+-                Section {
+-                    Toggle("Show Floating Steam Icon", isOn: $showSteamIcon)
+-                        .focusRing(isFocused(.showSteamIcon))
+-                } footer: {
+-                    Text("The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way) - the icon itself has the same control.")
+-                        .font(.caption)
+-                        .foregroundStyle(.secondary)
+-                }
+-
+-                Section {
+-                    Toggle("Hide Library Badges", isOn: $hideLibraryBadges)
+-                        .focusRing(isFocused(.hideBadges))
+-                } footer: {
+-                    Text("The Custom/Mac/Windows label every game's art shows to say where it came from. Turn on to hide all three everywhere - every layout, every appearance.")
+-                        .font(.caption)
+-                        .foregroundStyle(.secondary)
+-                }
+-
+-                Section {
+-                    Picker("Layout", selection: $libraryLayoutRaw) {
+-                        ForEach(LibraryLayoutStyle.allCases) { style in
+-                            Text(style.displayName).tag(style.rawValue)
+-                        }
+-                    }
+-                    Picker("Appearance", selection: $skinRaw) {
+-                        ForEach(PlaydockSkin.allCases) { skin in
+-                            Text(skin.displayName).tag(skin.rawValue)
+-                        }
+-                    }
+-                    Picker("Card Art", selection: $artSourceRaw) {
+-                        ForEach(PlaydockArtSource.allCases) { source in
+-                            Text(source.displayName).tag(source.rawValue)
+-                        }
+-                    }
+-                } header: {
+-                    Text("Library Look")
+-                } footer: {
+-                    VStack(alignment: .leading, spacing: 6) {
+-                        Text((LibraryLayoutStyle(rawValue: libraryLayoutRaw) ?? .grid).subtitle + " · " + (PlaydockArtSource(rawValue: artSourceRaw) ?? .banner).subtitle)
+-                        Button("Run Setup Wizard Again") { showingWizard = true }
+-                            .buttonStyle(.link)
+-                            .font(.caption)
+-                    }
+-                    .font(.caption)
+-                    .foregroundStyle(.secondary)
+-                }
+-                .sheet(isPresented: $showingWizard) {
+-                    SetupWizardView()
+-                }
+-
+-                if isAdvancedMode {
+-                    GameSettingsFields(config: $model.gameModeConfig)
+-                }
+-
+-                EngineUpdateSection()
+-
+-                Section {
+-                    Toggle("Preview With Sample Games", isOn: Binding(
+-                        get: { model.isPreviewingSampleGames },
+-                        set: { _ in model.togglePreviewSampleGames() }
+-                    ))
+-                    .focusRing(isFocused(.sampleGames))
+-                } footer: {
+-                    Text("Adds 11 well-known games (real art/ratings, nothing actually installed) so you can see how the grid looks at different sizes. Turn off to remove them - they're never saved.")
+-                        .font(.caption)
+-                        .foregroundStyle(.secondary)
+-                }
+-
+-                Section {
+-                    Button {
+-                        model.revealInFinder(ExeRunner.logsDir)
+-                    } label: {
+-                        Label("Open Logs Folder", systemImage: "doc.text.magnifyingglass")
+-                    }
+-                    .focusRing(isFocused(.openLogs))
+-                    Button {
+-                        model.revealInFinder(("~/Library/Logs/DiagnosticReports" as NSString).expandingTildeInPath)
+-                    } label: {
+-                        Label("Open Crash Reports", systemImage: "exclamationmark.triangle")
+-                    }
+-                    .focusRing(isFocused(.openCrashReports))
+-                } header: {
+-                    Text("Diagnostics")
+-                } footer: {
+-                    Text("Every launch writes its own wine log here, plus a running record of background checks (like fetching a game's store art). If something's not working, this is the first place to look.")
+-                        .font(.caption)
+-                        .foregroundStyle(.secondary)
+-                }
+-            }
+-            .onChange(of: controllerObserver.directionPress?.token) { _ in
+-                guard let direction = controllerObserver.directionPress?.direction, direction == .up || direction == .down else { return }
+-                let all = SettingsRow.allCases
+-                guard let current = focusedRow, let index = all.firstIndex(of: current) else {
+-                    focusedRow = all.first
+-                    return
+-                }
+-                focusedRow = all[safe: direction == .up ? index - 1 : index + 1] ?? current
+-            }
+-            .onChange(of: controllerObserver.primaryPress) { _ in
+-                switch focusedRow {
+-                case .advancedMode: isAdvancedMode.toggle()
+-                case .showSteamIcon: showSteamIcon.toggle()
+-                case .hideBadges: hideLibraryBadges.toggle()
+-                case .sampleGames: model.togglePreviewSampleGames()
+-                case .openLogs: model.revealInFinder(ExeRunner.logsDir)
+-                case .openCrashReports: model.revealInFinder(("~/Library/Logs/DiagnosticReports" as NSString).expandingTildeInPath)
+-                case .done: dismiss()
+-                case nil: break
+-                }
+-            }
+-            .formStyle(.grouped)
+-        }
+-        .frame(width: 420, height: isAdvancedMode ? 710 : 490)
+-        .animation(.easeInOut(duration: 0.2), value: isAdvancedMode)
+-    }
+-}
++// MARK: - Per-game settings popover
+ 
+ private struct GameSettingsPopover: View {
+     @EnvironmentObject private var model: AppModel

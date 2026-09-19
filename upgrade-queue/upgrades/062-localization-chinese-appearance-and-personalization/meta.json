@@ -1,0 +1,30 @@
+{
+  "id": "062-localization-chinese-appearance-and-personalization",
+  "title": "Simplified Chinese translations \u2014 appearance & personalization controls",
+  "description": "Adds the appearance & personalization controls strings (14 keys) to the chineseSimplified table.",
+  "category": "settings",
+  "commit_message": "Add Simplified Chinese translations: appearance & personalization controls",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift"
+  ],
+  "dependencies": [
+    "061-localization-chinese-general-and-steam-toggles"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "061-localization-chinese-general-and-steam-toggles",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.771025+00:00",
+    "original_patch_sha1": "cf34ed57ad2f3a69b1555823e4bd732bfa6ccdde",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

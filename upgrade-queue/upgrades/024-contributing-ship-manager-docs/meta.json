@@ -1,0 +1,28 @@
+{
+  "id": "024-contributing-ship-manager-docs",
+  "title": "Docs: document the Ship Manager workflow in CONTRIBUTING.md",
+  "description": "Adds a real 'Shipping small changes' section explaining upgrade-queue/ and ./Scripts/ship_manager.sh - a genuine, permanent addition to how maintainer-side changes now flow, previously undocumented anywhere a contributor would find it.",
+  "category": "docs",
+  "commit_message": "Document the Ship Manager workflow in CONTRIBUTING.md",
+  "files": [
+    "CONTRIBUTING.md"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.760288+00:00",
+    "original_patch_sha1": "a0b5ade50f5ffa839f09b58539e1ea4768cd1a9e",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

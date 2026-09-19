@@ -1,0 +1,27 @@
+diff --git a/Sources/ExeDock/Views/LibraryLayouts.swift b/Sources/ExeDock/Views/LibraryLayouts.swift
+index d855d5341785e3e67a7675e166d56d8743801d74..a41d2085b6e8b606c0c94bf1bf34e72e31a994d0 100644
+--- a/Sources/ExeDock/Views/LibraryLayouts.swift
++++ b/Sources/ExeDock/Views/LibraryLayouts.swift
+@@ -16,6 +16,9 @@ struct LibraryPresentation {
+     /// in the WebView-rendered ones, so every layout shows the same real "Mac" badge, not just Grid/
+     /// Steam-style/Spotlight.
+     let isMac: Bool
++    /// A game running through Playdock's own Windows Steam bottle (`SteamGameSource.wineBottle`) -
++    /// the real majority case, previously the only one with no badge of its own on any layout.
++    let isWindows: Bool
+ 
+     /// What shape of tile is asking - every portrait/square tile used to force-crop the landscape
+     /// store banner because portrait/square art was never looked for at all. Each call site says
+@@ -28,10 +31,10 @@ struct LibraryPresentation {
+     static func resolve(_ entry: LibraryEntry, shape: Shape = .landscape) async -> LibraryPresentation {
+         switch entry {
+         case .custom(let game):
+-            return LibraryPresentation(artPath: game.effectiveArtworkPath, genre: game.discovered.steamGenres.first, description: game.effectiveDescription, isCustom: true, isMac: false)
++            return LibraryPresentation(artPath: game.effectiveArtworkPath, genre: game.discovered.steamGenres.first, description: game.effectiveDescription, isCustom: true, isMac: false, isWindows: false)
+         case .steam(let game):
+             let info = await SteamStoreInfoCache.shared.info(for: game.metadataAppID)
+-            return LibraryPresentation(artPath: preferredArtPath(appID: game.metadataAppID, shape: shape, bannerPath: info?.headerImagePath), genre: info?.genres.first, description: info?.shortDescription, isCustom: false, isMac: game.source == .nativeMac)
++            return LibraryPresentation(artPath: preferredArtPath(appID: game.metadataAppID, shape: shape, bannerPath: info?.headerImagePath), genre: info?.genres.first, description: info?.shortDescription, isCustom: false, isMac: game.source == .nativeMac, isWindows: game.source == .wineBottle)
+         }
+     }
+ 

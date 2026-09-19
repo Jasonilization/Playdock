@@ -1,0 +1,30 @@
+{
+  "id": "030-engine-choice-themed-cards",
+  "title": "Boot UI: the engine-choice rows use real per-skin card styling",
+  "description": "The per-engine choice rows used a plain quaternary-opacity background and system accentColor for 'Recommended' - now use the real cardSurface() and skin.accent every other card in the app uses.",
+  "category": "polish",
+  "commit_message": "Theme the engine-choice rows with cardSurface/skin.accent",
+  "files": [
+    "Sources/ExeDock/Views/SetupView.swift"
+  ],
+  "dependencies": [
+    "029-engine-choice-themed-title"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "029-engine-choice-themed-title",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.763194+00:00",
+    "original_patch_sha1": "a5b3e0aaf6f209fc112edbdba721788a0cd6ffb1",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

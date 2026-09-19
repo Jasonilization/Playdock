@@ -1,0 +1,31 @@
+{
+  "id": "111-settings-panel-hide-badges-toggle",
+  "title": "SettingsPanelView: Hide Library Badges toggle",
+  "description": "Adds a 'Hide Library Badges' toggle to the Personalization tab, bound to GameModeView.hideBadgesKey.",
+  "category": "settings",
+  "commit_message": "SettingsPanelView: Hide Library Badges toggle",
+  "files": [
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [
+    "011-hide-badges-setting-ui",
+    "110-settings-panel-personalization-tab"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "medium",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "110-settings-panel-personalization-tab",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.802104+00:00",
+    "original_patch_sha1": "7f716505c01c351956ec8665cc0639c33dc29550",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

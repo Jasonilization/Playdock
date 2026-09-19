@@ -1,0 +1,30 @@
+{
+  "id": "115-settings-panel-engine-updates",
+  "title": "SettingsPanelView: engine updates + advanced engine controls",
+  "description": "Adds EngineUpdatePanelSection (the card-styled 'Check for Engine Updates' two-step flow) and, behind Advanced Mode, the Wine-engine picker + graphics/sync toggles, into the Diagnostics tab.",
+  "category": "settings",
+  "commit_message": "SettingsPanelView: engine updates + advanced engine controls",
+  "files": [
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [
+    "114-settings-panel-diagnostics-tab"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "114-settings-panel-diagnostics-tab",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.806256+00:00",
+    "original_patch_sha1": "7fc8187f37773502ad222f6b480dc00490ee4e8a",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

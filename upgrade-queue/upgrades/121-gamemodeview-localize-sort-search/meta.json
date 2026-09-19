@@ -1,0 +1,30 @@
+{
+  "id": "121-gamemodeview-localize-sort-search",
+  "title": "GameModeView: localize the sort menu + search bar",
+  "description": "Runs the sort-option labels and the search field placeholder / Sort picker through L(_:).",
+  "category": "settings",
+  "commit_message": "GameModeView: localize the sort menu + search bar",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "120-gamemodeview-localize-header-chrome"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "120-gamemodeview-localize-header-chrome",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.811128+00:00",
+    "original_patch_sha1": "d98267b365c1892bb6353dc8188e885472b32c1b",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

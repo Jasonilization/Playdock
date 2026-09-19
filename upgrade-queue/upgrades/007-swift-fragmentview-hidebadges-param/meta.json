@@ -1,0 +1,30 @@
+{
+  "id": "007-swift-fragmentview-hidebadges-param",
+  "title": "Swift: SkinWebGridFragmentView accepts a hideBadges flag",
+  "description": "Same contract as SkinWebGridView's own hideBadges param (separate piece), applied to the fragment view Steam-style/Spotlight embed for their own card grids.",
+  "category": "labels",
+  "commit_message": "Add hideBadges param to SkinWebGridFragmentView",
+  "files": [
+    "Sources/ExeDock/Support/SkinWebGridFragmentView.swift"
+  ],
+  "dependencies": [
+    "004-badge-js-hide-attribute"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build -c release",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": "004-badge-js-hide-attribute",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.747129+00:00",
+    "original_patch_sha1": "b6d590abba514ed03759cd171f960294beec74c3",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

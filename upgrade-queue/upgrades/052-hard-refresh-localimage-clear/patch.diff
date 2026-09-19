@@ -1,0 +1,17 @@
+diff --git a/Sources/ExeDock/Support/LocalImageCache.swift b/Sources/ExeDock/Support/LocalImageCache.swift
+index 6775b827bd0c91378f34a1356a1ee4cb1ee77048..96982ef0e3e8c4b2b4d34631478dd54b46e03b81 100644
+--- a/Sources/ExeDock/Support/LocalImageCache.swift
++++ b/Sources/ExeDock/Support/LocalImageCache.swift
+@@ -34,6 +34,12 @@ enum LocalImageCache {
+     /// decoding full-resolution first and throwing most of it away.
+     private static let maxDimension: CGFloat = 1000
+ 
++    /// Drops every decoded bitmap. Used by Settings' "Hard Refresh Game Info" so re-downloaded art
++    /// at the same file path isn't masked by the previous decode still sitting in memory.
++    static func clear() {
++        cache.removeAllObjects()
++    }
++
+     static func image(atPath path: String) -> NSImage? {
+         let key = path as NSString
+         if let cached = cache.object(forKey: key) {

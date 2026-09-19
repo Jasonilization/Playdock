@@ -1,0 +1,45 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index ad121b647dde1c1b1f1271a6702970ab775df9e9..c756cb285003b0829c51173071644f2cee422f8e 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -349,18 +349,10 @@ struct GameModeView: View {
+             .padding(.bottom, isDashboardTheActiveControllerLayer && controllerObserver.isConnected ? Self.legendBarHeight : 0)
+             .animation(.easeInOut(duration: 0.2), value: controllerObserver.isConnected)
+ 
+-            // "minimalizing steam launcher just makes it disappear... should be on the edge but
+-            // still expandable... should look good too," then "it disappears for a second...
+-            // should be smooth, like when you minimize your window on macOS" - steamFloatingIcon
+-            // now owns both its expanded and collapsed states as one continuous view (see its own
+-            // doc comment), rather than this call site swapping between two separate ones.
+-            steamFloatingIcon
+-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+-                .allowsHitTesting(
+-                    detailGame == nil && detailCustomGame == nil && launchOverlayGame == nil
+-                        && launchOverlayCustomGame == nil && !showingControllerMode
+-                )
+-            .animation(.easeInOut(duration: 0.3), value: showSteamIcon)
++            // The two bottom-right floating controls - the Steam icon and (stacked just above it)
++            // the Settings launcher - kept in their own nested container so this outer ZStack
++            // doesn't grow past what Swift's type-checker will solve in one pass.
++            cornerFloaters
+ 
+             if isDashboardTheActiveControllerLayer {
+                 ControllerLegendBar(hints: dashboardControllerHints)
+@@ -412,6 +404,8 @@ struct GameModeView: View {
+                 .transition(.opacity)
+                 .zIndex(2)
+             }
++
++            settingsOverlay
+         }
+         .animation(.easeInOut(duration: 0.2), value: model.launchingTarget)
+         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: launchOverlayGame?.appID)
+@@ -979,7 +973,7 @@ struct GameModeView: View {
+     /// carousel) - both of those own the same D-pad/A stream the instant they're shown, per
+     /// `ControllerObserver`'s "single owner, self-filtering subscribers" design.
+     private var isDashboardTheActiveControllerLayer: Bool {
+-        detailGame == nil && detailCustomGame == nil && !showingControllerMode
++        detailGame == nil && detailCustomGame == nil && !showingControllerMode && !showingSettings
+     }
+ 
+     /// `focusedTarget`'s own `.card` index, resolved to that entry's real id, for `SkinWebGridView`'s

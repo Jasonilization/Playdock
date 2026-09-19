@@ -1,0 +1,28 @@
+{
+  "id": "033-dmg-window-layout",
+  "title": "Installer: a real, laid-out DMG window instead of Finder defaults",
+  "description": "make_dmg.sh produced a DMG with zero window layout - whatever a user's own Finder window settings happened to be, not a deliberate drag-to-Applications arrangement like real Mac installers have. Adds the standard technique (mount read-write, lay out via a real Finder AppleScript - sized window, icon view, Playdock.app and an /Applications symlink positioned side by side - then re-compress to the same read-only UDZO path).",
+  "category": "installer",
+  "commit_message": "Lay out the DMG window (icon positions, sized window)",
+  "files": [
+    "Scripts/make_dmg.sh"
+  ],
+  "dependencies": [],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "bash -n Scripts/make_dmg.sh",
+    "./Scripts/build_app.sh && ./Scripts/make_dmg.sh 0.0.0-test (manual: open the DMG, confirm the window is sized/laid out, then rm dist/Playdock-0.0.0-test.dmg)"
+  ],
+  "risk": "medium",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:5419c3",
+  "parent": null,
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.765520+00:00",
+    "original_patch_sha1": "bc2ee494acfe5d9ce3fd22bdaa7eb0935bc40195",
+    "patch_regenerated": true
+  },
+  "legacy_status": "READY"
+}

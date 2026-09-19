@@ -1,0 +1,18 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index 84eb59c654a6b91eb05e8c06a0ae7adc972cc2a9..7affd1ac7a949dde0c6b049488f552991c9f06fa 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -207,5 +207,13 @@ enum Localization {
+         "No games installed": "Aucun jeu installé",
+         "%lld game": "%lld jeu",
+         "%lld games": "%lld jeux",
++        "General": "Général",
++        "Appearance": "Apparence",
++        "Personalization": "Personnalisation",
++        "Library": "Bibliothèque",
++        "Games & Data": "Jeux et données",
++        "Language": "Langue",
++        "Diagnostics": "Diagnostics",
++        "About": "À propos",
+     ]
+ }

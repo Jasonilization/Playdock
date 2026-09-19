@@ -1,0 +1,35 @@
+diff --git a/Sources/ExeDock/Views/CDriveView.swift b/Sources/ExeDock/Views/CDriveView.swift
+index 29413941aa1c6d0f5131fcda95594fd46616ffbb..54c29d680ebb34b4d63c56b74b74045b78d3b2e0 100644
+--- a/Sources/ExeDock/Views/CDriveView.swift
++++ b/Sources/ExeDock/Views/CDriveView.swift
+@@ -85,7 +85,7 @@ struct CDriveView: View {
+             } else {
+                 ScrollViewReader { scrollProxy in
+                     List(Array(entries.enumerated()), id: \.element.id) { index, entry in
+-                        CDriveRow(entry: entry, isFocused: controllerObserver.isConnected && focusedIndex == index) {
++                        CDriveRow(entry: entry, skin: skin, isFocused: controllerObserver.isConnected && focusedIndex == index) {
+                             handleActivate(entry)
+                         } onReveal: {
+                             model.revealInFinder(entry.path)
+@@ -169,6 +169,7 @@ struct CDriveView: View {
+ 
+ private struct CDriveRow: View {
+     let entry: CDriveEntry
++    let skin: PlaydockSkin
+     let isFocused: Bool
+     let onActivate: () -> Void
+     let onReveal: () -> Void
+@@ -187,9 +188,12 @@ private struct CDriveRow: View {
+                 .frame(width: 26, height: 26)
+             Text(entry.name)
+                 .font(.body)
++                .fontDesign(skin.fontDesign)
+             Spacer()
+             if entry.isExecutable {
+-                Text("Run").font(.callout.weight(.medium)).foregroundStyle(Color.accentColor)
++                // Same real inconsistency as the breadcrumb (separate unit) - "Run" used the
++                // generic system Color.accentColor instead of the active skin's own accent.
++                Text("Run").font(.callout.weight(.medium)).foregroundStyle(skin.accent)
+             }
+             Button(action: onReveal) {
+                 Image(systemName: "folder")

@@ -1,0 +1,30 @@
+{
+  "id": "116-settings-panel-about-tab",
+  "title": "SettingsPanelView: About tab",
+  "description": "Adds the About category: app name, version from the bundle, one-line description, engine credit, contact line.",
+  "category": "settings",
+  "commit_message": "SettingsPanelView: About tab",
+  "files": [
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [
+    "115-settings-panel-engine-updates"
+  ],
+  "base_commit": "8ceb2c24f17cb7a6eb4c5a7d5a12fac43e390b2d",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-05T00:00:00Z",
+  "author": "session:029a34",
+  "parent": "115-settings-panel-engine-updates",
+  "schema_version": 2,
+  "provenance": {
+    "migrated_at": "2026-09-18T14:25:37.806875+00:00",
+    "original_patch_sha1": "5f9b6a669dab9c46ed12e1ecf465774b0216fe14",
+    "patch_regenerated": true
+  },
+  "legacy_status": "BLOCKED"
+}

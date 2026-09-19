@@ -1,0 +1,13 @@
+diff --git a/Sources/ExeDock/Support/DesignSystem.swift b/Sources/ExeDock/Support/DesignSystem.swift
+index 3c4a4e08c6c2c9a9e752444be8e9847c3275bc19..6e92a1f1f1f4c90b546b1639a95cc7239a10c9eb 100644
+--- a/Sources/ExeDock/Support/DesignSystem.swift
++++ b/Sources/ExeDock/Support/DesignSystem.swift
+@@ -128,7 +128,7 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
+     var topBarBackground: Color {
+         switch self {
+         case .luxury: return Self.dynamicAccent(light: (0.965, 0.961, 0.953), dark: (0.082, 0.078, 0.071)) // #f6f5f3 / #151412
+-        case .brutalist: return Self.dynamicAccent(light: (0.996, 0.965, 0.894), dark: (0.090, 0.078, 0.063)) // #fef6e4 / #171410
++        case .brutalist: return Self.dynamicAccent(light: (0.996, 0.965, 0.894), dark: (0.106, 0.090, 0.071)) // #fef6e4 / #1b1712 - dark ground lifted off near-black so cards/text stop looking crushed
+         case .cyber: return Self.dynamicAccent(light: (0.933, 0.961, 0.969), dark: (0.020, 0.027, 0.039)) // #eef5f7 / #05070a
+         case .soft: return Self.dynamicAccent(light: (0.902, 0.906, 0.933), dark: (0.169, 0.176, 0.227)) // #e6e7ee / #2b2d3a
+         case .pixel: return Self.dynamicAccent(light: (0.780, 0.839, 0.937), dark: (0.161, 0.212, 0.435)) // #c7d6ef / #29366f (--panel)
