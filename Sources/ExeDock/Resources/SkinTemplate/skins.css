@@ -38,6 +38,11 @@ input.search::placeholder{color:inherit;opacity:0.6;}
    at a glance. */
 .badge-windows{background:#0d9488 !important;color:#fff !important;}
 
+/* "a setting to hide labels" - one attribute on <html> (set by PlaydockRender/RenderGridFragment
+   from a real hideBadges flag) hides every badge kind at once, native-layout or WebView-rendered,
+   rather than a separate on/off per badge kind. */
+[data-hide-badges="true"] .badge{display:none !important;}
+
 /* ================= 1. Luxury (native macOS) ================= */
 .lux{ --bg:#f6f5f3; --panel:#ffffffcc; --line:rgba(0,0,0,.08); --fg:#1c1b19; --sub:#6b6863; --accent:#b08d57; }
 [data-stage-theme="dark"] .lux{ --bg:#151412; --panel:#211f1caa; --line:rgba(255,255,255,.08); --fg:#f1efe9; --sub:#9b968c; }
