@@ -95,8 +95,9 @@ expect(r.get("ok"), f"retry push ok ({r.get('message','')[:80]})")
 expect(uid in engine.load_shipments(), "ledger records the shipment after push")
 
 # remote actually has it
-code, out, _ = engine.git("ls-remote", "origin")
-expect(code == 0 and sha in out, "origin really contains the shipped commit")
+engine.git("fetch", "-q", "origin")
+code, out, _ = engine.git("branch", "-r", "--contains", sha)
+expect(code == 0 and any(l.strip() for l in out.splitlines()), "origin really contains the shipped commit")
 
 # reconcile on 'restart' is a no-op now
 changed = engine.reconcile_committed()
