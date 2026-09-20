@@ -555,14 +555,33 @@ def _ship_commit(uid, message_override=None):
     write_json(upgrade_dir(uid) / "meta.json", meta)
     save_state({"committed_upgrade": uid, "committed_sha": sha, "files": files})
 
+    # Receipt commit: the status flip above modifies a tracked queue file; without
+    # committing it, every *next* ship's preflight would see a dirty tree. So each ship
+    # is one content commit + one tiny receipt commit, pushed together.
+    meta_rel = str((upgrade_dir(uid) / "meta.json").relative_to(REPO_ROOT))
+    code, out, err = git("add", "--", meta_rel)
+    receipt_sha = None
+    if code == 0:
+        code2, out2, err2 = git("commit", "-m", f"Queue receipt: {uid} shipped as {sha[:10]}")
+        if code2 == 0:
+            receipt_sha = head_sha()
+    if not receipt_sha:
+        # Receipt failed (nothing staged?) - degrade gracefully: leave the meta flush in
+        # place and mark state so the UI can explain; never pretend SHIPPED.
+        return {"ok": True, "commit": sha, "pushed": False,
+                "message": f"Content committed as {sha[:10]} but the receipt commit failed: {err2 or out2}\n"
+                           "The work is safe; resolve the queue meta change and push manually, then Retry Push."}
+
     push = _push()
     if push["ok"]:
         _finalize_shipped(uid, sha)
         save_state({})
-        return {"ok": True, "message": f"Shipped as {sha[:10]} and pushed.", "commit": sha, "pushed": True}
-    return {"ok": True, "message": f"Committed as {sha[:10]} but push failed - local commit KEEP,"
-            f" nothing lost. Retry push when the remote is reachable.\n{push['message']}",
-            "commit": sha, "pushed": False, "push_error": push.get("message", "")}
+        return {"ok": True, "message": f"Shipped as {sha[:10]} (+ receipt {receipt_sha[:10]}), pushed.",
+                "commit": sha, "receipt": receipt_sha, "pushed": True}
+    return {"ok": True, "commit": sha, "receipt": receipt_sha, "pushed": False,
+            "push_error": push.get("message", ""),
+            "message": f"Committed {sha[:10]} + receipt {receipt_sha[:10]}, but push failed - nothing lost; "
+                       "Retry Push when the remote is reachable."}
 
 
 def _push():
