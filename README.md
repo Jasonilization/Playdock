@@ -3,13 +3,15 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Wiki](https://img.shields.io/badge/docs-wiki-informational.svg)](https://github.com/Jasonilization/Playdock/wiki)
 
-A Mac dashboard for the Windows games (and programs) you're already running through Wine - built
-on top of the Sikarugir engine, not instead of it.
+A Mac dashboard for the Windows games (and programs you might want to run) you're already running through Wine - built
+on top of the Sikarugir engine.
 
-Steam is the front door: install it once, and Playdock shows your library as a proper grid -
+Steam is the main feature here: install it once, and Playdock shows your library as a proper grid -
 box art, a short description, your account's name and avatar - with a big icon you double-click to
 open Steam itself, same as you would on the desktop. Drag-and-drop `.exe` support is still in here
 too, tucked under "Exe Loader" in the sidebar for when you just need to run something once.
+
+## NOTICE: Due to skool reasons, Playdock would have a much slower rate of development. Playdock is still actively being worked on, but updates will be more irregular and shipped long-term through Ship Manager rather than on a regular schedule. Thanks to everyone who’s liked, used, or followed this lil side project ❤️
 
 ## Screenshots
 
@@ -37,7 +39,8 @@ brew install --cask jasonilization/playdock/playdock
 
 Either way, it's signed with a free Apple Development identity rather than a paid Developer ID, so
 it's not notarized - Gatekeeper will call it out as being from an unidentified developer on first
-launch. Right-click the app → **Open**, or:
+launch. Right-click the app → **Open**, or go to settings, and under privacy and security, click *open anyways*. 
+You can also do this in the terminal via:
 
 ```sh
 xattr -dr com.apple.quarantine "/Applications/Playdock.app"
@@ -58,7 +61,8 @@ seen and tracked.
 
 Wine wrapper tools are great once you've built a wrapper. But "I just installed a game in Steam,
 why do I need to build anything" is a real gap, and that's what this fills - point it at a Steam
-bottle and it just works, no per-game setup.
+bottle and it just works, no per-game setup. This means you won't have to do all the messy configuration
+steps in sikarugir.
 
 ## How it fits with Sikarugir
 
@@ -78,6 +82,7 @@ distributable wrapper for one program, that's still Sikarugir Creator's job - Pl
 Sikarugir Creator itself has to be installed by you - there's no real download URL for it baked
 into this app on purpose. Guessing at one and silently fetching it felt like a bad idea, so if it's
 missing, Playdock just tells you and waits.
+
 
 ## What it does
 
