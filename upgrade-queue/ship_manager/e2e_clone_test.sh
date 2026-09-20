@@ -44,9 +44,13 @@ d.mkdir(parents=True)
     "id": uid, "title": "synthetic selftest", "commit_message": "e2e selftest commit",
     "files": ["E2E_SELFTEST.txt"], "dependencies": [], "tests": ["true"],
     "status": "READY", "schema_version": 2, "base_commit": engine.head_sha()}))
+# The clone is throwaway - commit the queue addition there so preflight sees a clean tree.
 man = engine.load_manifest()
 man["upgrades"] = man.get("upgrades", []) + [uid]
 engine.write_json(engine.MANIFEST_PATH, man)
+subprocess.run(["git", "add", "-A", "upgrade-queue"], check=True)
+subprocess.run(["git", "-c", "user.email=e2e@local", "-c", "user.name=e2e",
+                "commit", "-qm", "e2e synthetic upgrade"], check=True)
 
 # --- dirty-tree refusal ----------------------------------------------------------
 pathlib.Path("README.md").write_text(pathlib.Path("README.md").read_text() + "\n# dirty\n")
@@ -71,9 +75,11 @@ r = engine.ship_commit(uid)
 expect(r.get("ok"), "commit accepted")
 expect(r.get("pushed") is False, "push failed as intended (bogus remote)")
 meta = json.loads((d / "meta.json").read_text())
-expect(meta["status"] == "COMMITTED", "status is COMMITTED, not SHIPPED")
+expect(meta.get("status") == "READY", "meta.json is NOT churned by shipping")
+expect(uid not in engine.load_shipments(), "ledger has no entry while push is pending")
 sha = engine.head_sha()
-expect(meta["shipped_commit"] == sha, "commit sha recorded")
+st = engine.load_state()
+expect(st.get("committed_upgrade") == uid and st.get("committed_sha") == sha, "pending-push state recorded")
 expect(pathlib.Path("E2E_SELFTEST.txt").exists(), "no rollback: content survived push failure")
 
 # restart reconciliation does NOT mark it shipped while remote lacks it
@@ -86,8 +92,7 @@ subprocess.run(["git", "init", "--bare", "-q", "/tmp/shipmgr-e2e/origin.git"], c
 subprocess.run(["git", "remote", "set-url", "origin", "/tmp/shipmgr-e2e/origin.git"], check=True)
 r = engine.ship_retry_push(uid)
 expect(r.get("ok"), f"retry push ok ({r.get('message','')[:80]})")
-meta = json.loads((d / "meta.json").read_text())
-expect(meta["status"] == "SHIPPED" and meta.get("shipped_at"), "marked SHIPPED after push")
+expect(uid in engine.load_shipments(), "ledger records the shipment after push")
 
 # remote actually has it
 code, out, _ = engine.git("ls-remote", "origin")

@@ -1,0 +1,10 @@
+{
+  "001-badge-css-windows-color": {
+    "commit": "88de5354976d7342f0ec0645e1a69a6d56c4b6ce",
+    "shipped_at": "2026-09-20T00:00:15.445618+00:00"
+  },
+  "002-badge-css-hide-rule": {
+    "commit": "7fc94cb7f2d668183d317171c0a50c1e1f4e1726",
+    "shipped_at": "2026-09-20T06:37:30.740329+00:00"
+  }
+}

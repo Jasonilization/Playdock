@@ -23,6 +23,5 @@
     "migrated_at": "2026-09-18T14:25:37.761224+00:00",
     "original_patch_sha1": "fdb21136d62731e7584efd216af09ec7573f9253",
     "patch_regenerated": true
-  },
-  "legacy_status": "READY"
+  }
 }

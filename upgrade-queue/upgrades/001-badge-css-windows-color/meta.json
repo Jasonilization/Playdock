@@ -14,7 +14,7 @@
     "swift test"
   ],
   "risk": "low",
-  "status": "SHIPPED",
+  "status": "READY",
   "created_at": "2026-09-05T00:00:00Z",
   "author": "session:5419c3",
   "parent": null,
@@ -23,8 +23,5 @@
     "migrated_at": "2026-09-18T14:25:37.736584+00:00",
     "original_patch_sha1": "c249291377fbde4a9b62a472c31e6e8fe5607d3c",
     "patch_regenerated": true
-  },
-  "legacy_status": "READY",
-  "shipped_commit": "88de5354976d7342f0ec0645e1a69a6d56c4b6ce",
-  "shipped_at": "2026-09-20T00:00:15.445618+00:00"
+  }
 }

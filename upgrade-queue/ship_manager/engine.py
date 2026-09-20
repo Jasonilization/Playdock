@@ -16,7 +16,7 @@ Each upgrade is a directory `upgrade-queue/upgrades/<id>/` with:
   notes.md    optional human notes.
 
 Effectively-computed status (never stored, always derived):
-  SHIPPED   meta.status == SHIPPED
+  SHIPPED   uid present in upgrade-queue/shipments.json (the ledger)
   READY     all transitive dependencies SHIPPED and patch applies to current HEAD
   WAITING   some transitive dependency not yet SHIPPED (this is what the old UI lumped
             under BLOCKED - the UI now shows *which* deps and why)
@@ -51,6 +51,7 @@ REPO_ROOT = QUEUE_DIR.parent
 UPGRADES_DIR = QUEUE_DIR / "upgrades"
 MANIFEST_PATH = QUEUE_DIR / "manifest.json"
 STATE_PATH = SHIP_MANAGER_DIR / ".state.json"
+SHIPMENTS_PATH = QUEUE_DIR / "shipments.json"
 WORKTREE_PARENT = REPO_ROOT / ".git" / "shipmgr-worktrees"
 SNAPSHOT_ROOT = REPO_ROOT / ".git" / "shipmgr-snapshots"
 
@@ -166,30 +167,43 @@ def dep_closure(uid, metas=None):
     return seen
 
 
-def unshipped_deps(uid, metas=None):
+def load_shipments():
+    """The ship ledger: uid -> {commit, shipped_at}. Kept OUT of per-upgrade meta.json
+    so shipping one upgrade never dirties the other 108 files; receipt commits touch
+    exactly this one small file."""
+    return load_json(SHIPMENTS_PATH, {})
+
+
+def is_shipped(uid, shipments=None):
+    return uid in (shipments if shipments is not None else load_shipments())
+
+
+def unshipped_deps(uid, metas=None, shipments=None):
     """Direct deps that aren't SHIPPED. Returns list of {id, title} for UI reasons."""
     metas = metas or all_metas()
-    meta = metas[uid]
+    shipments = shipments if shipments is not None else load_shipments()
     missing = []
-    for d in meta.get("dependencies", []):
+    for d in metas[uid].get("dependencies", []):
         dm = metas.get(d)
         if dm is None:
             missing.append({"id": d, "title": "(missing from queue)", "ship_state": "missing"})
-        elif dm.get("status") != "SHIPPED":
-            missing.append({"id": d, "title": dm.get("title", d), "ship_state": dm.get("status", "READY")})
+        elif not is_shipped(d, shipments):
+            missing.append({"id": d, "title": dm.get("title", d), "ship_state": "READY"})
     return missing
 
 
 def effective_status(uid, metas=None):
     metas = metas or all_metas()
+    shipments = load_shipments()
     meta = metas[uid]
-    if meta.get("status") == "SHIPPED":
+    if uid in shipments:
         return "SHIPPED", []
-    if meta.get("status") == "COMMITTED":
+    state = load_state()
+    if state.get("committed_upgrade") == uid:
         return "COMMITTED", []
     if meta.get("status") == "HOLD":
         return "HOLD", []
-    missing = unshipped_deps(uid, metas)
+    missing = unshipped_deps(uid, metas, shipments)
     return ("WAITING", missing) if missing else ("READY", [])
 
 
@@ -198,7 +212,7 @@ def blocked_reasons(uid, metas=None):
     metas = metas or all_metas()
     meta = metas[uid]
     reasons = []
-    for dep in unshipped_deps(uid, metas):
+    for dep in unshipped_deps(uid, metas, load_shipments()):
         dep_files = metas.get(dep["id"], {}).get("files", [])
         shared = sorted(set(dep_files) & set(meta.get("files", [])))
         why = f"shares {', '.join(shared)}" if shared else "required by declared dependency"
@@ -305,7 +319,7 @@ def dry_run(uid):
     wt = make_worktree("HEAD", f"shipmgr-dryrun-{uid.split('-')[0]}")
     try:
         ancestors = [u for u in topo_order()
-                     if u in dep_closure(uid, metas) and metas[u].get("status") != "SHIPPED"]
+                     if u in dep_closure(uid, metas) and not is_shipped(u)]
         applied_ancestors = []
         for anc in ancestors:
             ok, msg = apply_patch_text(load_patch(anc), wt)
@@ -550,38 +564,21 @@ def _ship_commit(uid, message_override=None):
         return ShipError("git", "git commit failed", stderr=err or out).as_dict()
     sha = head_sha()
 
-    meta["status"] = "COMMITTED"
-    meta["shipped_commit"] = sha
-    write_json(upgrade_dir(uid) / "meta.json", meta)
+    # The ledger entry is written only on a CONFIRMED push (see _finalize_shipped).
+    # Until then the upgrade shows as COMMITTED-pending-push via this state file -
+    # nothing in the tracked tree changes here, so the next ship's preflight stays happy.
     save_state({"committed_upgrade": uid, "committed_sha": sha, "files": files})
-
-    # Receipt commit: the status flip above modifies a tracked queue file; without
-    # committing it, every *next* ship's preflight would see a dirty tree. So each ship
-    # is one content commit + one tiny receipt commit, pushed together.
-    meta_rel = str((upgrade_dir(uid) / "meta.json").relative_to(REPO_ROOT))
-    code, out, err = git("add", "--", meta_rel)
-    receipt_sha = None
-    if code == 0:
-        code2, out2, err2 = git("commit", "-m", f"Queue receipt: {uid} shipped as {sha[:10]}")
-        if code2 == 0:
-            receipt_sha = head_sha()
-    if not receipt_sha:
-        # Receipt failed (nothing staged?) - degrade gracefully: leave the meta flush in
-        # place and mark state so the UI can explain; never pretend SHIPPED.
-        return {"ok": True, "commit": sha, "pushed": False,
-                "message": f"Content committed as {sha[:10]} but the receipt commit failed: {err2 or out2}\n"
-                           "The work is safe; resolve the queue meta change and push manually, then Retry Push."}
 
     push = _push()
     if push["ok"]:
-        _finalize_shipped(uid, sha)
+        receipt = _finalize_shipped(uid, sha)
         save_state({})
-        return {"ok": True, "message": f"Shipped as {sha[:10]} (+ receipt {receipt_sha[:10]}), pushed.",
-                "commit": sha, "receipt": receipt_sha, "pushed": True}
-    return {"ok": True, "commit": sha, "receipt": receipt_sha, "pushed": False,
+        return {"ok": True, "message": f"Shipped as {sha[:10]} (+ receipt {receipt[:10] if receipt else 'n/a'}), pushed.",
+                "commit": sha, "receipt": receipt, "pushed": True}
+    return {"ok": True, "commit": sha, "pushed": False,
             "push_error": push.get("message", ""),
-            "message": f"Committed {sha[:10]} + receipt {receipt_sha[:10]}, but push failed - nothing lost; "
-                       "Retry Push when the remote is reachable."}
+            "message": f"Committed {sha[:10]}, but push failed - NOTHING is lost or rolled back; "
+                       "the commit is in your local history. Retry Push when the remote is reachable."}
 
 
 def _push():
@@ -590,43 +587,53 @@ def _push():
 
 
 def _finalize_shipped(uid, sha):
-    meta = load_meta(uid)
-    meta["status"] = "SHIPPED"
-    meta["shipped_at"] = datetime.now(timezone.utc).isoformat()
-    meta["shipped_commit"] = sha
-    write_json(upgrade_dir(uid) / "meta.json", meta)
+    """Ledger entry -> receipt commit -> best-effort push. Returns receipt sha.
+    Only touch is upgrade-queue/shipments.json, so shipping never dirties the tree."""
+    shipments = load_shipments()
+    shipments[uid] = {"commit": sha, "shipped_at": datetime.now(timezone.utc).isoformat()}
+    write_json(SHIPMENTS_PATH, shipments)
+    rel = str(SHIPMENTS_PATH.relative_to(REPO_ROOT))
+    git("add", "--", rel)
+    code, _, err = git("commit", "-m", f"Queue receipt: {uid} shipped as {sha[:10]}")
+    if code != 0:
+        return None
+    receipt = head_sha()
+    git("push", "origin", "HEAD", timeout=300)  # best effort - content already on origin
+    return receipt
 
 
 def ship_retry_push(uid):
     state = load_state()
-    meta = load_meta(uid)
-    if meta.get("status") != "COMMITTED" or state.get("committed_upgrade") != uid:
+    shipments = load_shipments()
+    if uid in shipments:
+        return {"ok": True, "message": "Already recorded shipped."}
+    if state.get("committed_upgrade") != uid:
         return ShipError("state", "No committed-but-unpushed upgrade pending.").as_dict()
     push = _push()
     if push["ok"]:
-        _finalize_shipped(uid, state["committed_sha"])
+        receipt = _finalize_shipped(uid, state["committed_sha"])
         save_state({})
-        return {"ok": True, "message": "Pushed. Marked SHIPPED."}
+        return {"ok": True, "message": f"Pushed. Marked SHIPPED (receipt {(receipt or '')[:10]})."}
     return ShipError("push", f"Push still failing: {push['message']}").as_dict()
 
 
 def reconcile_committed():
-    """Startup: any COMMITTED upgrade whose commit is now on the remote -> SHIPPED."""
-    metas = all_metas()
-    changed = []
-    for uid, meta in metas.items():
-        if meta.get("status") != "COMMITTED":
-            continue
-        sha = meta.get("shipped_commit")
-        if not sha:
-            continue
-        code, out, _ = git("branch", "-r", "--contains", sha)
-        if code == 0 and any(l.strip() for l in out.splitlines()):
-            _finalize_shipped(uid, sha)
-            changed.append(uid)
-    if changed and load_state().get("committed_upgrade") in changed:
+    """Startup recovery: a committed upgrade whose commit has since appeared on the
+    remote (pushed by hand, or a previous crash midway) gets its ledger entry now."""
+    state = load_state()
+    uid = state.get("committed_upgrade")
+    sha = state.get("committed_sha")
+    if not uid or not sha:
+        return []
+    if uid in load_shipments():
         save_state({})
-    return changed
+        return [uid]
+    code, out, _ = git("branch", "-r", "--contains", sha)
+    if code == 0 and any(l.strip() for l in out.splitlines()):
+        _finalize_shipped(uid, sha)
+        save_state({})
+        return [uid]
+    return []
 
 
 # ---------------------------------------------------------------------------
@@ -649,7 +656,8 @@ def queue_tip_refs():
     """The (possibly empty) list of upgrades whose content a new preparation builds on:
     every non-shipped one, in topo order. Shipped ones are already in HEAD."""
     metas = all_metas()
-    return [u for u in topo_order() if metas[u].get("status") != "SHIPPED"]
+    shipments = load_shipments()
+    return [u for u in topo_order() if u not in shipments]
 
 
 def prepare_session_start(title=""):
@@ -785,7 +793,8 @@ def _verify_all_worker():
     import time
     global VERIFY_STATE
     metas = all_metas()
-    order = [u for u in topo_order() if metas[u].get("status") != "SHIPPED" and metas[u].get("status") != "HOLD"]
+    shipments = load_shipments()
+    order = [u for u in topo_order() if u not in shipments and metas[u].get("status") != "HOLD"]
     VERIFY_STATE.update(running=True, step=0, total=len(order), log=[], result=None,
                         started_at=datetime.now(timezone.utc).isoformat(), finished_at=None)
     wt = None
