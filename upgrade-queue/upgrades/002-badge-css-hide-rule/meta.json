@@ -16,7 +16,7 @@
     "swift test"
   ],
   "risk": "low",
-  "status": "READY",
+  "status": "COMMITTED",
   "created_at": "2026-09-05T00:00:00Z",
   "author": "session:5419c3",
   "parent": "001-badge-css-windows-color",
@@ -26,5 +26,6 @@
     "original_patch_sha1": "5207ef1b82d74e7ea4b988481e587b8acea0722d",
     "patch_regenerated": true
   },
-  "legacy_status": "READY"
+  "legacy_status": "READY",
+  "shipped_commit": "7fc94cb7f2d668183d317171c0a50c1e1f4e1726"
 }
