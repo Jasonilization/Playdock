@@ -10,5 +10,9 @@
   "003-badge-js-windows-case": {
     "commit": "07b6938887176fe7e4ff1fd87f181b9d15204d0e",
     "shipped_at": "2026-09-21T03:31:42.912836+00:00"
+  },
+  "004-badge-js-hide-attribute": {
+    "commit": "0df5fcf78016ba185085cc878e61b962739c25df",
+    "shipped_at": "2026-09-21T07:50:42.344545+00:00"
   }
 }
