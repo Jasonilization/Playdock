@@ -261,6 +261,7 @@ window.PlaydockRender = function (skinKey, gamesJSON, metaJSON) {
   try { META = JSON.parse(metaJSON); } catch (e) { META = { user: 'Player', theme: 'light' }; }
   CURRENT_SKIN = skinKey;
   document.documentElement.setAttribute('data-stage-theme', META.theme === 'dark' ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-hide-badges', META.hideBadges ? 'true' : 'false');
   doRender();
 };
 
@@ -277,8 +278,14 @@ window.PlaydockRenderGridFragment = function (skinKey, gamesJSON, themeJSON) {
   let games = [];
   try { games = JSON.parse(gamesJSON); } catch (e) { games = []; }
   let theme = 'light';
-  try { theme = JSON.parse(themeJSON).theme === 'dark' ? 'dark' : 'light'; } catch (e) {}
+  let hideBadges = false;
+  try {
+    const parsedTheme = JSON.parse(themeJSON);
+    theme = parsedTheme.theme === 'dark' ? 'dark' : 'light';
+    hideBadges = !!parsedTheme.hideBadges;
+  } catch (e) {}
   document.documentElement.setAttribute('data-stage-theme', theme);
+  document.documentElement.setAttribute('data-hide-badges', hideBadges ? 'true' : 'false');
   const cardsFn = CARDS[skinKey] || CARDS.luxury;
   const skinClass = SKIN_CLASS[skinKey] || SKIN_CLASS.luxury;
   stage.innerHTML = `<div class="${skinClass} grid-fragment"><div class="grid">${cardsFn(games)}</div></div>`;
