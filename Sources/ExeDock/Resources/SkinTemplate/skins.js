@@ -83,6 +83,10 @@ const badge = (gm, customLabel) => {
     const isAllCaps = customLabel === customLabel.toUpperCase();
     return `<span class="badge badge-mac">${isAllCaps ? 'MAC' : 'Mac'}</span>`;
   }
+  if (gm.windows) {
+    const isAllCaps = customLabel === customLabel.toUpperCase();
+    return `<span class="badge badge-windows">${isAllCaps ? 'WINDOWS' : 'Windows'}</span>`;
+  }
   return '';
 };
 
