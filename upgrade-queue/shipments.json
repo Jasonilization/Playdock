@@ -18,5 +18,9 @@
   "005-swift-entry-windows-field": {
     "commit": "e1b77365ce89e4590234f00f18c3831265225caa",
     "shipped_at": "2026-09-22T07:31:34.407203+00:00"
+  },
+  "006-swift-gridview-hidebadges-param": {
+    "commit": "cd1e9cad5d5575972a8f1af36c4d4d1a7a9de7c5",
+    "shipped_at": "2026-09-22T09:10:44.170814+00:00"
   }
 }
