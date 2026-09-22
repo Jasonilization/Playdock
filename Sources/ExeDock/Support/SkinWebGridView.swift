@@ -17,6 +17,11 @@ struct SkinWebGridEntry: Encodable, Equatable {
     /// A game found in the real, separate macOS Steam client's own library (`SteamGameSource
     /// .nativeMac`) - shown with a real "Mac" badge, the same way a custom game gets "Custom".
     let mac: Bool
+    /// A game running through Playdock's own Windows Steam bottle (`SteamGameSource.wineBottle`) -
+    /// the real majority case, previously the only one with no badge of its own at all. Defaulted
+    /// so this field's own addition stays independently buildable - the one real call site
+    /// (`GameModeView.webGridEntries`) starts actually setting it in a separate, later piece.
+    let windows: Bool = false
     let running: Bool
     let size: String?
     let hours: String?
