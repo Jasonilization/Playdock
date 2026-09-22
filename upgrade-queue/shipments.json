@@ -14,5 +14,9 @@
   "004-badge-js-hide-attribute": {
     "commit": "0df5fcf78016ba185085cc878e61b962739c25df",
     "shipped_at": "2026-09-21T07:50:42.344545+00:00"
+  },
+  "005-swift-entry-windows-field": {
+    "commit": "e1b77365ce89e4590234f00f18c3831265225caa",
+    "shipped_at": "2026-09-22T07:31:34.407203+00:00"
   }
 }
