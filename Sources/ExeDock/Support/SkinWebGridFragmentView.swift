@@ -12,6 +12,8 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
     let skin: PlaydockSkin
     let entries: [SkinWebGridEntry]
     let isDark: Bool
+    /// "a setting to hide labels" - see `SkinWebGridView.hideBadges`'s identical contract.
+    var hideBadges: Bool = false
     let onOpen: (String) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(onOpen: onOpen) }
@@ -36,14 +38,14 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
 
     func updateNSView(_ webView: WKWebView, context: Context) {
         context.coordinator.onOpen = onOpen
-        context.coordinator.render(skin: skin, entries: entries, isDark: isDark)
+        context.coordinator.render(skin: skin, entries: entries, isDark: isDark, hideBadges: hideBadges)
     }
 
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         var onOpen: (String) -> Void
         weak var webView: WKWebView?
         private var isPageReady = false
-        private var pending: (skin: PlaydockSkin, entries: [SkinWebGridEntry], isDark: Bool)?
+        private var pending: (skin: PlaydockSkin, entries: [SkinWebGridEntry], isDark: Bool, hideBadges: Bool)?
 
         init(onOpen: @escaping (String) -> Void) {
             self.onOpen = onOpen
@@ -58,23 +60,23 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             isPageReady = true
             if let pending {
-                render(skin: pending.skin, entries: pending.entries, isDark: pending.isDark)
+                render(skin: pending.skin, entries: pending.entries, isDark: pending.isDark, hideBadges: pending.hideBadges)
             }
         }
 
-        func render(skin: PlaydockSkin, entries: [SkinWebGridEntry], isDark: Bool) {
+        func render(skin: PlaydockSkin, entries: [SkinWebGridEntry], isDark: Bool, hideBadges: Bool) {
             guard isPageReady, let webView else {
-                pending = (skin, entries, isDark)
+                pending = (skin, entries, isDark, hideBadges)
                 return
             }
             pending = nil
             guard let entriesJSON = jsonString(entries) else { return }
-            guard let themeJSON = jsonString(WebTheme(theme: isDark ? "dark" : "light")) else { return }
+            guard let themeJSON = jsonString(WebTheme(theme: isDark ? "dark" : "light", hideBadges: hideBadges)) else { return }
             let js = "window.PlaydockRenderGridFragment && window.PlaydockRenderGridFragment(\(jsLiteral(skin.rawValue)), \(jsLiteral(entriesJSON)), \(jsLiteral(themeJSON)));"
             webView.evaluateJavaScript(js, completionHandler: nil)
         }
 
-        private struct WebTheme: Encodable { let theme: String }
+        private struct WebTheme: Encodable { let theme: String; let hideBadges: Bool }
 
         private func jsonString<T: Encodable>(_ value: T) -> String? {
             guard let data = try? JSONEncoder().encode(value) else { return nil }
