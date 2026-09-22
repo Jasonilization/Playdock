@@ -13,7 +13,9 @@ REAL="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 rm -rf /tmp/shipmgr-e2e
 mkdir -p /tmp/shipmgr-e2e
 git clone -q "$REAL" "$CLONE" 2>/dev/null || git clone -q "file://$REAL" "$CLONE"
-# the queue is (for the moment) untracked in the real repo - carry it across
+# carry the WORKING queue across (covers any not-yet-committed engine fixes) - replacing
+# the cloned copy rather than nesting inside it (cp -a semantics with an existing target)
+rm -rf "$CLONE/upgrade-queue"
 cp -a "$REAL/upgrade-queue" "$CLONE/upgrade-queue"
 git -C "$CLONE" remote set-url origin /nonexistent-bogus-remote.git
 
@@ -58,6 +60,15 @@ r = engine.ship_prepare(uid)
 expect(r.get("stage") == "clean-check" and not r.get("ok"), f"dirty tree refused (stage={r.get('stage')})")
 expect(not pathlib.Path("E2E_SELFTEST.txt").exists(), "refusal applied nothing")
 subprocess.run(["git", "checkout", "--", "README.md"], check=True)
+
+# --- queue bookkeeping must NOT block shipping ------------------------------------
+mp = pathlib.Path("upgrade-queue/manifest.json")
+mp.write_text(mp.read_text() + "\n")
+r = engine.ship_prepare(uid)
+expect(r.get("ok"), "dirty upgrade-queue/ bookkeeping does not block shipping")
+r = engine.ship_abort(uid)
+expect(r.get("ok"), "abort clean after queue-dirty prepare")
+subprocess.run(["git", "checkout", "--", "upgrade-queue/manifest.json"], check=True)
 
 # --- prepare -> tamper -> commit refusal ------------------------------------------
 r = engine.ship_prepare(uid)

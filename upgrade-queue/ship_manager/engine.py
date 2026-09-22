@@ -375,12 +375,20 @@ def ship_preflight(uid):
     meta = load_meta(uid)
     files = meta.get("files", [])
     fileset = set(files)
+    if any(f.startswith("upgrade-queue/") for f in files):
+        raise ShipError("clean-check",
+                        f"{uid} touches upgrade-queue/ itself - shipping queue-state changes is the "
+                        "manager's own job (ledger/receipts), not a queued upgrade's. Refusing.")
     staged, modified, colliding_untracked = [], [], []
     for e in _porcelain():
+        # upgrade-queue/ bookkeeping (manifest appends from prepare-sessions, ledger receipts,
+        # new ready upgrades) is the manager's OWN managed state, not user work-in-progress on the
+        # app - it must never block shipping the app. Commits only ever stage the upgrade's files.
+        queue_own = e["path"].startswith("upgrade-queue/")
         x, y = e["xy"][0], e["xy"][1]
-        if x not in (" ", "?"):
+        if x not in (" ", "?") and not queue_own:
             staged.append(e["path"])
-        elif y not in (" ", "?"):
+        elif y not in (" ", "?") and not queue_own:
             modified.append(e["path"])
         elif x == "?" and y == "?":
             if e["path"] in fileset:
@@ -546,8 +554,10 @@ def _ship_commit(uid, message_override=None):
         if not (REPO_ROOT / f).exists():
             return ShipError("tamper-check", f"{f} (new file) vanished since prepare.").as_dict()
 
-    # ensure only our files end up staged
-    cur = [e["path"] for e in _porcelain() if e["xy"][0] not in (" ", "?")]
+    # ensure only our files end up staged (queue bookkeeping staged alongside is left
+    # alone - it never enters this commit and needs no intervention)
+    cur = [e["path"] for e in _porcelain()
+           if e["xy"][0] not in (" ", "?") and not e["path"].startswith("upgrade-queue/")]
     extra = [p for p in cur if p not in files]
     if extra:
         return ShipError("staging-check",
