@@ -45,6 +45,10 @@ struct SkinWebGridView: NSViewRepresentable {
     /// icon). The page has no idea a controller exists at all; this just tells it which card to
     /// draw the ring around, via `window.PlaydockSetFocus` (see that function's own doc comment).
     var focusedIndex: Int?
+    /// "a setting to hide labels" - hides every Mac/Custom/Windows badge in the real page via one
+    /// shared `[data-hide-badges]` CSS rule (see skins.css), not a per-skin toggle. Defaulted so
+    /// this plumbing stays independently buildable before anything actually sets it non-default.
+    var hideBadges: Bool = false
     let onOpen: (String) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(onOpen: onOpen) }
@@ -72,7 +76,7 @@ struct SkinWebGridView: NSViewRepresentable {
 
     func updateNSView(_ webView: WKWebView, context: Context) {
         context.coordinator.onOpen = onOpen
-        context.coordinator.render(skin: skin, entries: entries, userName: userName, isDark: isDark)
+        context.coordinator.render(skin: skin, entries: entries, userName: userName, isDark: isDark, hideBadges: hideBadges)
         context.coordinator.setFocus(focusedIndex)
     }
 
@@ -80,7 +84,7 @@ struct SkinWebGridView: NSViewRepresentable {
         var onOpen: (String) -> Void
         weak var webView: WKWebView?
         private var isPageReady = false
-        private var pending: (skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool)?
+        private var pending: (skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool, hideBadges: Bool)?
 
         init(onOpen: @escaping (String) -> Void) {
             self.onOpen = onOpen
@@ -95,18 +99,18 @@ struct SkinWebGridView: NSViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             isPageReady = true
             if let pending {
-                render(skin: pending.skin, entries: pending.entries, userName: pending.userName, isDark: pending.isDark)
+                render(skin: pending.skin, entries: pending.entries, userName: pending.userName, isDark: pending.isDark, hideBadges: pending.hideBadges)
             }
         }
 
-        func render(skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool) {
+        func render(skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool, hideBadges: Bool) {
             guard isPageReady, let webView else {
-                pending = (skin, entries, userName, isDark)
+                pending = (skin, entries, userName, isDark, hideBadges)
                 return
             }
             pending = nil
             guard let entriesJSON = jsonString(entries) else { return }
-            let meta = WebMeta(user: userName, theme: isDark ? "dark" : "light")
+            let meta = WebMeta(user: userName, theme: isDark ? "dark" : "light", hideBadges: hideBadges)
             guard let metaJSON = jsonString(meta) else { return }
             let js = "window.PlaydockRender && window.PlaydockRender(\(jsLiteral(skin.rawValue)), \(jsLiteral(entriesJSON)), \(jsLiteral(metaJSON)));"
             webView.evaluateJavaScript(js, completionHandler: nil)
@@ -121,7 +125,7 @@ struct SkinWebGridView: NSViewRepresentable {
             webView.evaluateJavaScript("window.PlaydockSetFocus && window.PlaydockSetFocus(\(arg));", completionHandler: nil)
         }
 
-        private struct WebMeta: Encodable { let user: String; let theme: String }
+        private struct WebMeta: Encodable { let user: String; let theme: String; let hideBadges: Bool }
 
         private func jsonString<T: Encodable>(_ value: T) -> String? {
             guard let data = try? JSONEncoder().encode(value) else { return nil }
