@@ -22,5 +22,9 @@
   "006-swift-gridview-hidebadges-param": {
     "commit": "cd1e9cad5d5575972a8f1af36c4d4d1a7a9de7c5",
     "shipped_at": "2026-09-22T09:10:44.170814+00:00"
+  },
+  "007-swift-fragmentview-hidebadges-param": {
+    "commit": "f14fd0e2a6beb9029bcf9a3d482a0f37f2b47503",
+    "shipped_at": "2026-09-22T23:28:43.367122+00:00"
   }
 }
