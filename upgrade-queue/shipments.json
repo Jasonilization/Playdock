@@ -26,5 +26,9 @@
   "007-swift-fragmentview-hidebadges-param": {
     "commit": "f14fd0e2a6beb9029bcf9a3d482a0f37f2b47503",
     "shipped_at": "2026-09-22T23:28:43.367122+00:00"
+  },
+  "008-library-presentation-iswindows": {
+    "commit": "33c104da384a97e6d23ba565ed4abefae09683fe",
+    "shipped_at": "2026-09-23T08:49:36.589759+00:00"
   }
 }
