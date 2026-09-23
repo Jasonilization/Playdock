@@ -140,6 +140,11 @@ private struct LibraryEntryTile: View {
                     // Spotlight (all WebView-rendered) had this, every native layout's own tile
                     // still only knew about "Custom."
                     Text("MAC").font(.system(size: 9, weight: .bold)).padding(4).background(Color(red: 0, green: 0.443, blue: 0.827), in: Capsule()).foregroundStyle(.white).padding(6)
+                } else if presentation?.isWindows == true {
+                    // Same real #0d9488 teal the WebView badge uses - "make sure our windows
+                    // steam inistalled games have their own labels," per live feedback: the real
+                    // majority case previously had no badge of its own anywhere, native or WebView.
+                    Text("WINDOWS").font(.system(size: 9, weight: .bold)).padding(4).background(Color(red: 0.051, green: 0.584, blue: 0.533), in: Capsule()).foregroundStyle(.white).padding(6)
                 }
                 if isRunning {
                     Circle().fill(.green).frame(width: 9, height: 9).padding(6)
