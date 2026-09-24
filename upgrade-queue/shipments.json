@@ -34,5 +34,9 @@
   "009-tile-windows-badge": {
     "commit": "89ef04625f338837fd0e5d3f2f7f2b465014ca68",
     "shipped_at": "2026-09-23T09:00:32.898828+00:00"
+  },
+  "010-sidebar-windows-badge": {
+    "commit": "1a7418849b13e86031344833d33f40b8320b5907",
+    "shipped_at": "2026-09-24T09:17:47.778987+00:00"
   }
 }
