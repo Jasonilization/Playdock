@@ -365,6 +365,8 @@ struct LibrarySidebarLayout: View {
                                 Text("CUSTOM GAME").font(.caption.bold()).foregroundStyle(.purple)
                             } else if presentation?.isMac == true {
                                 Text("MAC GAME").font(.caption.bold()).foregroundStyle(Color(red: 0.4, green: 0.68, blue: 1.0))
+                            } else if presentation?.isWindows == true {
+                                Text("WINDOWS GAME").font(.caption.bold()).foregroundStyle(Color(red: 0.2, green: 0.75, blue: 0.68))
                             }
                             SkinTitleText(text: selected.name, size: 30).foregroundStyle(.white)
                             if let desc = presentation?.description {
