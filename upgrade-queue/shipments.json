@@ -38,5 +38,9 @@
   "010-sidebar-windows-badge": {
     "commit": "1a7418849b13e86031344833d33f40b8320b5907",
     "shipped_at": "2026-09-24T09:17:47.778987+00:00"
+  },
+  "011-hide-badges-setting-ui": {
+    "commit": "ed577ee4b3d660a56a06d8bd525d25c0dbd8b26c",
+    "shipped_at": "2026-09-25T04:15:24.435788+00:00"
   }
 }
