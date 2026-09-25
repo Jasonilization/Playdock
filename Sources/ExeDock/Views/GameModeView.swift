@@ -55,6 +55,12 @@ struct GameModeView: View {
     /// the visual one.
     static let showSteamIconKey = "com.exedock.showSteamIcon"
     @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = true
+    /// "a setting to hide labels" - one global switch for every Custom/Mac/Windows badge, native
+    /// layouts and the WebView-rendered ones alike, rather than a per-badge-kind toggle nobody
+    /// asked for. Nothing reads this yet - a separate, later piece wires it into the actual badge
+    /// display sites.
+    static let hideBadgesKey = "com.exedock.hideLibraryBadges"
+    @AppStorage(GameModeView.hideBadgesKey) private var hideLibraryBadges = false
     @LocalState private var search = ""
     @LocalState private var showingSettingsSheet = false
     @LocalState private var showingAddGameSheet = false
@@ -1932,7 +1938,7 @@ private struct EngineUpdateSection: View {
 /// nested controls (sliders, pickers) aren't part of this focus loop yet - a smaller follow-up,
 /// same as the header/search/sort scope boundary on the main dashboard.
 private enum SettingsRow: Int, CaseIterable {
-    case advancedMode, showSteamIcon, sampleGames, openLogs, openCrashReports, done
+    case advancedMode, showSteamIcon, hideBadges, sampleGames, openLogs, openCrashReports, done
 }
 
 private struct DefaultSettingsSheet: View {
@@ -1946,6 +1952,7 @@ private struct DefaultSettingsSheet: View {
     @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
     @AppStorage(PlaydockArtSource.storageKey) private var artSourceRaw = PlaydockArtSource.banner.rawValue
     @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = true
+    @AppStorage(GameModeView.hideBadgesKey) private var hideLibraryBadges = false
 
     private func isFocused(_ row: SettingsRow) -> Bool {
         controllerObserver.isConnected && focusedRow == row
@@ -1978,6 +1985,15 @@ private struct DefaultSettingsSheet: View {
                         .focusRing(isFocused(.showSteamIcon))
                 } footer: {
                     Text("The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way) - the icon itself has the same control.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section {
+                    Toggle("Hide Library Badges", isOn: $hideLibraryBadges)
+                        .focusRing(isFocused(.hideBadges))
+                } footer: {
+                    Text("The Custom/Mac/Windows label every game's art shows to say where it came from. Turn on to hide all three everywhere - every layout, every appearance.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -2066,6 +2082,7 @@ private struct DefaultSettingsSheet: View {
                 switch focusedRow {
                 case .advancedMode: isAdvancedMode.toggle()
                 case .showSteamIcon: showSteamIcon.toggle()
+                case .hideBadges: hideLibraryBadges.toggle()
                 case .sampleGames: model.togglePreviewSampleGames()
                 case .openLogs: model.revealInFinder(ExeRunner.logsDir)
                 case .openCrashReports: model.revealInFinder(("~/Library/Logs/DiagnosticReports" as NSString).expandingTildeInPath)
