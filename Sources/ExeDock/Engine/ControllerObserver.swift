@@ -175,26 +175,7 @@ final class ControllerObserver: ObservableObject {
         // `valueChangedHandler` (fires continuously while held) - the latter would fire dozens of
         // times a second while a direction is held, jumping through focus far too fast.
         if let dpad = profile.dpads[GCInputDirectionPad] {
-            dpad.up.pressedChangedHandler = { [weak self] _, _, pressed in
-                guard pressed else { return }
-                log("D-pad up")
-                Task { @MainActor in self?.directionPress = (.up, UUID()) }
-            }
-            dpad.down.pressedChangedHandler = { [weak self] _, _, pressed in
-                guard pressed else { return }
-                log("D-pad down")
-                Task { @MainActor in self?.directionPress = (.down, UUID()) }
-            }
-            dpad.left.pressedChangedHandler = { [weak self] _, _, pressed in
-                guard pressed else { return }
-                log("D-pad left")
-                Task { @MainActor in self?.directionPress = (.left, UUID()) }
-            }
-            dpad.right.pressedChangedHandler = { [weak self] _, _, pressed in
-                guard pressed else { return }
-                log("D-pad right")
-                Task { @MainActor in self?.directionPress = (.right, UUID()) }
-            }
+            wireDirectionPad(dpad, label: "D-pad", log: log)
         } else {
             DiagnosticsLog.log("ControllerObserver: no dpad found under key '\(GCInputDirectionPad)' - real dpad presses will never be seen")
         }
@@ -207,6 +188,32 @@ final class ControllerObserver: ObservableObject {
             guard pressed else { return }
             log("B")
             Task { @MainActor in self?.secondaryPress = UUID() }
+        }
+    }
+
+    /// Wires one `GCControllerDirectionPad`'s four sub-buttons to `directionPress` - pulled out of
+    /// `attachGlobalHandlers` as a pure extraction (identical behavior, D-pad only, for now) so a
+    /// later change can reuse it for the analog thumbsticks without duplicating this block.
+    private func wireDirectionPad(_ dpad: GCControllerDirectionPad, label: String, log: @escaping (String) -> Void) {
+        dpad.up.pressedChangedHandler = { [weak self] _, _, pressed in
+            guard pressed else { return }
+            log("\(label) up")
+            Task { @MainActor in self?.directionPress = (.up, UUID()) }
+        }
+        dpad.down.pressedChangedHandler = { [weak self] _, _, pressed in
+            guard pressed else { return }
+            log("\(label) down")
+            Task { @MainActor in self?.directionPress = (.down, UUID()) }
+        }
+        dpad.left.pressedChangedHandler = { [weak self] _, _, pressed in
+            guard pressed else { return }
+            log("\(label) left")
+            Task { @MainActor in self?.directionPress = (.left, UUID()) }
+        }
+        dpad.right.pressedChangedHandler = { [weak self] _, _, pressed in
+            guard pressed else { return }
+            log("\(label) right")
+            Task { @MainActor in self?.directionPress = (.right, UUID()) }
         }
     }
 }
