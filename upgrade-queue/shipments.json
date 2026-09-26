@@ -42,5 +42,9 @@
   "011-hide-badges-setting-ui": {
     "commit": "ed577ee4b3d660a56a06d8bd525d25c0dbd8b26c",
     "shipped_at": "2026-09-25T04:15:24.435788+00:00"
+  },
+  "012-controller-extract-dpad-helper": {
+    "commit": "92df7e360ce32b21f256626ce26665b8fb5c18c4",
+    "shipped_at": "2026-09-26T04:31:28.770656+00:00"
   }
 }
