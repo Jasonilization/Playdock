@@ -46,5 +46,9 @@
   "012-controller-extract-dpad-helper": {
     "commit": "92df7e360ce32b21f256626ce26665b8fb5c18c4",
     "shipped_at": "2026-09-26T04:31:28.770656+00:00"
+  },
+  "013-controller-thumbstick-navigation": {
+    "commit": "3138653dbe0b3034f47043dcbb8ea171e500a953",
+    "shipped_at": "2026-09-26T04:33:55.954603+00:00"
   }
 }
