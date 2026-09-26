@@ -50,5 +50,9 @@
   "013-controller-thumbstick-navigation": {
     "commit": "3138653dbe0b3034f47043dcbb8ea171e500a953",
     "shipped_at": "2026-09-26T04:33:55.954603+00:00"
+  },
+  "014-focus-js-data-id-and-match": {
+    "commit": "839b3c0c882f7309c6c5352af915e273958049f2",
+    "shipped_at": "2026-09-26T04:37:12.315265+00:00"
   }
 }
