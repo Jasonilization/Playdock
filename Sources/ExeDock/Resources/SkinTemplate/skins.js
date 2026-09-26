@@ -71,7 +71,7 @@ function handleSearchInput(value) {
 
 // Every card in every design below carries data-id + onclick="postClick('...')" - a single,
 // consistent bridge point no matter which skin's markup wraps it.
-const click = (id) => `onclick="postClick('${id}')"`;
+const click = (id) => `data-id="${esc(id)}" onclick="postClick('${id}')"`;
 
 // A card's top-left corner badge - "Custom" for a manually-imported game, "Mac" for one found in
 // the real, separate macOS Steam client's own library (never both at once, so this is a plain
@@ -298,10 +298,10 @@ window.PlaydockRenderGridFragment = function (skinKey, gamesJSON, themeJSON) {
 // in order), so index N here really is entry N's own card, no separate id-matching needed. Called
 // with `null`/undefined to clear focus entirely (controller disconnected, or focus moved to a
 // native control outside the grid).
-window.PlaydockSetFocus = function (index) {
+window.PlaydockSetFocus = function (id) {
   const cards = document.querySelectorAll('#stage .card');
-  cards.forEach((el, i) => {
-    if (index != null && i === index) {
+  cards.forEach((el) => {
+    if (id != null && el.dataset.id === id) {
       el.classList.add('controller-focus');
       el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     } else {
