@@ -179,6 +179,20 @@ final class ControllerObserver: ObservableObject {
         } else {
             DiagnosticsLog.log("ControllerObserver: no dpad found under key '\(GCInputDirectionPad)' - real dpad presses will never be seen")
         }
+        // "add joystick (wobbly thing) support for eslecting things," per live feedback - both
+        // thumbsticks are the exact same real type as the physical D-pad in Apple's own API
+        // (`GCControllerDirectionPad`, confirmed via the framework's own type system, not an
+        // assumption), so pushing a stick far enough crosses the same real per-element threshold
+        // Apple already computes internally and fires the identical discrete up/down/left/right
+        // event the D-pad does - `wireDirectionPad` is the exact same code either one runs
+        // through, so every existing `directionPress` consumer picks up stick navigation for
+        // free, with no separate deadzone/debounce logic needed.
+        if let leftStick = profile.dpads[GCInputLeftThumbstick] {
+            wireDirectionPad(leftStick, label: "left stick", log: log)
+        }
+        if let rightStick = profile.dpads[GCInputRightThumbstick] {
+            wireDirectionPad(rightStick, label: "right stick", log: log)
+        }
         profile.buttons[GCInputButtonA]?.pressedChangedHandler = { [weak self] _, _, pressed in
             guard pressed else { return }
             log("A")
