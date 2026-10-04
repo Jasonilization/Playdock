@@ -58,5 +58,9 @@
   "015-swift-gridview-focusedid-contract": {
     "commit": "f60111d779ba5416423fe933b83dbc9ae2631c2b",
     "shipped_at": "2026-10-04T10:24:36.620625+00:00"
+  },
+  "016-swift-fragmentview-focusedid-param": {
+    "commit": "4989f0c0e5a500148b412850e6f8f48839c28322",
+    "shipped_at": "2026-10-04T10:35:38.453190+00:00"
   }
 }
