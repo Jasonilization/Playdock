@@ -1,0 +1,54 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 9fa02e0add3a16970949556d78e581a18bc377b8..d885408fb8f905a7cf4bbd9d0b7a437293f6923d 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -51,6 +51,9 @@ struct GameModeView: View {
+     @EnvironmentObject private var model: AppModel
+     @ObservedObject private var runningTracker = RunningGameTracker.shared
+     @ObservedObject private var controllerObserver = ControllerObserver.shared
++    /// Play-session records - observed so a just-finished session re-sorts "Recently / Most
++    /// Played" (and re-renders card activity chips) the moment the tracker writes it.
++    @ObservedObject private var playActivity = PlayActivityStore.shared
+     @Environment(\.colorScheme) private var systemColorScheme
+     @AppStorage("com.exedock.advancedMode") private var isAdvancedMode = false
+     @AppStorage(LibraryLayoutStyle.storageKey) private var libraryLayoutRaw = LibraryLayoutStyle.grid.rawValue
+@@ -98,6 +101,8 @@ struct GameModeView: View {
+     private enum GameSortOption: String, CaseIterable, Identifiable {
+         case name = "Name"
+         case recentlyUpdated = "Recently Updated"
++        case recentlyPlayed = "Recently Played"
++        case mostPlayed = "Most Played"
+         var id: String { rawValue }
+     }
+ 
+@@ -108,6 +113,19 @@ struct GameModeView: View {
+             return filtered.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+         case .recentlyUpdated:
+             return filtered.sorted { ($0.lastUpdated ?? .distantPast) > ($1.lastUpdated ?? .distantPast) }
++        case .recentlyPlayed:
++            // Never-played games sink to the bottom (dated distantPast), then by name within ties.
++            return filtered.sorted {
++                let a = playActivity.lastPlayed($0.appID) ?? .distantPast
++                let b = playActivity.lastPlayed($1.appID) ?? .distantPast
++                return a != b ? a > b : $0.name.localizedStandardCompare($1.name) == .orderedAscending
++            }
++        case .mostPlayed:
++            return filtered.sorted {
++                playActivity.totalSeconds(for: $0.appID) != playActivity.totalSeconds(for: $1.appID)
++                    ? playActivity.totalSeconds(for: $0.appID) > playActivity.totalSeconds(for: $1.appID)
++                    : $0.name.localizedStandardCompare($1.name) == .orderedAscending
++            }
+         }
+     }
+ 
+@@ -123,6 +141,10 @@ struct GameModeView: View {
+             return filtered.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+         case .recentlyUpdated:
+             return filtered.sorted { $0.sortDate > $1.sortDate }
++        case .recentlyPlayed:
++            return filtered.sorted { (playActivity.lastPlayed($0.id) ?? .distantPast) > (playActivity.lastPlayed($1.id) ?? .distantPast) }
++        case .mostPlayed:
++            return filtered.sorted { playActivity.totalSeconds(for: $0.id) > playActivity.totalSeconds(for: $1.id) }
+         }
+     }
+ 

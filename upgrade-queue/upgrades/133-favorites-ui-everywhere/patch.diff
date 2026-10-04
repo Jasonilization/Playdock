@@ -1,0 +1,156 @@
+diff --git a/Sources/ExeDock/Resources/SkinTemplate/skins.css b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+index 721c17e6587cf4b379e7633cd2f6390018665bf1..e52a7a38cb2f2f4fe673ae712b8811393c1b4ef7 100644
+--- a/Sources/ExeDock/Resources/SkinTemplate/skins.css
++++ b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+@@ -38,6 +38,9 @@ input.search::placeholder{color:inherit;opacity:0.6;}
+    at a glance. */
+ .badge-windows{background:#0d9488 !important;color:#fff !important;}
+ 
++/* Favorites: small heart on the art, user's own curation - deliberately NOT covered by the
++   [data-hide-badges] rule (that's for source badges), same visual family though. */
++.favchip{position:absolute;top:6px;right:6px;font-size:11px;line-height:1;padding:3px 6px;border-radius:999px;color:#ff4d6f;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
+ /* "a setting to hide labels" - one attribute on <html> (set by PlaydockRender/RenderGridFragment
+    from a real hideBadges flag) hides every badge kind at once, native-layout or WebView-rendered,
+    rather than a separate on/off per badge kind. */
+diff --git a/Sources/ExeDock/Resources/SkinTemplate/skins.js b/Sources/ExeDock/Resources/SkinTemplate/skins.js
+index ee8da34f66c9bac7168a1e483cf627d2a7f70dc1..c5dd679b1f08ca492a3b6e085ffe06b3015032a0 100644
+--- a/Sources/ExeDock/Resources/SkinTemplate/skins.js
++++ b/Sources/ExeDock/Resources/SkinTemplate/skins.js
+@@ -111,7 +111,7 @@ const CARDS = {
+ 
+   brutalist: (games) => games.map(gm => `
+     <div class="card" ${click(gm.id)}>
+-      <div class="art" style="${artStyle(gm, 80, 60)}">${badge(gm, 'Custom')}</div>
++      <div class="art" style="${artStyle(gm, 80, 60)}">${badge(gm, 'Custom')}${gm.favorite ? '<span class="favchip">♥</span>' : ''}</div>
+       <div class="body">
+         <p class="title">${esc(gm.title)}</p>
+         <span class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</span>
+@@ -122,7 +122,7 @@ const CARDS = {
+ 
+   cyber: (games) => games.map(gm => `
+     <div class="card" ${click(gm.id)}>
+-      <div class="art" style="${artStyle(gm, 70, 140)}">${badge(gm, 'CUSTOM')}</div>
++      <div class="art" style="${artStyle(gm, 70, 140)}">${badge(gm, 'CUSTOM')}${gm.favorite ? '<span class="favchip">♥</span>' : ''}</div>
+       <div class="body">
+         <p class="title">${esc(gm.title)}</p>
+         <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
+@@ -133,7 +133,7 @@ const CARDS = {
+ 
+   soft: (games) => games.map(gm => `
+     <div class="card" ${click(gm.id)}>
+-      <div class="art" style="${artStyle(gm, 25, 100)}">${badge(gm, 'Custom')}</div>
++      <div class="art" style="${artStyle(gm, 25, 100)}">${badge(gm, 'Custom')}${gm.favorite ? '<span class="favchip">♥</span>' : ''}</div>
+       <p class="title">${esc(gm.title)}</p>
+       <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
+       <p class="desc">${esc(gm.desc)}</p>
+@@ -142,7 +142,7 @@ const CARDS = {
+ 
+   pixel: (games) => games.map(gm => `
+     <div class="card" ${click(gm.id)}>
+-      <div class="art" style="${artStyle(gm, 90, 100)}">${badge(gm, 'MOD')}</div>
++      <div class="art" style="${artStyle(gm, 90, 100)}">${badge(gm, 'MOD')}${gm.favorite ? '<span class="favchip">♥</span>' : ''}</div>
+       <div class="body">
+         <p class="title">${esc(gm.title)}</p>
+         <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
+diff --git a/Sources/ExeDock/Support/SkinWebGridView.swift b/Sources/ExeDock/Support/SkinWebGridView.swift
+index 0ab8a7ed7790727103d12d34bc58753909240545..828ca4b886112cf29a6f7c6e54b642b1daefb544 100644
+--- a/Sources/ExeDock/Support/SkinWebGridView.swift
++++ b/Sources/ExeDock/Support/SkinWebGridView.swift
+@@ -25,6 +25,10 @@ struct SkinWebGridEntry: Encodable, Equatable {
+     let running: Bool
+     let size: String?
+     let hours: String?
++    /// Marked as a favorite by the user (LibraryCurationStore) - rendered as a small heart on the
++    /// card art, deliberately separate from the source badges (Custom/Mac/Windows), which the
++    /// "hide badges" setting governs: this one is yours, not Provenance.
++    var favorite: Bool = false
+ }
+ 
+ /// The real per-skin HTML/CSS from `ten-playdocks.html`, rendered by an actual `WKWebView` instead
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 9f849986a80704d38e877886231a3b65bd40b211..2ee7245587c0330def2516d72d3def90a07b2fad 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -54,6 +54,7 @@ struct GameModeView: View {
+     /// Play-session records - observed so a just-finished session re-sorts "Recently / Most
+     /// Played" (and re-renders card activity chips) the moment the tracker writes it.
+     @ObservedObject private var playActivity = PlayActivityStore.shared
++    @ObservedObject private var curation = LibraryCurationStore.shared
+     @Environment(\.colorScheme) private var systemColorScheme
+     @AppStorage("com.exedock.advancedMode") private var isAdvancedMode = false
+     @AppStorage(LibraryLayoutStyle.storageKey) private var libraryLayoutRaw = LibraryLayoutStyle.grid.rawValue
+@@ -194,7 +195,8 @@ struct GameModeView: View {
+                 mac: isMac,
+                 running: runningTracker.runningGames[entry.id] != nil,
+                 size: sizeText,
+-                hours: totalSecondsPlayed > 0 ? Self.playHoursText(totalSecondsPlayed) : nil
++                hours: totalSecondsPlayed > 0 ? Self.playHoursText(totalSecondsPlayed) : nil,
++                favorite: curation.isFavorite(entry.id)
+             )
+         }
+     }
+@@ -1445,6 +1447,7 @@ struct GameDetailView: View {
+     /// recorder (see PlayActivityStore). Observed so a finishing session updates the header in
+     /// place while the page is open.
+     @ObservedObject private var playActivity = PlayActivityStore.shared
++    @ObservedObject private var curation = LibraryCurationStore.shared
+     let game: SteamGame
+     let isAdvancedMode: Bool
+     let onClose: () -> Void
+@@ -1639,8 +1642,19 @@ struct GameDetailView: View {
+ 
+     private var header: some View {
+         VStack(alignment: .leading, spacing: 10) {
+-            SkinTitleText(text: game.name, size: 34)
+-                .foregroundStyle(.white)
++            HStack(alignment: .firstTextBaseline, spacing: 12) {
++                SkinTitleText(text: game.name, size: 34)
++                    .foregroundStyle(.white)
++                Button {
++                    curation.toggleFavorite(game.appID)
++                } label: {
++                    Image(systemName: curation.isFavorite(game.appID) ? "heart.fill" : "heart")
++                        .font(.title2)
++                        .foregroundStyle(curation.isFavorite(game.appID) ? .pink : .white.opacity(0.45))
++                }
++                .buttonStyle(.plain)
++                .help(L(curation.isFavorite(game.appID) ? "Remove from Favorites" : "Mark as Favorite"))
++            }
+             if storeInfo?.metacriticScore != nil || !(storeInfo?.genres.isEmpty ?? true) {
+                 HStack(spacing: 10) {
+                     if let score = storeInfo?.metacriticScore {
+diff --git a/Sources/ExeDock/Views/LibraryLayouts.swift b/Sources/ExeDock/Views/LibraryLayouts.swift
+index 78fa9f170eac172fdc693bef7d64d0f5351ce6f5..b433b90a9360718f4b4a52dffa868392548c84b7 100644
+--- a/Sources/ExeDock/Views/LibraryLayouts.swift
++++ b/Sources/ExeDock/Views/LibraryLayouts.swift
+@@ -115,6 +115,7 @@ private struct LibraryEntryTile: View {
+     var isFocused: Bool = false
+     let onOpen: () -> Void
+     @ObservedObject private var runningTracker = RunningGameTracker.shared
++    @ObservedObject private var curation = LibraryCurationStore.shared
+     @LocalState private var presentation: LibraryPresentation?
+     @LocalState private var isHovering = false
+     @LocalState private var gameAccent: Color?
+@@ -149,6 +150,22 @@ private struct LibraryEntryTile: View {
+                 if isRunning {
+                     Circle().fill(.green).frame(width: 9, height: 9).padding(6)
+                 }
++                // Favorites are the user's own mark, not a provenance badge - top-right, mirroring
++                // the web skins' fav chip, and deliberately unaffected by any badge-hiding toggle.
++                if curation.isFavorite(entry.id) {
++                    VStack {
++                        HStack {
++                            Spacer(minLength: 0)
++                            Image(systemName: "heart.fill")
++                                .font(.system(size: 10, weight: .bold))
++                                .foregroundStyle(.white)
++                                .padding(4)
++                                .background(Color(red: 1, green: 0.18, blue: 0.33), in: Circle())
++                                .padding(6)
++                        }
++                        Spacer(minLength: 0)
++                    }
++                }
+             }
+             SkinTitleText(text: entry.name, size: 15).frame(width: width, alignment: .leading)
+             // Grid's own real cards always show a visible per-skin action button, not just bare

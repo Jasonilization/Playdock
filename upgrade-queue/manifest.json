@@ -109,6 +109,20 @@
     "118-gamemodeview-redirect-settings-triggers",
     "119-gamemodeview-remove-legacy-settings-sheet",
     "120-gamemodeview-localize-header-chrome",
-    "121-gamemodeview-localize-sort-search"
+    "121-gamemodeview-localize-sort-search",
+    "122-playtime-activity-store",
+    "123-playtime-tracker-records-sessions",
+    "124-playtime-sort-recently-and-most-played",
+    "125-playtime-on-grid-cards",
+    "126-playtime-detail-activity-summary",
+    "127-reliability-detail-banner",
+    "128-reliability-diagnostics-overview",
+    "129-screenshots-fullsize-lightbox-browse",
+    "130-detail-capability-chips",
+    "131-detail-more-like-this-rail",
+    "132-library-curation-store",
+    "133-favorites-ui-everywhere",
+    "134-favorites-filter-and-hide-games",
+    "135-sort-recently-added"
   ]
 }

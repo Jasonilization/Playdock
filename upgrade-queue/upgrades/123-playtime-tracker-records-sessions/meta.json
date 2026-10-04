@@ -1,0 +1,28 @@
+{
+  "id": "123-playtime-tracker-records-sessions",
+  "title": "Running games now record play sessions (tracker -> PlayActivityStore)",
+  "description": "RunningGameTracker's poll loop already knew exactly when a game appeared and vanished - now each completed appearance writes a PlaySession, and a will-terminate flush credits a session that's still open when the app quits. Sessions are keyed by the same id the dashboard uses everywhere (appID for Steam games, CustomGame.id for customs), so later UI pieces read them as-is.",
+  "category": "playtime",
+  "commit_message": "Record play sessions from the running-games tracker",
+  "files": [
+    "Sources/ExeDock/Engine/RunningGameTracker.swift"
+  ],
+  "dependencies": [
+    "122-playtime-activity-store"
+  ],
+  "parent": "122-playtime-activity-store",
+  "base_commit": "36008665fb01fa21887855e0d8a594309a62540b",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-21T11:40:11.685755+00:00",
+  "author": "prepare-chain:claude",
+  "schema_version": 2,
+  "provenance": {
+    "prepared_in_chain": true,
+    "queue_tip_size": 106
+  }
+}

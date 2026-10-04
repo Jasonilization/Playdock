@@ -1,0 +1,144 @@
+diff --git a/Sources/ExeDock/Engine/PlayActivityStore.swift b/Sources/ExeDock/Engine/PlayActivityStore.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..5860d252136998a58a504cc7565b3a117c5669f8
+--- /dev/null
++++ b/Sources/ExeDock/Engine/PlayActivityStore.swift
+@@ -0,0 +1,85 @@
++import Foundation
++
++/// One contiguous play session, as observed by `RunningGameTracker` (a game process appeared at
++/// `startedAt` and was gone again by `endedAt`). Deliberately just three fields - anything fancier
++/// (notes, idle detection) can be derived later from a v1 file without a migration.
++struct PlaySession: Codable, Equatable {
++    /// The same key the rest of the dashboard uses: `SteamGame.appID` for Steam games,
++    /// `CustomGame.id` for manually-imported ones. Names would break on a rename; ids don't.
++    let gameID: String
++    let startedAt: Date
++    let endedAt: Date
++
++    var duration: TimeInterval { endedAt.timeIntervalSince(startedAt) }
++}
++
++/// Local, ground-truth answer to "how much have I actually played this, and when last" - the one
++/// stat every.launcher.leads.with (Steam's Playtime, Playnite's Play Time) that Playdock had no
++/// answer for at all (`SkinWebGridEntry.hours` literally shipped `nil` for every card). No Steam
++/// API key, no network: `RunningGameTracker` already observes every running game process; this
++/// just writes down what it sees. The honest limitation lives in the polling itself (see the
++/// tracker's own doc comment) and is why sessions shorter than `minimumDuration` are ignored -
++/// a one-cycle ps flicker must not become "you played for 4 seconds".
++@MainActor
++final class PlayActivityStore: ObservableObject {
++    static let shared = PlayActivityStore()
++
++    /// Same support folder convention `LocalOutcomeTracker` already uses.
++    static let defaultPath =
++        ("~/Library/Application Support/ExeDock/PlayActivity.json" as NSString).expandingTildeInPath
++
++    /// Sessions under 30s are process noise (the 5s poll can double-count a fast exit/re-check
++    /// flicker), not play. Long real sessions are never affected; nothing else is heuristically
++    /// trimmed anywhere - the raw record stays trustworthy.
++    static let minimumDuration: TimeInterval = 30
++
++    @Published private(set) var sessions: [PlaySession] = []
++
++    private let path: String
++
++    init(path: String = PlayActivityStore.defaultPath) {
++        self.path = path
++        reload()
++    }
++
++    /// Append one completed session. Called by `RunningGameTracker` at the moment a watched game
++    /// stops appearing in `ps`. Fine to call for a game that was never watched long - filtering on
++    /// `minimumDuration` means recordNothingInteresting stays cheap.
++    func record(gameID: String, started: Date, ended: Date) {
++        guard ended.timeIntervalSince(started) >= Self.minimumDuration else { return }
++        sessions.append(PlaySession(gameID: gameID, startedAt: started, endedAt: ended))
++        save()
++    }
++
++    // MARK: - Queries (raw - presentation formatting belongs to callers, skins included)
++
++    func totalSeconds(for gameID: String) -> TimeInterval {
++        sessions.filter { $0.gameID == gameID }.reduce(0) { $0 + $1.duration }
++    }
++
++    func sessionCount(for gameID: String) -> Int {
++        sessions.count { $0.gameID == gameID }
++    }
++
++    func lastPlayed(_ gameID: String) -> Date? {
++        sessions.filter { $0.gameID == gameID }.map(\.endedAt).max()
++    }
++
++    /// Every game with at least one real recorded session, for "did anything get recorded"
++    /// checks in settings/diagnostics.
++    var recordedGameIDs: Set<String> { Set(sessions.map(\.gameID)) }
++
++    // MARK: - persistence
++
++    func reload() {
++        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return }
++        sessions = (try? JSONDecoder().decode([PlaySession].self, from: data)) ?? []
++    }
++
++    private func save() {
++        let dir = (path as NSString).deletingLastPathComponent
++        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
++        guard let data = try? JSONEncoder().encode(sessions) else { return }
++        try? data.write(to: URL(fileURLWithPath: path))
++    }
++}
+diff --git a/Tests/ExeDockTests/PlayActivityStoreTests.swift b/Tests/ExeDockTests/PlayActivityStoreTests.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..166ed4cb652cfb9264aadced340ee91ed6a10389
+--- /dev/null
++++ b/Tests/ExeDockTests/PlayActivityStoreTests.swift
+@@ -0,0 +1,47 @@
++import Foundation
++import Testing
++@testable import ExeDock
++
++@Suite("PlayActivityStore")
++struct PlayActivityStoreTests {
++    @MainActor
++    private func makeStore() -> PlayActivityStore {
++        let dir = FileManager.default.temporaryDirectory
++            .appendingPathComponent("play-activity-tests-\(UUID().uuidString)")
++        return PlayActivityStore(path: dir.appendingPathComponent("PlayActivity.json").path)
++    }
++
++    @Test @MainActor func recordsAndAggregates() async {
++        let store = makeStore()
++        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
++        store.record(gameID: "413150", started: t0, ended: t0.addingTimeInterval(3600))
++        store.record(gameID: "413150", started: t0 + 100_000, ended: t0 + 100_000 + 1800)
++        store.record(gameID: "105600", started: t0, ended: t0.addingTimeInterval(600))
++
++        #expect(store.sessionCount(for: "413150") == 2)
++        #expect(store.totalSeconds(for: "413150") == 5400)
++        #expect(store.totalSeconds(for: "105600") == 600)
++        #expect(store.sessionCount(for: "never-played") == 0)
++        #expect(store.lastPlayed("never-played") == nil)
++    }
++
++    @Test @MainActor func subMinimumSessionsAreIgnored() async {
++        let store = makeStore()
++        let t0 = Date()
++        store.record(gameID: "x", started: t0, ended: t0.addingTimeInterval(5))
++        #expect(store.sessionCount(for: "x") == 0)
++    }
++
++    @Test @MainActor func persistsAcrossInstances() async {
++        let dir = FileManager.default.temporaryDirectory
++            .appendingPathComponent("play-activity-tests-\(UUID().uuidString)")
++        let path = dir.appendingPathComponent("PlayActivity.json").path
++        let t0 = Date(timeIntervalSince1970: 1_700_000_000)
++        await MainActor.run {
++            let a = PlayActivityStore(path: path)
++            a.record(gameID: "g", started: t0, ended: t0.addingTimeInterval(120))
++        }
++        let b = await MainActor.run { PlayActivityStore(path: path) }
++        #expect(b.sessionCount(for: "g") == 1)
++    }
++}

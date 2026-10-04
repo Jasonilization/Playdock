@@ -1,0 +1,53 @@
+diff --git a/Sources/ExeDock/Engine/RunningGameTracker.swift b/Sources/ExeDock/Engine/RunningGameTracker.swift
+index df3308bec6fad85d598c9b0e97937ac338617d4a..7af612e996a8747c1b22b49882b8225abf9b860c 100644
+--- a/Sources/ExeDock/Engine/RunningGameTracker.swift
++++ b/Sources/ExeDock/Engine/RunningGameTracker.swift
+@@ -1,3 +1,4 @@
++import AppKit
+ import Foundation
+ 
+ struct RunningProcessInfo: Equatable {
+@@ -29,7 +30,22 @@ final class RunningGameTracker: ObservableObject {
+     private var watchedGames: [String: String] = [:] // id -> matchFragment
+     private var knownStartTimes: [String: Date] = [:]
+ 
+-    private init() {}
++    private init() {
++        // A quit mid-session is still a real session: if the app is terminating while a game is
++        // running, record what we know (start = first seen, end = now) rather than dropping the
++        // whole session on the floor.
++        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
++            Task { @MainActor in self?.flushOpenSessions() }
++        }
++    }
++
++    /// Writes one `PlayActivityStore` record for every game currently tracked as running. Called
++    /// when a watched game disappears from `ps`, and once from the will-terminate observer.
++    private func flushOpenSessions(only endedIDs: Set<String>? = nil) {
++        for (id, info) in runningGames where endedIDs?.contains(id) ?? true {
++            PlayActivityStore.shared.record(gameID: id, started: info.startedAt, ended: Date())
++        }
++    }
+ 
+     /// Replaces the full watch list - call with every library item currently on the dashboard
+     /// (Steam and custom games alike). `id` is whatever that item is keyed by elsewhere
+@@ -78,16 +94,19 @@ final class RunningGameTracker: ObservableObject {
+         }.value
+         guard !Task.isCancelled else { return }
+ 
++        var ended: Set<String> = []
+         for (id, _) in targets {
+             if let pid = matches[id] {
+                 let startedAt = knownStartTimes[id] ?? Date()
+                 knownStartTimes[id] = startedAt
+                 runningGames[id] = RunningProcessInfo(pid: pid, startedAt: startedAt)
+             } else {
++                if runningGames[id] != nil { ended.insert(id) }
+                 runningGames.removeValue(forKey: id)
+                 knownStartTimes.removeValue(forKey: id)
+             }
+         }
++        if !ended.isEmpty { flushOpenSessions(only: ended) }
+     }
+ 
+     /// Off the main actor: shells out to `ps`, same pattern `ExeRunner`/`SikarugirEngine` already

@@ -1,0 +1,28 @@
+{
+  "id": "127-reliability-detail-banner",
+  "title": "Detail page shows launch reliability and offers a fix at the failure moment",
+  "description": "Playdock records every launch outcome it drives (LocalOutcomeTracker); the detail view now shows it: a quiet 'N launches, no errors' line when things work, and - when the last 2+ launches failed - a warning banner with one-tap 'Find a Working Configuration' (CompatibilityFinder inline). The support loop closes at the moment of failure instead of pointing at a log folder.",
+  "category": "reliability",
+  "commit_message": "Detail page: launch-reliability banner with inline Compatibility Finder",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "126-playtime-detail-activity-summary"
+  ],
+  "parent": "126-playtime-detail-activity-summary",
+  "base_commit": "36008665fb01fa21887855e0d8a594309a62540b",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-22T08:05:43.758921+00:00",
+  "author": "prepare-chain:claude",
+  "schema_version": 2,
+  "provenance": {
+    "prepared_in_chain": true,
+    "queue_tip_size": 106
+  }
+}

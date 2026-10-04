@@ -1,0 +1,31 @@
+{
+  "id": "129-screenshots-fullsize-lightbox-browse",
+  "title": "Full-size screenshots in a browsable lightbox (arrows + D-pad)",
+  "description": "The media strip's tap-to-expand now becomes a real viewer: full-resolution images lazy-loaded through URLCache the moment a page is opened (cached thumb until it lands), next/previous with on-screen arrows or the controller D-pad, photo counter, Esc/secondary-click/backdrop to close. SteamStoreInfo records each screenshot's full URL (schema v3, refetch-through as entries expire), so the strip itself stays 6 cheap thumbnails.",
+  "category": "detail",
+  "commit_message": "Full-size screenshots with a browsable, controller-aware lightbox",
+  "files": [
+    "Sources/ExeDock/Engine/SteamStoreInfoCache.swift",
+    "Sources/ExeDock/Models/SteamStoreInfo.swift",
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "051-hard-refresh-steamstoreinfo-clear-memory",
+    "127-reliability-detail-banner"
+  ],
+  "parent": "127-reliability-detail-banner",
+  "base_commit": "36008665fb01fa21887855e0d8a594309a62540b",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-22T10:21:23.150702+00:00",
+  "author": "prepare-chain:claude",
+  "schema_version": 2,
+  "provenance": {
+    "prepared_in_chain": true,
+    "queue_tip_size": 106
+  }
+}

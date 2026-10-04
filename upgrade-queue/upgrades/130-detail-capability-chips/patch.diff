@@ -1,0 +1,61 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 9f57e46597411414cb57c5dd2bc383bfeb5d6d5e..4c3cf9ad8596bbb6f9f404e6d881a4d234af56ec 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -1639,6 +1639,22 @@ struct GameDetailView: View {
+                     }
+                 }
+             }
++
++            // Steam `categories` are already downloaded for the grid; the ones a player decides
++            // things on (controller support first - this whole app is built around controllers)
++            // rendered as compact chips right under the genre tags. Anything Playdock doesn't
++            // specifically recognize just doesn't chip (no cryptic raw store strings).
++            if !capabilityChips.isEmpty {
++                HStack(spacing: 8) {
++                    ForEach(capabilityChips, id: \.label) { chip in
++                        Label(L(chip.label), systemImage: chip.icon)
++                            .font(.caption.weight(.semibold))
++                            .padding(.horizontal, 10).padding(.vertical, 5)
++                            .background(.white.opacity(0.10), in: Capsule())
++                            .overlay(Capsule().stroke(.white.opacity(0.18)))
++                    }
++                }
++            }
+             if !subtitleLine.isEmpty {
+                 Text(subtitleLine)
+                     .font(.callout)
+@@ -1695,6 +1711,33 @@ struct GameDetailView: View {
+         return paths
+     }
+ 
++    /// The store categories worth a chip up front, in a fixed display order so "Full controller
++    /// support" (the decision a controller-first dashboard actually funnels toward) always reads
++    /// first for the games that have it.
++    private var capabilityChips: [(label: String, icon: String)] {
++        let cats = Set(storeInfo?.categories ?? [])
++        let known: [(label: String, icon: String, matches: Set<String>)] = [
++            ("Full Controller Support", "gamecontroller.fill", ["Full controller support"]),
++            ("Controller Support", "gamecontroller", ["Partial Controller Support"]),
++            ("Co-op", "person.2.fill", ["Co-op", "Shared/Split Screen Co-op", "Online Co-op", "Local Co-op"]),
++            ("Multiplayer", "person.3.fill", ["Multi-player", "Online PvP", "PvP", "Cross-Platform Multiplayer",
++                                              "Shared/Split Screen PvP", "LAN PvP", "LAN Co-op"]),
++            ("Cloud Saves", "icloud.fill", ["Steam Cloud"]),
++            ("Workshop", "hammer.fill", ["Steam Workshop", "Includes level editor"]),
++            ("Achievements", "trophy.fill", ["Steam Achievements"]),
++            ("Leaderboards", "chart.bar.fill", ["Steam Leaderboards"]),
++            ("Remote Play", "play.display", ["Remote Play Together", "Remote Play on TV", "Remote Play on Tablet",
++                                             "Remote Play on Phone", "Remote Play on Desktop"]),
++            ("HDR", "sun.max.fill", ["HDR available"]),
++            ("Family Sharing", "person.2.square.stack.fill", ["Family Sharing"]),
++        ]
++        var chips: [(label: String, icon: String)] = []
++        for entry in known where !cats.isDisjoint(with: entry.matches) {
++            chips.append((label: entry.label, icon: entry.icon))
++        }
++        return chips
++    }
++
+     /// True whenever there's actually something to put in `photoGrid`.
+     private var hasPhotos: Bool { !allPhotoPaths.isEmpty }
+ 

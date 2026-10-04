@@ -1,0 +1,101 @@
+diff --git a/Sources/ExeDock/Resources/SkinTemplate/skins.css b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+index 27c877f862f88c03cf088d877a7e49e633eef39e..721c17e6587cf4b379e7633cd2f6390018665bf1 100644
+--- a/Sources/ExeDock/Resources/SkinTemplate/skins.css
++++ b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+@@ -193,6 +193,10 @@ input.search::placeholder{color:inherit;opacity:0.6;}
+ .lst .title{font-family:'Public Sans';font-weight:600;font-size:13.5px;}
+ .lst .badge{font-size:9.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;margin-left:6px;font-family:'Public Sans';}
+ .lst .genre{color:var(--sub);}
++/* Play-time text inside a card's genre line - quieter than the genre itself, inherits the
++   skin's own subdued color so it never fights the palette. */
++.ptime{opacity:.75;}
++
+ .lst .num{font-variant-numeric:tabular-nums;color:var(--sub);text-align:right;}
+ .lst .status{text-align:right;}
+ .lst .run-pill{color:#1a9c56;font-weight:600;font-size:11.5px;}
+diff --git a/Sources/ExeDock/Resources/SkinTemplate/skins.js b/Sources/ExeDock/Resources/SkinTemplate/skins.js
+index 32fbf85bb82a60ed5148792edf588ea37914fbe5..ee8da34f66c9bac7168a1e483cf627d2a7f70dc1 100644
+--- a/Sources/ExeDock/Resources/SkinTemplate/skins.js
++++ b/Sources/ExeDock/Resources/SkinTemplate/skins.js
+@@ -103,7 +103,7 @@ const CARDS = {
+       </div>
+       <div class="body">
+         <p class="title">${esc(gm.title)}</p>
+-        <p class="genre">${esc(gm.genre)}</p>
++        <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
+         <p class="desc">${esc(gm.desc)}</p>
+         ${gm.running ? '<div class="run"><span class="dot"></span>Running</div>' : '<button class="cta">View Details</button>'}
+       </div>
+@@ -114,7 +114,7 @@ const CARDS = {
+       <div class="art" style="${artStyle(gm, 80, 60)}">${badge(gm, 'Custom')}</div>
+       <div class="body">
+         <p class="title">${esc(gm.title)}</p>
+-        <span class="genre">${esc(gm.genre)}</span>
++        <span class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</span>
+         <p class="desc">${esc(gm.desc)}</p>
+         ${gm.running ? '<button class="cta run">● Running</button>' : '<button class="cta">Launch →</button>'}
+       </div>
+@@ -125,7 +125,7 @@ const CARDS = {
+       <div class="art" style="${artStyle(gm, 70, 140)}">${badge(gm, 'CUSTOM')}</div>
+       <div class="body">
+         <p class="title">${esc(gm.title)}</p>
+-        <p class="genre">${esc(gm.genre)}</p>
++        <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
+         <p class="desc">${esc(gm.desc)}</p>
+         ${gm.running ? '<button class="cta run">● RUNNING</button>' : '<button class="cta">LAUNCH ▸</button>'}
+       </div>
+@@ -135,7 +135,7 @@ const CARDS = {
+     <div class="card" ${click(gm.id)}>
+       <div class="art" style="${artStyle(gm, 25, 100)}">${badge(gm, 'Custom')}</div>
+       <p class="title">${esc(gm.title)}</p>
+-      <p class="genre">${esc(gm.genre)}</p>
++      <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
+       <p class="desc">${esc(gm.desc)}</p>
+       ${gm.running ? '<button class="cta run">● Running</button>' : '<button class="cta">Launch</button>'}
+     </div>`).join(''),
+@@ -145,7 +145,7 @@ const CARDS = {
+       <div class="art" style="${artStyle(gm, 90, 100)}">${badge(gm, 'MOD')}</div>
+       <div class="body">
+         <p class="title">${esc(gm.title)}</p>
+-        <p class="genre">${esc(gm.genre)}</p>
++        <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
+         <p class="desc">${esc(gm.desc)}</p>
+         ${gm.running ? '<button class="cta run">■ LIVE</button>' : '<button class="cta">START ▶</button>'}
+       </div>
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index d885408fb8f905a7cf4bbd9d0b7a437293f6923d..345fef4f100dc2c3c15f1025460b73ff6c548e3f 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -180,6 +180,10 @@ struct GameModeView: View {
+                 isMac = false
+                 sizeText = nil
+             }
++            // Cards show local recorded play time ("7.5 h") instead of the permanent `nil` the
++            // grid used to ship with - ground truth from PlayActivityStore, nil (chip hidden) for
++            // a game with no recorded session yet.
++            let totalSecondsPlayed = playActivity.totalSeconds(for: entry.id)
+             return SkinWebGridEntry(
+                 id: entry.id,
+                 title: entry.name,
+@@ -190,11 +194,20 @@ struct GameModeView: View {
+                 mac: isMac,
+                 running: runningTracker.runningGames[entry.id] != nil,
+                 size: sizeText,
+-                hours: nil
++                hours: totalSecondsPlayed > 0 ? Self.playHoursText(totalSecondsPlayed) : nil
+             )
+         }
+     }
+ 
++    /// "5 m" / "2.5 h" - one decimal under 10h, whole hours above; minutes are rounded UP so any
++    /// real session at all shows at least "1 m" rather than a confusing "0 m".
++    private static func playHoursText(_ seconds: TimeInterval) -> String {
++        if seconds < 3600 { return "\(max(1, Int((seconds / 60).rounded(.up)))) m" }
++        let hours = seconds / 3600
++        if hours < 10 { return String(format: "%.1f h", hours) }
++        return "\(Int(hours.rounded())) h"
++    }
++
+     /// Resolves every entry currently in the library concurrently (already-resolved entries are
+     /// skipped, so this stays cheap on repeat calls) - driven by a `.task(id:)` keyed on the actual
+     /// set of entry ids, so adding/removing a game re-resolves only what's actually new.

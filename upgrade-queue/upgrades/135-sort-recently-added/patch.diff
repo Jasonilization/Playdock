@@ -1,0 +1,60 @@
+diff --git a/Sources/ExeDock/Models/LibraryEntry.swift b/Sources/ExeDock/Models/LibraryEntry.swift
+index 4285e3924de5985ffda607a0d84c45dd4965dfb2..5ed301723b11ec890729637330c1adc7db1ea9cb 100644
+--- a/Sources/ExeDock/Models/LibraryEntry.swift
++++ b/Sources/ExeDock/Models/LibraryEntry.swift
+@@ -31,4 +31,25 @@ enum LibraryEntry: Identifiable, Equatable {
+         case .custom(let game): return game.addedAt
+         }
+     }
++
++    /// Used for the "Recently Added" sort. Steam's manifests carry no install date, so the
++    /// closest real ground truth is the install folder's own filesystem creation date (the moment
++    /// Steam finished downloading into it); a custom game simply reports its imported date.
++    var addedDate: Date {
++        switch self {
++        case .steam(let game): return Self.creationDate(ofFolder: game.installFolderPath) ?? .distantPast
++        case .custom(let game): return game.addedAt
++        }
++    }
++
++    /// Folder-creation lookups get memoized so a sort's O(n log n) comparisons don't re-stat the
++    /// same paths dozens of times over.
++    private static var creationDateCache: [String: Date?] = [:]
++
++    private static func creationDate(ofFolder path: String) -> Date? {
++        if let cached = creationDateCache[path] { return cached }
++        let result = (try? FileManager.default.attributesOfItem(atPath: path))?[.creationDate] as? Date
++        creationDateCache[path] = result
++        return result
++    }
+ }
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index cedb7ad55b7f66209919e58896faea65d7746143..e310e50e16217dd09cd3b14942e0abc0d568e050 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -106,6 +106,7 @@ struct GameModeView: View {
+         case recentlyUpdated = "Recently Updated"
+         case recentlyPlayed = "Recently Played"
+         case mostPlayed = "Most Played"
++        case recentlyAdded = "Recently Added"
+         var id: String { rawValue }
+     }
+ 
+@@ -129,6 +130,8 @@ struct GameModeView: View {
+                     ? playActivity.totalSeconds(for: $0.appID) > playActivity.totalSeconds(for: $1.appID)
+                     : $0.name.localizedStandardCompare($1.name) == .orderedAscending
+             }
++        case .recentlyAdded:
++            return filtered.sorted { LibraryEntry.steam($0).addedDate > LibraryEntry.steam($1).addedDate }
+         }
+     }
+ 
+@@ -152,6 +155,8 @@ struct GameModeView: View {
+             return filtered.sorted { (playActivity.lastPlayed($0.id) ?? .distantPast) > (playActivity.lastPlayed($1.id) ?? .distantPast) }
+         case .mostPlayed:
+             return filtered.sorted { playActivity.totalSeconds(for: $0.id) > playActivity.totalSeconds(for: $1.id) }
++        case .recentlyAdded:
++            return filtered.sorted { $0.addedDate > $1.addedDate }
+         }
+     }
+ 
