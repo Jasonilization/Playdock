@@ -79,3 +79,26 @@ Statuses are **derived**, never guessed:
 - **Verify Whole Queue** button — applies every unshipped upgrade one at a time in
   dependency order in an isolated worktree, building after each single one, exactly
   simulating the one-a-day habit.
+
+## Auto-shipper (unattended, 3-7 ships/day)
+
+`auto_shipper.py` ships a **random 3-7** READY upgrades per day with no supervision,
+calling the same engine functions the dashboard's Ship buttons call — so preflight,
+byte snapshots, abort-restore, content+receipt commits, and never-force guarantees all
+apply identically.
+
+- **Runs daily at 13:00** via `~/Library/LaunchAgents/com.playdock.autoshipper.plist`
+  (versioned copy in `Scripts/`). Install/reinstall it with:
+  `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.playdock.autoshipper.plist`
+  (disable: `launchctl bootout gui/$(id -u)/com.playdock.autoshipper`).
+- **Stops at the first failure** and never skips ahead: a failed prepare touches
+  nothing, a failed commit aborts back to pre-ship bytes, and the log says which
+  upgrade and stage to look at.
+- **Stands down** when: a manual ship is mid-flight, free disk < 6 GiB, origin is
+  unreachable, or it already ran today (wake-refires stay idempotent). A failed push
+  is retried once, then left in the engine's safe COMMITTED state — the next run's
+  reconcile recovers it automatically.
+- Logs to `upgrade-queue/ship_manager/auto_shipper.log`; the same directory holds its
+  run-state JSON and lock file (all gitignored).
+- By hand: `--dry-run` (show what would ship), `--count N` (ship exactly N),
+  `--force` (re-run even if today's run happened).

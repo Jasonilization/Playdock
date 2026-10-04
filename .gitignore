@@ -8,4 +8,8 @@ dist/
 # Ship Manager runtime state (local only)
 upgrade-queue/ship_manager/.state.json
 upgrade-queue/ship_manager/.sessions.json
+upgrade-queue/ship_manager/auto_shipper.log
+upgrade-queue/ship_manager/auto_shipper_state.json
+upgrade-queue/ship_manager/auto_shipper.lock
+upgrade-queue/ship_manager/auto_shipper.launchd.log
 __pycache__/
