@@ -66,5 +66,9 @@
   "017-gamemodeview-focusedcardid": {
     "commit": "00cfa8a921ca9839fe1f1f244d90a1ad5f65dd56",
     "shipped_at": "2026-10-04T10:45:18.246930+00:00"
+  },
+  "018-steamstyle-spotlight-focus-ring": {
+    "commit": "8f0dccdd4d6880639fc52823fca8b3315bfc9e76",
+    "shipped_at": "2026-10-04T13:01:29.713433+00:00"
   }
 }
