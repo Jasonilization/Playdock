@@ -188,7 +188,8 @@ def unshipped_deps(uid, metas=None, shipments=None):
         if dm is None:
             missing.append({"id": d, "title": "(missing from queue)", "ship_state": "missing"})
         elif not is_shipped(d, shipments):
-            missing.append({"id": d, "title": dm.get("title", d), "ship_state": "READY"})
+            state, _ = effective_status(d, metas)
+            missing.append({"id": d, "title": dm.get("title", d), "ship_state": state})
     return missing
 
 
@@ -285,8 +286,21 @@ def run_tests(meta, cwd):
     for cmd in meta.get("tests", []):
         code, out, err = run(["sh", "-c", cmd], cwd=cwd, timeout=1200)
         if code != 0:
-            return False, cmd, (out + "\n" + err)[-4000:]
+            return False, cmd, _failure_excerpt(out + "\n" + err)
     return True, None, None
+
+
+def _failure_excerpt(text, cap=4000):
+    """Swift build failures bury their real diagnostics far above the tail: the long
+    compile-command lines that follow them fill a plain last-`cap` window and hide the
+    actual error (a dry-run once reported nothing but index-path spam for a type-check
+    timeout). Surface every `error:` line first (deduped, individually capped), then a
+    short tail for context; plain tail when there are no such lines at all."""
+    error_lines = [l for l in text.splitlines() if "error:" in l]
+    if not error_lines:
+        return text[-cap:]
+    seen = list(dict.fromkeys(l[:400] for l in error_lines))
+    return ("\n".join(seen)[:cap - 1500] + "\n--- tail ---\n" + text[-1200:])[:cap]
 
 
 def head_sha():
@@ -679,6 +693,10 @@ def prepare_session_start(title=""):
         for uid in queue_tip_refs():
             ok, msg = apply_patch_text(load_patch(uid), wt)
             if not ok:
+                # The except clause below only covers raised exceptions, and this is a
+                # returned error - clean up here or the throwaway worktree leaks (it is
+                # not in .sessions.json either, so prepare_session_gc can't see it).
+                remove_worktree(wt)
                 return ShipError("queue-tip",
                                  f"Could not build the queue tip (failed at {uid}): {msg}").as_dict()
             applied.append(uid)
@@ -743,7 +761,7 @@ def prepare_session_capture(sid, slug, title, description="", category="", commi
         "files": files,
         "dependencies": deps,
         "parent": deps[-1] if deps else None,
-        "base_commit": metas_any_base(),
+        "base_commit": head_sha(),
         "tests": tests or ["swift build", "swift test"],
         "risk": risk,
         "status": "READY",
@@ -781,13 +799,6 @@ def prepare_session_gc():
     if alive != sessions:
         save_sessions(alive)
     return alive
-
-
-def metas_any_base():
-    metas = all_metas()
-    for m in metas.values():
-        return m.get("base_commit", "HEAD")
-    return "HEAD"
 
 
 # ---------------------------------------------------------------------------
@@ -840,6 +851,14 @@ def _verify_all_worker():
                             finished_at=datetime.now(timezone.utc).isoformat())
     except ShipError as e:
         VERIFY_STATE.update(running=False, result={"ok": False, "message": e.message},
+                            finished_at=datetime.now(timezone.utc).isoformat())
+    except Exception as e:
+        # Anything else - a stuck build's TimeoutExpired, a KeyError on a missing meta -
+        # previously killed this worker with running=True forever, wedging the Verify
+        # button until a server restart. Record it like any other failure instead.
+        VERIFY_STATE.update(running=False,
+                            result={"ok": False,
+                                    "message": f"verify-all crashed: {type(e).__name__}: {e}"},
                             finished_at=datetime.now(timezone.utc).isoformat())
     finally:
         if wt:
