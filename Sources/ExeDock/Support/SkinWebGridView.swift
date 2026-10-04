@@ -40,11 +40,12 @@ struct SkinWebGridView: NSViewRepresentable {
     let entries: [SkinWebGridEntry]
     let userName: String
     let isDark: Bool
-    /// The card a controller's D-pad currently has focused, by index into `entries` - `nil` while
-    /// no controller is connected or focus is elsewhere (a toolbar button, the floating Steam
-    /// icon). The page has no idea a controller exists at all; this just tells it which card to
-    /// draw the ring around, via `window.PlaydockSetFocus` (see that function's own doc comment).
-    var focusedIndex: Int?
+    /// The real game id a controller's D-pad currently has focused - `nil` while no controller is
+    /// connected or focus is elsewhere (a toolbar button, the floating Steam icon). Matched by id
+    /// rather than position (see `PlaydockSetFocus`'s own doc comment in skins.js for why position
+    /// alone isn't safe once a fragment grid renders a filtered subset). The page has no idea a
+    /// controller exists at all; this just tells it which card to draw the ring around.
+    var focusedID: String?
     /// "a setting to hide labels" - hides every Mac/Custom/Windows badge in the real page via one
     /// shared `[data-hide-badges]` CSS rule (see skins.css), not a per-skin toggle. Defaulted so
     /// this plumbing stays independently buildable before anything actually sets it non-default.
@@ -77,7 +78,7 @@ struct SkinWebGridView: NSViewRepresentable {
     func updateNSView(_ webView: WKWebView, context: Context) {
         context.coordinator.onOpen = onOpen
         context.coordinator.render(skin: skin, entries: entries, userName: userName, isDark: isDark, hideBadges: hideBadges)
-        context.coordinator.setFocus(focusedIndex)
+        context.coordinator.setFocus(focusedID)
     }
 
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
@@ -116,12 +117,12 @@ struct SkinWebGridView: NSViewRepresentable {
             webView.evaluateJavaScript(js, completionHandler: nil)
         }
 
-        /// `index` is `nil` when nothing should be highlighted right now (no controller, or focus
-        /// is on a native control outside the grid) - only actually calls into the page once it's
+        /// `id` is `nil` when nothing should be highlighted right now (no controller, or focus is
+        /// on a native control outside the grid) - only actually calls into the page once it's
         /// ready, same deferred-until-loaded contract `render(skin:entries:userName:isDark:)` has.
-        func setFocus(_ index: Int?) {
+        func setFocus(_ id: String?) {
             guard isPageReady, let webView else { return }
-            let arg = index.map(String.init) ?? "null"
+            let arg = id.map(jsLiteral) ?? "null"
             webView.evaluateJavaScript("window.PlaydockSetFocus && window.PlaydockSetFocus(\(arg));", completionHandler: nil)
         }
 
@@ -138,6 +139,19 @@ struct SkinWebGridView: NSViewRepresentable {
             guard let data = try? JSONEncoder().encode(s), let literal = String(data: data, encoding: .utf8) else { return "\"\"" }
             return literal
         }
+    }
+}
+
+extension SkinWebGridView {
+    /// Bridge while GameModeView still tracks the focused card positionally (until it resolves
+    /// that index to a real id in a separate piece): translates the index into the entry's own
+    /// id - the contract `window.PlaydockSetFocus` matches by (see skins.js) - so the one real
+    /// call site keeps compiling and the ring lands on the right card in the meantime. An index
+    /// outside `entries` (stale after a list change) focuses nothing, same as `nil`.
+    init(skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool,
+         focusedIndex: Int?, onOpen: @escaping (String) -> Void) {
+        self.init(skin: skin, entries: entries, userName: userName, isDark: isDark,
+                  focusedID: focusedIndex.flatMap { entries[safe: $0]?.id }, onOpen: onOpen)
     }
 }
 
