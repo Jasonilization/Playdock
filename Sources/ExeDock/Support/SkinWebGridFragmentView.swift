@@ -14,6 +14,10 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
     let isDark: Bool
     /// "a setting to hide labels" - see `SkinWebGridView.hideBadges`'s identical contract.
     var hideBadges: Bool = false
+    /// See `SkinWebGridView.focusedID`'s identical contract - matched by real game id, which is
+    /// what makes this safe against this exact view rendering a *filtered* subset (Steam-style's
+    /// All/Custom filter, Spotlight's featured-game exclusion).
+    var focusedID: String?
     let onOpen: (String) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(onOpen: onOpen) }
@@ -39,6 +43,7 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
     func updateNSView(_ webView: WKWebView, context: Context) {
         context.coordinator.onOpen = onOpen
         context.coordinator.render(skin: skin, entries: entries, isDark: isDark, hideBadges: hideBadges)
+        context.coordinator.setFocus(focusedID)
     }
 
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
@@ -74,6 +79,13 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
             guard let themeJSON = jsonString(WebTheme(theme: isDark ? "dark" : "light", hideBadges: hideBadges)) else { return }
             let js = "window.PlaydockRenderGridFragment && window.PlaydockRenderGridFragment(\(jsLiteral(skin.rawValue)), \(jsLiteral(entriesJSON)), \(jsLiteral(themeJSON)));"
             webView.evaluateJavaScript(js, completionHandler: nil)
+        }
+
+        /// See `SkinWebGridView.Coordinator.setFocus(_:)` - identical contract, id-matched.
+        func setFocus(_ id: String?) {
+            guard isPageReady, let webView else { return }
+            let arg = id.map(jsLiteral) ?? "null"
+            webView.evaluateJavaScript("window.PlaydockSetFocus && window.PlaydockSetFocus(\(arg));", completionHandler: nil)
         }
 
         private struct WebTheme: Encodable { let theme: String; let hideBadges: Bool }
