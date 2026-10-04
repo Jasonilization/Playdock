@@ -1,7 +1,7 @@
 {
   "id": "015-swift-gridview-focusedid-contract",
   "title": "Swift: SkinWebGridView.focusedIndex becomes focusedID",
-  "description": "Grid's own WKWebView wrapper switches its focus contract from a positional Int index to the real game id, matching the JS-side change in a separate piece. Grid always renders its full unfiltered list, so this was previously correct 'by luck' - now correct by construction.",
+  "description": "Grid's own WKWebView wrapper switches its focus contract from a positional Int index to the real game id, matching the JS-side change in a separate piece. Grid always renders its full unfiltered list, so this was previously correct 'by luck' - now correct by construction. A temporary init(focusedIndex:) bridge in an extension (which leaves the memberwise init intact) keeps the one existing GameModeView call site compiling and translating index->id, so this piece builds standalone; the next piece removes it once GameModeView tracks the id itself.",
   "category": "controller",
   "commit_message": "Change SkinWebGridView's focus contract from index to id",
   "files": [
@@ -25,6 +25,8 @@
   "provenance": {
     "migrated_at": "2026-09-18T14:25:37.752174+00:00",
     "original_patch_sha1": "c7e9e623e40b85105fae1c2d3bce5aa5f519256e",
-    "patch_regenerated": true
+    "patch_regenerated": true,
+    "repaired_at": "2026-10-04T00:00:00+00:00",
+    "repair": "Added init(focusedIndex:) extension bridge: without it this piece renamed the API but left GameModeView's call site dangling, so HEAD+this alone did not build (type-checker timeout at GameModeView.swift:270) and every dry-run/ship of it failed at the swift build gate. Bridge translated the positional index to the entry's real id; removed by 017-gamemodeview-focusedcardid once its by-id call site lands. Final queue state unchanged byte-for-byte (017's postimage blob equals 133's preimage blob)."
   }
 }

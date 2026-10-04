@@ -1,11 +1,12 @@
 {
   "id": "017-gamemodeview-focusedcardid",
   "title": "Swift: GameModeView resolves the focused card to a real id",
-  "description": "GameModeView.focusedCardIndex becomes focusedCardID (resolves the D-pad-focused array index to that entry's real id) and Grid's own SkinWebGridView call site is updated to pass it. Steam-style/Spotlight aren't wired yet - separate piece.",
+  "description": "GameModeView.focusedCardIndex becomes focusedCardID (resolves the D-pad-focused array index to that entry's real id) and Grid's own SkinWebGridView call site is updated to pass it, which retires the temporary init(focusedIndex:) bridge added with the contract switch - its last caller is gone, so it is deleted here. Steam-style/Spotlight aren't wired yet - separate piece.",
   "category": "controller",
   "commit_message": "Resolve GameModeView's focused card to an id, wire into Grid",
   "files": [
-    "Sources/ExeDock/Views/GameModeView.swift"
+    "Sources/ExeDock/Views/GameModeView.swift",
+    "Sources/ExeDock/Support/SkinWebGridView.swift"
   ],
   "dependencies": [
     "015-swift-gridview-focusedid-contract"
@@ -24,6 +25,8 @@
   "provenance": {
     "migrated_at": "2026-09-18T14:25:37.753700+00:00",
     "original_patch_sha1": "ecc071cf819a6254265bb45c62a09c964e0b641e",
-    "patch_regenerated": true
+    "patch_regenerated": true,
+    "repaired_at": "2026-10-04T00:00:00+00:00",
+    "repair": "Added the SkinWebGridView.swift hunk deleting the init(focusedIndex:) bridge introduced by the repaired 015, so no dead code survives; files[] gained SkinWebGridView.swift accordingly. GameModeView hunks unchanged. Postimage blob is byte-identical to the original 017's (and to 133's preimage), so the queue's final state is unchanged."
   }
 }

@@ -1,8 +1,32 @@
+diff --git a/Sources/ExeDock/Support/SkinWebGridView.swift b/Sources/ExeDock/Support/SkinWebGridView.swift
+index 44f512d4c2f27543ef362bf950ec44a24412de0f..0ab8a7ed7790727103d12d34bc58753909240545 100644
+--- a/Sources/ExeDock/Support/SkinWebGridView.swift
++++ b/Sources/ExeDock/Support/SkinWebGridView.swift
+@@ -142,19 +142,6 @@ struct SkinWebGridView: NSViewRepresentable {
+     }
+ }
+ 
+-extension SkinWebGridView {
+-    /// Bridge while GameModeView still tracks the focused card positionally (until it resolves
+-    /// that index to a real id in a separate piece): translates the index into the entry's own
+-    /// id - the contract `window.PlaydockSetFocus` matches by (see skins.js) - so the one real
+-    /// call site keeps compiling and the ring lands on the right card in the meantime. An index
+-    /// outside `entries` (stale after a list change) focuses nothing, same as `nil`.
+-    init(skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool,
+-         focusedIndex: Int?, onOpen: @escaping (String) -> Void) {
+-        self.init(skin: skin, entries: entries, userName: userName, isDark: isDark,
+-                  focusedID: focusedIndex.flatMap { entries[safe: $0]?.id }, onOpen: onOpen)
+-    }
+-}
+-
+ /// Building a `SkinWebGridEntry` from real app data - shared by both the Steam and custom-game
+ /// cases, and the one place that turns a locally-cached `NSImage` into the compact base64
+ /// `data:` URI the sandboxed page can actually load (a `file://` reference would need explicit read
 diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
-index 037f60ea7b053561f75a5834f5bc2e4ea7e634e7..0c714444a81215aec6cbabe32e4d7935e2cb7350 100644
+index f550b9706addab5f31832843c164c90ab18d00aa..b887b3ac7beb1d1525964dafc7fecd803ef561b9 100644
 --- a/Sources/ExeDock/Views/GameModeView.swift
 +++ b/Sources/ExeDock/Views/GameModeView.swift
-@@ -285,7 +285,7 @@ struct GameModeView: View {
+@@ -291,7 +291,7 @@ struct GameModeView: View {
                              // exists - `focusedTarget`'s own .card(index) case was already tracked
                              // correctly (moveFocus/activateFocusedTarget below), it just had nowhere
                              // to draw a visible ring. See window.PlaydockSetFocus in skins.js.
@@ -11,7 +35,7 @@ index 037f60ea7b053561f75a5834f5bc2e4ea7e634e7..0c714444a81215aec6cbabe32e4d7935
                              onOpen: openLibraryEntry
                          )
                          .frame(width: geometry.size.width, height: geometry.size.height)
-@@ -850,12 +850,13 @@ struct GameModeView: View {
+@@ -856,12 +856,13 @@ struct GameModeView: View {
          detailGame == nil && detailCustomGame == nil && !showingControllerMode
      }
  

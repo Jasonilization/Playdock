@@ -1,8 +1,8 @@
 diff --git a/Sources/ExeDock/Support/SkinWebGridView.swift b/Sources/ExeDock/Support/SkinWebGridView.swift
-index e8d5d2a5d07cb7f0da7bc00d0b94b08494c7b4bb..c05720e9b405c5baaafb73db96ed64085c97ae7f 100644
+index b6d679a489cc725d9821050ab29c22e01ba89ea3..44f512d4c2f27543ef362bf950ec44a24412de0f 100644
 --- a/Sources/ExeDock/Support/SkinWebGridView.swift
 +++ b/Sources/ExeDock/Support/SkinWebGridView.swift
-@@ -35,11 +35,12 @@ struct SkinWebGridView: NSViewRepresentable {
+@@ -40,11 +40,12 @@ struct SkinWebGridView: NSViewRepresentable {
      let entries: [SkinWebGridEntry]
      let userName: String
      let isDark: Bool
@@ -20,7 +20,7 @@ index e8d5d2a5d07cb7f0da7bc00d0b94b08494c7b4bb..c05720e9b405c5baaafb73db96ed6408
      /// "a setting to hide labels" - hides every Mac/Custom/Windows badge in the real page via one
      /// shared `[data-hide-badges]` CSS rule (see skins.css), not a per-skin toggle. Defaulted so
      /// this plumbing stays independently buildable before anything actually sets it non-default.
-@@ -72,7 +73,7 @@ struct SkinWebGridView: NSViewRepresentable {
+@@ -77,7 +78,7 @@ struct SkinWebGridView: NSViewRepresentable {
      func updateNSView(_ webView: WKWebView, context: Context) {
          context.coordinator.onOpen = onOpen
          context.coordinator.render(skin: skin, entries: entries, userName: userName, isDark: isDark, hideBadges: hideBadges)
@@ -29,7 +29,7 @@ index e8d5d2a5d07cb7f0da7bc00d0b94b08494c7b4bb..c05720e9b405c5baaafb73db96ed6408
      }
  
      final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
-@@ -111,12 +112,12 @@ struct SkinWebGridView: NSViewRepresentable {
+@@ -116,12 +117,12 @@ struct SkinWebGridView: NSViewRepresentable {
              webView.evaluateJavaScript(js, completionHandler: nil)
          }
  
@@ -46,3 +46,23 @@ index e8d5d2a5d07cb7f0da7bc00d0b94b08494c7b4bb..c05720e9b405c5baaafb73db96ed6408
              webView.evaluateJavaScript("window.PlaydockSetFocus && window.PlaydockSetFocus(\(arg));", completionHandler: nil)
          }
  
+@@ -141,6 +142,19 @@ struct SkinWebGridView: NSViewRepresentable {
+     }
+ }
+ 
++extension SkinWebGridView {
++    /// Bridge while GameModeView still tracks the focused card positionally (until it resolves
++    /// that index to a real id in a separate piece): translates the index into the entry's own
++    /// id - the contract `window.PlaydockSetFocus` matches by (see skins.js) - so the one real
++    /// call site keeps compiling and the ring lands on the right card in the meantime. An index
++    /// outside `entries` (stale after a list change) focuses nothing, same as `nil`.
++    init(skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool,
++         focusedIndex: Int?, onOpen: @escaping (String) -> Void) {
++        self.init(skin: skin, entries: entries, userName: userName, isDark: isDark,
++                  focusedID: focusedIndex.flatMap { entries[safe: $0]?.id }, onOpen: onOpen)
++    }
++}
++
+ /// Building a `SkinWebGridEntry` from real app data - shared by both the Steam and custom-game
+ /// cases, and the one place that turns a locally-cached `NSImage` into the compact base64
+ /// `data:` URI the sandboxed page can actually load (a `file://` reference would need explicit read
