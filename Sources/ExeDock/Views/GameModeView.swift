@@ -291,7 +291,7 @@ struct GameModeView: View {
                             // exists - `focusedTarget`'s own .card(index) case was already tracked
                             // correctly (moveFocus/activateFocusedTarget below), it just had nowhere
                             // to draw a visible ring. See window.PlaydockSetFocus in skins.js.
-                            focusedIndex: focusedCardIndex,
+                            focusedID: focusedCardID,
                             onOpen: openLibraryEntry
                         )
                         .frame(width: geometry.size.width, height: geometry.size.height)
@@ -856,12 +856,13 @@ struct GameModeView: View {
         detailGame == nil && detailCustomGame == nil && !showingControllerMode
     }
 
-    /// `focusedTarget`'s own `.card` index, for `SkinWebGridView`'s `focusedIndex` - `nil` for
-    /// every other target (toolbar, Steam icon) or while no controller is connected, so the WebView
-    /// only ever shows a ring while there's a real card focused for it to show.
-    private var focusedCardIndex: Int? {
+    /// `focusedTarget`'s own `.card` index, resolved to that entry's real id, for `SkinWebGridView`'s
+    /// `focusedID` - `nil` for every other target (toolbar, Steam icon) or while no controller is
+    /// connected, so the WebView only ever shows a ring while there's a real card focused for it to
+    /// show.
+    private var focusedCardID: String? {
         guard controllerObserver.isConnected, case .card(let index) = focusedTarget else { return nil }
-        return index
+        return libraryEntries[safe: index]?.id
     }
 
     /// The real on-screen control legend for whichever layout is actually showing - "markers for

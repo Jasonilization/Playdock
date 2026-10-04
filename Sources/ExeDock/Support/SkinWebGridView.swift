@@ -142,19 +142,6 @@ struct SkinWebGridView: NSViewRepresentable {
     }
 }
 
-extension SkinWebGridView {
-    /// Bridge while GameModeView still tracks the focused card positionally (until it resolves
-    /// that index to a real id in a separate piece): translates the index into the entry's own
-    /// id - the contract `window.PlaydockSetFocus` matches by (see skins.js) - so the one real
-    /// call site keeps compiling and the ring lands on the right card in the meantime. An index
-    /// outside `entries` (stale after a list change) focuses nothing, same as `nil`.
-    init(skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool,
-         focusedIndex: Int?, onOpen: @escaping (String) -> Void) {
-        self.init(skin: skin, entries: entries, userName: userName, isDark: isDark,
-                  focusedID: focusedIndex.flatMap { entries[safe: $0]?.id }, onOpen: onOpen)
-    }
-}
-
 /// Building a `SkinWebGridEntry` from real app data - shared by both the Steam and custom-game
 /// cases, and the one place that turns a locally-cached `NSImage` into the compact base64
 /// `data:` URI the sandboxed page can actually load (a `file://` reference would need explicit read
