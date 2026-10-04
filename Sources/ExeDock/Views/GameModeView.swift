@@ -1032,9 +1032,9 @@ struct GameModeView: View {
         case .grid: EmptyView() // unreachable - handled above
         case .shelves: LibraryShelvesLayout(entries: libraryEntries, onOpenDetail: openDetail)
         case .sidebar: LibrarySidebarLayout(entries: libraryEntries, onOpenDetail: openDetail)
-        case .steam: LibrarySteamStyleLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, onOpenDetail: openDetail)
+        case .steam: LibrarySteamStyleLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, focusedID: focusedCardID, onOpenDetail: openDetail)
         case .carousel: LibraryCarouselLayout(entries: libraryEntries, onOpenDetail: openDetail)
-        case .spotlight: LibrarySpotlightLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, onOpenDetail: openDetail)
+        case .spotlight: LibrarySpotlightLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, focusedID: focusedCardID, onOpenDetail: openDetail)
         }
     }
 

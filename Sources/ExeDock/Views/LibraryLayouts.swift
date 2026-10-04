@@ -402,6 +402,10 @@ struct LibrarySteamStyleLayout: View {
     let webGridEntries: [SkinWebGridEntry]
     let skin: PlaydockSkin
     let isDark: Bool
+    /// See `SkinWebGridFragmentView.focusedID`'s identical contract - passed straight through
+    /// unchanged, no local re-indexing needed even though `filteredWebEntries` below is a real
+    /// subset of `webGridEntries` (an id genuinely not in the current filter just shows no ring).
+    var focusedID: String? = nil
     let onOpenDetail: (LibraryEntry) -> Void
     @LocalState private var filter = "All Games"
     private let filters = ["All Games", "Custom Games"]
@@ -442,7 +446,7 @@ struct LibrarySteamStyleLayout: View {
             // SkinWebGridView already needs. The page's own real content scrolls natively inside
             // the WebView, same as Grid.
             GeometryReader { geo in
-                SkinWebGridFragmentView(skin: skin, entries: filteredWebEntries, isDark: isDark, onOpen: openByID)
+                SkinWebGridFragmentView(skin: skin, entries: filteredWebEntries, isDark: isDark, focusedID: focusedID, onOpen: openByID)
                     .frame(width: geo.size.width, height: geo.size.height)
             }
         }
@@ -564,6 +568,9 @@ struct LibrarySpotlightLayout: View {
     let webGridEntries: [SkinWebGridEntry]
     let skin: PlaydockSkin
     let isDark: Bool
+    /// See `LibrarySteamStyleLayout.focusedID` - identical reasoning, used for the "Also In Your
+    /// Collection" grid section, which excludes whatever's currently featured.
+    var focusedID: String? = nil
     let onOpenDetail: (LibraryEntry) -> Void
     @ObservedObject private var runningTracker = RunningGameTracker.shared
     @ObservedObject private var controllerObserver = ControllerObserver.shared
