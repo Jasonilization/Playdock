@@ -53,7 +53,15 @@ def free_gb():
 
 
 def remote_reachable():
-    return engine.git("ls-remote", "origin", "HEAD", timeout=30)[0] == 0
+    """launchd fires wake-coalesced jobs the instant the Mac wakes - often a beat
+    before Wi-Fi is back, which once stood the whole day down on a race it would
+    have won 30 seconds later. Retry for a few minutes instead of giving up."""
+    for attempt in range(5):
+        if engine.git("ls-remote", "origin", "HEAD", timeout=30)[0] == 0:
+            return True
+        if attempt < 4:
+            time.sleep(30)
+    return False
 
 
 def today():

@@ -87,10 +87,15 @@ calling the same engine functions the dashboard's Ship buttons call — so prefl
 byte snapshots, abort-restore, content+receipt commits, and never-force guarantees all
 apply identically.
 
-- **Runs daily at 13:00** via `~/Library/LaunchAgents/com.playdock.autoshipper.plist`
-  (versioned copy in `Scripts/`). Install/reinstall it with:
+- **Runs daily at 13:00, 16:00, and 19:00** via `~/Library/LaunchAgents/
+  com.playdock.autoshipper.plist` (versioned copy in `Scripts/`) — three idempotent
+  slots: a run that stands down (asleep at fire time and Wi-Fi not yet back, disk
+  guard, whatever) writes no state, so the next slot simply tries again; a run that
+  succeeds makes the later slots no-op on the same day. Install/reinstall it with:
   `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.playdock.autoshipper.plist`
-  (disable: `launchctl bootout gui/$(id -u)/com.playdock.autoshipper`).
+  (disable: `launchctl bootout gui/$(id -u)/com.playdock.autoshipper`). The origin
+  check also retries for ~2 minutes before standing down, because launchd fires
+  wake-coalesced jobs a beat before the network is actually up.
 - **Stops at the first failure** and never skips ahead: a failed prepare touches
   nothing, a failed commit aborts back to pre-ship bytes, and the log says which
   upgrade and stage to look at.
