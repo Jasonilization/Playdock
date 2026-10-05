@@ -195,7 +195,13 @@ struct LibraryShelvesLayout: View {
     private func cycleFeatured(by delta: Int) {
         guard let featured, let currentIndex = entries.firstIndex(where: { $0.id == featured.id }), !entries.isEmpty else { return }
         let newIndex = (currentIndex + delta + entries.count) % entries.count
-        manualFeaturedID = entries[newIndex].id
+        // A real, previously-missing cross-fade - switching the featured hero (LT/RT, the nav
+        // chevrons) used to snap the art/title/description straight to the new game with no
+        // transition at all. `.id(featured.id)` + `.transition(.opacity)` below is what makes this
+        // withAnimation actually have something to animate.
+        withAnimation(.easeInOut(duration: 0.28)) {
+            manualFeaturedID = entries[newIndex].id
+        }
     }
 
     var body: some View {
@@ -226,6 +232,8 @@ struct LibraryShelvesLayout: View {
                             .frame(maxWidth: .infinity, maxHeight: 300)
                         }
                     }
+                    .id(featured.id)
+                    .transition(.opacity)
                     .task(id: featured.id) {
                         featuredPresentation = await LibraryPresentation.resolve(featured)
                         if let path = featuredPresentation?.artPath { featuredAccent = await GameArtColor.dominantColor(forImagePath: path) }
