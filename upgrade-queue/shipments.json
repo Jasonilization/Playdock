@@ -70,5 +70,9 @@
   "018-steamstyle-spotlight-focus-ring": {
     "commit": "8f0dccdd4d6880639fc52823fca8b3315bfc9e76",
     "shipped_at": "2026-10-04T13:01:29.713433+00:00"
+  },
+  "019-shelves-hero-crossfade": {
+    "commit": "fe767e6656443b27a73a0d7854f42d4f82cd8848",
+    "shipped_at": "2026-10-05T09:55:50.282936+00:00"
   }
 }
