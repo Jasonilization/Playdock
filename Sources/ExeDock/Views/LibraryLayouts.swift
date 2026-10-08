@@ -449,7 +449,7 @@ struct LibrarySteamStyleLayout: View {
                         .padding(.horizontal, 14).padding(.vertical, 6).frame(maxWidth: .infinity, alignment: .leading)
                         .background(f == filter ? Color.accentColor.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 7))
                         .contentShape(Rectangle())
-                        .onTapGesture { filter = f }
+                        .onTapGesture { withAnimation(.easeInOut(duration: 0.15)) { filter = f } }
                 }
                 Spacer()
             }
