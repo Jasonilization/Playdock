@@ -303,7 +303,12 @@ struct LibrarySidebarLayout: View {
         guard !entries.isEmpty else { return }
         let currentIndex = entries.firstIndex { $0.id == selected?.id } ?? 0
         let newIndex = min(max(0, currentIndex + delta), entries.count - 1)
-        selectedID = entries[newIndex].id
+        // A real, previously-missing cross-fade - the detail pane's art/title/description used to
+        // snap straight to the new selection with no transition. `.id(selected.id)` +
+        // `.transition(.opacity)` below is what makes this withAnimation actually animate.
+        withAnimation(.easeInOut(duration: 0.22)) {
+            selectedID = entries[newIndex].id
+        }
     }
 
     /// A fixed sidebar column's width, in points - kept as a named constant since both the sidebar
@@ -338,7 +343,7 @@ struct LibrarySidebarLayout: View {
                             .background(isSelected ? Color.accentColor.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 7))
                             .padding(.horizontal, 8)
                             .contentShape(Rectangle())
-                            .onTapGesture { selectedID = entry.id }
+                            .onTapGesture { withAnimation(.easeInOut(duration: 0.22)) { selectedID = entry.id } }
                             .id(entry.id)
                         }
                     }
@@ -387,6 +392,8 @@ struct LibrarySidebarLayout: View {
                     }
                     .frame(width: max(0, geo.size.width - Self.sidebarWidth), height: geo.size.height)
                     .clipped()
+                    .id(selected.id)
+                    .transition(.opacity)
                     .task(id: selected.id) {
                         presentation = await LibraryPresentation.resolve(selected)
                         if let path = presentation?.artPath { selectedAccent = await GameArtColor.dominantColor(forImagePath: path) }
