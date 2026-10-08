@@ -11,6 +11,12 @@ independently reviewable upgrades queued in `upgrade-queue/upgrades/`.
 
 Then open <http://127.0.0.1:8765>. (`SHIPMGR_PORT` overrides the port.)
 
+The dashboard normally runs as a KeepAlive LaunchAgent (`~/Library/LaunchAgents/
+com.playdock.shipmgr.plist`, versioned copy in `Scripts/`) - started at login and
+restarted automatically if it ever dies. Manage it with `launchctl bootout` /
+`bootstrap gui/$(id -u)`; a manual `Scripts/ship_manager.sh` will fail with
+"Address already in use" while the agent holds the port.
+
 ## The model
 
 The queue is a **DAG**, not a flat list. Every upgrade has `meta.json` (schema 2):
