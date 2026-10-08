@@ -78,5 +78,9 @@
   "020-spotlight-hero-crossfade": {
     "commit": "d41e89bfb306d617f6a3429360ddb23de83d5a28",
     "shipped_at": "2026-10-08T04:58:57.191675+00:00"
+  },
+  "021-sidebar-detail-crossfade": {
+    "commit": "4e6855eaeac0e5a89fe26c4d70ace86cce0b8568",
+    "shipped_at": "2026-10-08T05:08:13.709571+00:00"
   }
 }
