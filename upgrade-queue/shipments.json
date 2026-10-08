@@ -82,5 +82,9 @@
   "021-sidebar-detail-crossfade": {
     "commit": "4e6855eaeac0e5a89fe26c4d70ace86cce0b8568",
     "shipped_at": "2026-10-08T05:08:13.709571+00:00"
+  },
+  "022-steamstyle-filter-animation": {
+    "commit": "aef0901c3177ff88bd35c5c3b4f465c7e87723e6",
+    "shipped_at": "2026-10-08T05:11:25.245553+00:00"
   }
 }
