@@ -603,7 +603,11 @@ struct LibrarySpotlightLayout: View {
     private func cycleFeatured(by delta: Int) {
         guard let featured, let currentIndex = entries.firstIndex(where: { $0.id == featured.id }), !entries.isEmpty else { return }
         let newIndex = (currentIndex + delta + entries.count) % entries.count
-        manualFeaturedID = entries[newIndex].id
+        // Same real, previously-missing cross-fade as Shelves' own featured hero - see that
+        // struct's own `cycleFeatured` for the full reasoning.
+        withAnimation(.easeInOut(duration: 0.28)) {
+            manualFeaturedID = entries[newIndex].id
+        }
     }
 
     private var restWebEntries: [SkinWebGridEntry] {
@@ -646,6 +650,8 @@ struct LibrarySpotlightLayout: View {
                         }
                     }
                     .padding(32)
+                    .id(featured.id)
+                    .transition(.opacity)
                     .task(id: featured.id) {
                         featuredPresentation = await LibraryPresentation.resolve(featured)
                         if let path = featuredPresentation?.artPath { featuredAccent = await GameArtColor.dominantColor(forImagePath: path) }
