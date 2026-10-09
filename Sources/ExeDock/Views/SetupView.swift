@@ -114,7 +114,7 @@ struct SetupView: View {
 
     private func stepColor(_ step: Step, current: Step) -> Color {
         if step.rawValue < current.rawValue { return .green }
-        if step == current { return .accentColor }
+        if step == current { return skin.accent }
         return .secondary
     }
 
