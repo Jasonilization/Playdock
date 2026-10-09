@@ -90,5 +90,9 @@
   "023-controller-banner-transition": {
     "commit": "bf502ba64711e3aca3b932da9bde40dab8d6395b",
     "shipped_at": "2026-10-09T07:41:46.099739+00:00"
+  },
+  "024-contributing-ship-manager-docs": {
+    "commit": "96a6198b847583681d4bd678a1a67fa09d9dacf0",
+    "shipped_at": "2026-10-09T07:44:29.738714+00:00"
   }
 }
