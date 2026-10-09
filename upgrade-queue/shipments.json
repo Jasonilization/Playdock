@@ -86,5 +86,9 @@
   "022-steamstyle-filter-animation": {
     "commit": "aef0901c3177ff88bd35c5c3b4f465c7e87723e6",
     "shipped_at": "2026-10-08T05:11:25.245553+00:00"
+  },
+  "023-controller-banner-transition": {
+    "commit": "bf502ba64711e3aca3b932da9bde40dab8d6395b",
+    "shipped_at": "2026-10-09T07:41:46.099739+00:00"
   }
 }
