@@ -1,16 +1,25 @@
 import SwiftUI
 
-/// Shown while `SetupCoordinator` checks for / prepares the Sikarugir engine at launch.
+/// Shown while `SetupCoordinator` checks for / prepares the Sikarugir engine at launch - the very
+/// first thing a brand-new install ever shows. Previously plain system chrome with no relation to
+/// the rest of the app's real per-skin theming (the setup wizard that picks a skin hasn't run
+/// yet at this point, so this reads the default/already-saved skin rather than letting someone
+/// choose here - a real theme, not a themed choice).
 struct SetupView: View {
     @ObservedObject var setup: SetupCoordinator
+    @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
+    private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
 
     var body: some View {
-        if case .choosingEngine(let options, let recommended) = setup.stage {
-            EngineChoiceView(options: options, recommended: recommended) { chosen in
-                setup.chooseEngine(chosen)
+        ZStack {
+            SkinBackground(skin: skin).ignoresSafeArea()
+            if case .choosingEngine(let options, let recommended) = setup.stage {
+                EngineChoiceView(options: options, recommended: recommended) { chosen in
+                    setup.chooseEngine(chosen)
+                }
+            } else {
+                standardStages
             }
-        } else {
-            standardStages
         }
     }
 
