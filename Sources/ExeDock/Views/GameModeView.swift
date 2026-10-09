@@ -249,6 +249,7 @@ struct GameModeView: View {
                 header
                 if controllerObserver.isConnected && !controllerObserver.bannerDismissed {
                     controllerBanner
+                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
                 // No separate Divider() here anymore - header's own new skin-accent bottom border
                 // (see header's doc comment) already does this row's job, and a plain gray divider
@@ -479,7 +480,9 @@ struct GameModeView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.regular)
             Button {
-                controllerObserver.bannerDismissed = true
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    controllerObserver.bannerDismissed = true
+                }
             } label: {
                 Image(systemName: "xmark")
             }

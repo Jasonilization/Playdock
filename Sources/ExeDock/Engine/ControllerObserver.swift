@@ -1,5 +1,6 @@
 import Foundation
 import GameController
+import SwiftUI
 
 enum ControllerDirection {
     case up, down, left, right
@@ -120,9 +121,16 @@ final class ControllerObserver: ObservableObject {
     }
 
     private func refresh(justConnected: Bool = false) {
-        isConnected = !GCController.controllers().isEmpty
+        // Animated so the dashboard's own controller banner (gated on isConnected/bannerDismissed)
+        // slides in/out instead of popping - a real, previously-missing transition, paired with a
+        // matching `.transition()` on the banner itself in GameModeView.
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isConnected = !GCController.controllers().isEmpty
+            if justConnected, isConnected {
+                bannerDismissed = false
+            }
+        }
         if justConnected, isConnected {
-            bannerDismissed = false
             connectedPulse = UUID()
         }
     }
