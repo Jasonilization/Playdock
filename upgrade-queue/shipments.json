@@ -94,5 +94,9 @@
   "024-contributing-ship-manager-docs": {
     "commit": "96a6198b847583681d4bd678a1a67fa09d9dacf0",
     "shipped_at": "2026-10-09T07:44:29.738714+00:00"
+  },
+  "025-setup-boot-skinbackground": {
+    "commit": "de476757dc9f1518113497a02c2a3330599d4683",
+    "shipped_at": "2026-10-09T08:06:40.996066+00:00"
   }
 }
