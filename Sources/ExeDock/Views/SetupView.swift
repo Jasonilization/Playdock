@@ -202,6 +202,8 @@ private struct EngineChoiceView: View {
     let options: [String]
     let recommended: String?
     let onChoose: (String) -> Void
+    @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
+    private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -209,9 +211,7 @@ private struct EngineChoiceView: View {
             Image(systemName: "gamecontroller.fill")
                 .font(.system(size: 44))
                 .foregroundStyle(.secondary)
-            Text("Choose a Wine engine")
-                .font(.title2)
-                .bold()
+            SkinTitleText(text: "Choose a Wine engine", size: 22)
             Text("Sikarugir Creator has more than one engine ready to go. Recommended is the safest bet for most games - you can always change this later.")
                 .font(.body)
                 .foregroundStyle(.secondary)
