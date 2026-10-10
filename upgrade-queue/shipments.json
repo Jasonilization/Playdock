@@ -106,5 +106,9 @@
   "027-setup-boot-themed-retry-button": {
     "commit": "884b0ffed4a381fd212351b0dcde45794c9aa895",
     "shipped_at": "2026-10-10T09:01:53.542098+00:00"
+  },
+  "028-setup-boot-themed-title": {
+    "commit": "bfb7ffcc9761af9b48961e81c12654a437ad0238",
+    "shipped_at": "2026-10-10T09:03:56.113515+00:00"
   }
 }
