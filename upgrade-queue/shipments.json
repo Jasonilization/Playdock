@@ -102,5 +102,9 @@
   "026-setup-boot-step-tracker-accent": {
     "commit": "e0b475d380487d863c7ce5f35f65eb5c3b71152c",
     "shipped_at": "2026-10-09T08:09:20.529110+00:00"
+  },
+  "027-setup-boot-themed-retry-button": {
+    "commit": "884b0ffed4a381fd212351b0dcde45794c9aa895",
+    "shipped_at": "2026-10-10T09:01:53.542098+00:00"
   }
 }
