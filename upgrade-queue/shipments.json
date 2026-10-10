@@ -110,5 +110,9 @@
   "028-setup-boot-themed-title": {
     "commit": "bfb7ffcc9761af9b48961e81c12654a437ad0238",
     "shipped_at": "2026-10-10T09:03:56.113515+00:00"
+  },
+  "029-engine-choice-themed-title": {
+    "commit": "fb4fd3cb348fb2666174e1ed0dedd5b98e1e1cc3",
+    "shipped_at": "2026-10-10T09:05:57.999318+00:00"
   }
 }
