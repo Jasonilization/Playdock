@@ -56,9 +56,8 @@ struct SetupView: View {
                 Button("Check Again") {
                     setup.runSetup()
                 }
-                .font(.headline)
-                .padding(.vertical, 4)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PlaydockButtonStyle())
+                .frame(maxWidth: 220)
                 .padding(.top, 4)
             }
             Spacer()
