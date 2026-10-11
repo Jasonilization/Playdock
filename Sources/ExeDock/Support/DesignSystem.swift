@@ -292,7 +292,11 @@ private func dynamicColor(light: (r: Double, g: Double, b: Double), dark: (r: Do
 /// 0` are the same real technique, just different ink colors.
 private func hardShadowColor(for skin: PlaydockSkin) -> Color? {
     switch skin {
-    case .brutalist: return .primary
+    // Was `.primary` - fine as near-black on Brutalist's cream, but in dark mode `.primary` is
+    // near-*white*, so every card and button sat on a hard-edged white slab: a wall of glare that
+    // was a big part of "the colour scheme looks very bad." A shadow should read as a shadow in
+    // both modes - near-black ink on paper, a warm charcoal (#4b4237) on the dark ground.
+    case .brutalist: return dynamicColor(light: (0.078, 0.078, 0.078), dark: (0.294, 0.259, 0.216))
     case .pixel: return Color(red: 0.063, green: 0.071, blue: 0.11) // #10121c, the mockup's own ink
     default: return nil
     }
