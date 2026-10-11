@@ -350,18 +350,10 @@ struct GameModeView: View {
             .padding(.bottom, isDashboardTheActiveControllerLayer && controllerObserver.isConnected ? Self.legendBarHeight : 0)
             .animation(.easeInOut(duration: 0.2), value: controllerObserver.isConnected)
 
-            // "minimalizing steam launcher just makes it disappear... should be on the edge but
-            // still expandable... should look good too," then "it disappears for a second...
-            // should be smooth, like when you minimize your window on macOS" - steamFloatingIcon
-            // now owns both its expanded and collapsed states as one continuous view (see its own
-            // doc comment), rather than this call site swapping between two separate ones.
-            steamFloatingIcon
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                .allowsHitTesting(
-                    detailGame == nil && detailCustomGame == nil && launchOverlayGame == nil
-                        && launchOverlayCustomGame == nil && !showingControllerMode
-                )
-            .animation(.easeInOut(duration: 0.3), value: showSteamIcon)
+            // The two bottom-right floating controls - the Steam icon and (stacked just above it)
+            // the Settings launcher - kept in their own nested container so this outer ZStack
+            // doesn't grow past what Swift's type-checker will solve in one pass.
+            cornerFloaters
 
             if isDashboardTheActiveControllerLayer {
                 ControllerLegendBar(hints: dashboardControllerHints)
@@ -413,6 +405,8 @@ struct GameModeView: View {
                 .transition(.opacity)
                 .zIndex(2)
             }
+
+            settingsOverlay
         }
         .animation(.easeInOut(duration: 0.2), value: model.launchingTarget)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: launchOverlayGame?.appID)
@@ -982,7 +976,7 @@ struct GameModeView: View {
     /// carousel) - both of those own the same D-pad/A stream the instant they're shown, per
     /// `ControllerObserver`'s "single owner, self-filtering subscribers" design.
     private var isDashboardTheActiveControllerLayer: Bool {
-        detailGame == nil && detailCustomGame == nil && !showingControllerMode
+        detailGame == nil && detailCustomGame == nil && !showingControllerMode && !showingSettings
     }
 
     /// `focusedTarget`'s own `.card` index, resolved to that entry's real id, for `SkinWebGridView`'s
