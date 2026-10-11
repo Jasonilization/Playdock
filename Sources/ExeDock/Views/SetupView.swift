@@ -227,14 +227,14 @@ private struct EngineChoiceView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(name).font(.headline)
                                 if name == recommended {
-                                    Text("Recommended").font(.caption).foregroundStyle(Color.accentColor)
+                                    Text("Recommended").font(.caption).foregroundStyle(skin.accent)
                                 }
                             }
                             Spacer()
                             Image(systemName: "chevron.right").foregroundStyle(.tertiary)
                         }
                         .padding(12)
-                        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
+                        .cardSurface()
                     }
                     .buttonStyle(.plain)
                 }
