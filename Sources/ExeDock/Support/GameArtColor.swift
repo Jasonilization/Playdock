@@ -16,6 +16,13 @@ enum GameArtColor {
 
     private static let context = CIContext(options: [.useSoftwareRenderer: false])
 
+    /// Forgets every sampled color. Used by Settings' "Hard Refresh Game Info" - a game whose art
+    /// is about to be re-downloaded should get its accent re-sampled from the new image, not keep
+    /// the one derived from the old one.
+    static func clearCache() {
+        cache.removeAllObjects()
+    }
+
     /// Keeps `color`'s real hue but pulls saturation and brightness into a range that actually
     /// reads as a color instead of a gray - a raw pixel average is desaturated far more often than
     /// not (see `dominantColor`'s own doc comment for why), and a near-black or near-white result
