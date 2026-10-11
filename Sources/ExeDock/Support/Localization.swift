@@ -429,5 +429,13 @@ enum Localization {
         "No games installed": "インストール済みのゲームがありません",
         "%lld game": "%lld 本のゲーム",
         "%lld games": "%lld 本のゲーム",
+        "General": "一般",
+        "Appearance": "外観",
+        "Personalization": "パーソナライズ",
+        "Library": "ライブラリ",
+        "Games & Data": "ゲームとデータ",
+        "Language": "言語",
+        "Diagnostics": "診断",
+        "About": "情報",
     ]
 }
