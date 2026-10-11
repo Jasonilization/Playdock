@@ -148,16 +148,20 @@ struct CDriveView: View {
 
     private var breadcrumb: some View {
         HStack(spacing: 4) {
+            // A real, confirmed inconsistency: this row sits directly under the header's own real
+            // per-skin theming (topBarBackground/topBarBorderColor, above) but its own "current
+            // path" links still used the generic system Color.accentColor instead of the actual
+            // active skin's own accent.
             Button("C:") { pathStack = [] }
                 .buttonStyle(.plain)
-                .foregroundStyle(pathStack.isEmpty ? Color.primary : Color.accentColor)
+                .foregroundStyle(pathStack.isEmpty ? Color.primary : skin.accent)
             ForEach(Array(pathStack.enumerated()), id: \.offset) { index, component in
                 Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
                 Button(component) {
                     pathStack = Array(pathStack.prefix(index + 1))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(index == pathStack.count - 1 ? Color.primary : Color.accentColor)
+                .foregroundStyle(index == pathStack.count - 1 ? Color.primary : skin.accent)
             }
             Spacer()
         }
