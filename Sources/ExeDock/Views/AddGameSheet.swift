@@ -285,7 +285,13 @@ struct AddGameSheet: View {
 
     private func handleDroppedURL(_ url: URL) {
         var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else { return }
+        // A real, confirmed gap: a drop that resolves to a URL but not an actual file on disk
+        // (an alias Finder couldn't resolve, some non-file drag source) silently did nothing at
+        // all - no error, no feedback, the drop just visually completed and nothing happened.
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+            errorMessage = "Couldn't find a file at that location."
+            return
+        }
         if isDirectory.boolValue {
             handleFolder(at: url.path, folderName: url.lastPathComponent)
         } else if url.pathExtension.lowercased() == "exe" {
