@@ -114,5 +114,9 @@
   "029-engine-choice-themed-title": {
     "commit": "fb4fd3cb348fb2666174e1ed0dedd5b98e1e1cc3",
     "shipped_at": "2026-10-10T09:05:57.999318+00:00"
+  },
+  "030-engine-choice-themed-cards": {
+    "commit": "67acb5c1b89f56cdf188adc09fc031fc4f6af58a",
+    "shipped_at": "2026-10-11T09:01:36.615966+00:00"
   }
 }
