@@ -111,7 +111,7 @@ const CARDS = {
 
   brutalist: (games) => games.map(gm => `
     <div class="card" ${click(gm.id)}>
-      <div class="art" style="${artStyle(gm, 80, 60)}">${badge(gm, 'Custom')}</div>
+      <div class="art" style="${artStyle(gm, 80, 60)}">${badge(gm, 'Custom')}${gm.favorite ? '<span class="favchip">♥</span>' : ''}</div>
       <div class="body">
         <p class="title">${esc(gm.title)}</p>
         <span class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</span>
@@ -122,7 +122,7 @@ const CARDS = {
 
   cyber: (games) => games.map(gm => `
     <div class="card" ${click(gm.id)}>
-      <div class="art" style="${artStyle(gm, 70, 140)}">${badge(gm, 'CUSTOM')}</div>
+      <div class="art" style="${artStyle(gm, 70, 140)}">${badge(gm, 'CUSTOM')}${gm.favorite ? '<span class="favchip">♥</span>' : ''}</div>
       <div class="body">
         <p class="title">${esc(gm.title)}</p>
         <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
@@ -133,7 +133,7 @@ const CARDS = {
 
   soft: (games) => games.map(gm => `
     <div class="card" ${click(gm.id)}>
-      <div class="art" style="${artStyle(gm, 25, 100)}">${badge(gm, 'Custom')}</div>
+      <div class="art" style="${artStyle(gm, 25, 100)}">${badge(gm, 'Custom')}${gm.favorite ? '<span class="favchip">♥</span>' : ''}</div>
       <p class="title">${esc(gm.title)}</p>
       <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
       <p class="desc">${esc(gm.desc)}</p>
@@ -142,7 +142,7 @@ const CARDS = {
 
   pixel: (games) => games.map(gm => `
     <div class="card" ${click(gm.id)}>
-      <div class="art" style="${artStyle(gm, 90, 100)}">${badge(gm, 'MOD')}</div>
+      <div class="art" style="${artStyle(gm, 90, 100)}">${badge(gm, 'MOD')}${gm.favorite ? '<span class="favchip">♥</span>' : ''}</div>
       <div class="body">
         <p class="title">${esc(gm.title)}</p>
         <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>

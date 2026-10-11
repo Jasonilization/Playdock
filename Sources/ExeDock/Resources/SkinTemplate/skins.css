@@ -38,6 +38,9 @@ input.search::placeholder{color:inherit;opacity:0.6;}
    at a glance. */
 .badge-windows{background:#0d9488 !important;color:#fff !important;}
 
+/* Favorites: small heart on the art, user's own curation - deliberately NOT covered by the
+   [data-hide-badges] rule (that's for source badges), same visual family though. */
+.favchip{position:absolute;top:6px;right:6px;font-size:11px;line-height:1;padding:3px 6px;border-radius:999px;color:#ff4d6f;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
 /* "a setting to hide labels" - one attribute on <html> (set by PlaydockRender/RenderGridFragment
    from a real hideBadges flag) hides every badge kind at once, native-layout or WebView-rendered,
    rather than a separate on/off per badge kind. */

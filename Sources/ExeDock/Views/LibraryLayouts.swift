@@ -115,6 +115,7 @@ private struct LibraryEntryTile: View {
     var isFocused: Bool = false
     let onOpen: () -> Void
     @ObservedObject private var runningTracker = RunningGameTracker.shared
+    @ObservedObject private var curation = LibraryCurationStore.shared
     @LocalState private var presentation: LibraryPresentation?
     @LocalState private var isHovering = false
     @LocalState private var gameAccent: Color?
@@ -148,6 +149,22 @@ private struct LibraryEntryTile: View {
                 }
                 if isRunning {
                     Circle().fill(.green).frame(width: 9, height: 9).padding(6)
+                }
+                // Favorites are the user's own mark, not a provenance badge - top-right, mirroring
+                // the web skins' fav chip, and deliberately unaffected by any badge-hiding toggle.
+                if curation.isFavorite(entry.id) {
+                    VStack {
+                        HStack {
+                            Spacer(minLength: 0)
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(4)
+                                .background(Color(red: 1, green: 0.18, blue: 0.33), in: Circle())
+                                .padding(6)
+                        }
+                        Spacer(minLength: 0)
+                    }
                 }
             }
             SkinTitleText(text: entry.name, size: 15).frame(width: width, alignment: .leading)

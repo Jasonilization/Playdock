@@ -54,6 +54,7 @@ struct GameModeView: View {
     /// Play-session records - observed so a just-finished session re-sorts "Recently / Most
     /// Played" (and re-renders card activity chips) the moment the tracker writes it.
     @ObservedObject private var playActivity = PlayActivityStore.shared
+    @ObservedObject private var curation = LibraryCurationStore.shared
     @Environment(\.colorScheme) private var systemColorScheme
     @AppStorage("com.exedock.advancedMode") private var isAdvancedMode = false
     @AppStorage(LibraryLayoutStyle.storageKey) private var libraryLayoutRaw = LibraryLayoutStyle.grid.rawValue
@@ -194,7 +195,8 @@ struct GameModeView: View {
                 mac: isMac,
                 running: runningTracker.runningGames[entry.id] != nil,
                 size: sizeText,
-                hours: totalSecondsPlayed > 0 ? Self.playHoursText(totalSecondsPlayed) : nil
+                hours: totalSecondsPlayed > 0 ? Self.playHoursText(totalSecondsPlayed) : nil,
+                favorite: curation.isFavorite(entry.id)
             )
         }
     }
@@ -1445,6 +1447,7 @@ struct GameDetailView: View {
     /// recorder (see PlayActivityStore). Observed so a finishing session updates the header in
     /// place while the page is open.
     @ObservedObject private var playActivity = PlayActivityStore.shared
+    @ObservedObject private var curation = LibraryCurationStore.shared
     let game: SteamGame
     let isAdvancedMode: Bool
     let onClose: () -> Void
@@ -1639,8 +1642,19 @@ struct GameDetailView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SkinTitleText(text: game.name, size: 34)
-                .foregroundStyle(.white)
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                SkinTitleText(text: game.name, size: 34)
+                    .foregroundStyle(.white)
+                Button {
+                    curation.toggleFavorite(game.appID)
+                } label: {
+                    Image(systemName: curation.isFavorite(game.appID) ? "heart.fill" : "heart")
+                        .font(.title2)
+                        .foregroundStyle(curation.isFavorite(game.appID) ? .pink : .white.opacity(0.45))
+                }
+                .buttonStyle(.plain)
+                .help(L(curation.isFavorite(game.appID) ? "Remove from Favorites" : "Mark as Favorite"))
+            }
             if storeInfo?.metacriticScore != nil || !(storeInfo?.genres.isEmpty ?? true) {
                 HStack(spacing: 10) {
                     if let score = storeInfo?.metacriticScore {

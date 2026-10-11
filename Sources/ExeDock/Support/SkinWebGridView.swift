@@ -25,6 +25,10 @@ struct SkinWebGridEntry: Encodable, Equatable {
     let running: Bool
     let size: String?
     let hours: String?
+    /// Marked as a favorite by the user (LibraryCurationStore) - rendered as a small heart on the
+    /// card art, deliberately separate from the source badges (Custom/Mac/Windows), which the
+    /// "hide badges" setting governs: this one is yours, not Provenance.
+    var favorite: Bool = false
 }
 
 /// The real per-skin HTML/CSS from `ten-playdocks.html`, rendered by an actual `WKWebView` instead
