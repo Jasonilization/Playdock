@@ -118,5 +118,9 @@
   "030-engine-choice-themed-cards": {
     "commit": "67acb5c1b89f56cdf188adc09fc031fc4f6af58a",
     "shipped_at": "2026-10-11T09:01:36.615966+00:00"
+  },
+  "031-boot-to-dashboard-transition": {
+    "commit": "8be541a5125461758fcea13b6a016e9bc68666a3",
+    "shipped_at": "2026-10-11T09:04:18.000410+00:00"
   }
 }
