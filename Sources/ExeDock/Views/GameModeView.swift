@@ -106,6 +106,7 @@ struct GameModeView: View {
         case recentlyUpdated = "Recently Updated"
         case recentlyPlayed = "Recently Played"
         case mostPlayed = "Most Played"
+        case recentlyAdded = "Recently Added"
         var id: String { rawValue }
     }
 
@@ -129,6 +130,8 @@ struct GameModeView: View {
                     ? playActivity.totalSeconds(for: $0.appID) > playActivity.totalSeconds(for: $1.appID)
                     : $0.name.localizedStandardCompare($1.name) == .orderedAscending
             }
+        case .recentlyAdded:
+            return filtered.sorted { LibraryEntry.steam($0).addedDate > LibraryEntry.steam($1).addedDate }
         }
     }
 
@@ -152,6 +155,8 @@ struct GameModeView: View {
             return filtered.sorted { (playActivity.lastPlayed($0.id) ?? .distantPast) > (playActivity.lastPlayed($1.id) ?? .distantPast) }
         case .mostPlayed:
             return filtered.sorted { playActivity.totalSeconds(for: $0.id) > playActivity.totalSeconds(for: $1.id) }
+        case .recentlyAdded:
+            return filtered.sorted { $0.addedDate > $1.addedDate }
         }
     }
 

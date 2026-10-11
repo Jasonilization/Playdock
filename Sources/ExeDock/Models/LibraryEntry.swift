@@ -31,4 +31,25 @@ enum LibraryEntry: Identifiable, Equatable {
         case .custom(let game): return game.addedAt
         }
     }
+
+    /// Used for the "Recently Added" sort. Steam's manifests carry no install date, so the
+    /// closest real ground truth is the install folder's own filesystem creation date (the moment
+    /// Steam finished downloading into it); a custom game simply reports its imported date.
+    var addedDate: Date {
+        switch self {
+        case .steam(let game): return Self.creationDate(ofFolder: game.installFolderPath) ?? .distantPast
+        case .custom(let game): return game.addedAt
+        }
+    }
+
+    /// Folder-creation lookups get memoized so a sort's O(n log n) comparisons don't re-stat the
+    /// same paths dozens of times over.
+    private static var creationDateCache: [String: Date?] = [:]
+
+    private static func creationDate(ofFolder path: String) -> Date? {
+        if let cached = creationDateCache[path] { return cached }
+        let result = (try? FileManager.default.attributesOfItem(atPath: path))?[.creationDate] as? Date
+        creationDateCache[path] = result
+        return result
+    }
 }
