@@ -511,5 +511,11 @@ enum Localization {
         "Language": "Idioma",
         "Diagnostics": "Diagnóstico",
         "About": "Sobre",
+        "Advanced Mode": "Modo avançado",
+        "Adds a settings button to each game so you can fine-tune its engine and graphics settings individually. Most people never need this.": "Adiciona um botão de ajustes a cada jogo para ajustar o motor e os gráficos individualmente. A maioria das pessoas nunca precisa disso.",
+        "Show Floating Steam Icon": "Mostrar ícone flutuante da Steam",
+        "The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way).": "O ícone no canto da grade que abre a Steam com um clique duplo. Desative para recolhê-lo em uma pequena aba na borda (continua lá, apenas fora do caminho).",
+        "Preview With Sample Games": "Pré-visualizar com jogos de exemplo",
+        "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "Adiciona jogos conhecidos (arte e notas reais, nada instalado) para ver como a grade fica. Desative para removê-los.",
     ]
 }
