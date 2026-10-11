@@ -207,5 +207,13 @@ enum Localization {
         "No games installed": "Aucun jeu installé",
         "%lld game": "%lld jeu",
         "%lld games": "%lld jeux",
+        "General": "Général",
+        "Appearance": "Apparence",
+        "Personalization": "Personnalisation",
+        "Library": "Bibliothèque",
+        "Games & Data": "Jeux et données",
+        "Language": "Langue",
+        "Diagnostics": "Diagnostics",
+        "About": "À propos",
     ]
 }
