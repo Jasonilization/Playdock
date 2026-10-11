@@ -536,7 +536,7 @@ struct GameModeView: View {
                 .disabled(model.isLoadingSteamGames)
 
                 headerIconButton(systemImage: "gearshape", help: "Settings", isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(2)) {
-                    showingSettingsSheet = true
+                    openSettings()
                 }
             }
             .padding(.horizontal, 8)
@@ -1061,7 +1061,7 @@ struct GameModeView: View {
             model.refreshSteamGames()
             model.refreshSteamProfile()
         case .toolbar:
-            showingSettingsSheet = true
+            openSettings()
         case .card(let index):
             guard libraryEntries.indices.contains(index) else { return }
             switch libraryEntries[index] {
