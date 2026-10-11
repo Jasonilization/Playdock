@@ -449,7 +449,58 @@ struct SettingsPanelView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+
+            launchReliabilityCard
         }
+    }
+
+    /// A per-game tally of Playdock-driven launch outcomes - the same evidence the detail page's
+    /// banner uses, collected in one place. Only surfaces at all once at least one launch has been
+    /// recorded (no empty-state noise on a fresh install).
+    @ViewBuilder
+    private var launchReliabilityCard: some View {
+        let summaries = LocalOutcomeTracker.summaries()
+        if !summaries.isEmpty {
+            SettingsCard(skin: skin, title: L("Launch Reliability")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(summaries, id: \.appID) { summary in
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(gameName(for: summary.appID))
+                                    .font(.callout.weight(.medium))
+                                if summary.failures > 0 {
+                                    Text(LF("%lld/%lld launches OK · last failure %@", summary.total - summary.failures, summary.total, relative(summary.lastFailure)))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text(LF("%lld launches, no errors", summary.total))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: summary.failures == 0 ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                .foregroundStyle(summary.failures == 0 ? .green : .yellow)
+                        }
+                        if summary.appID != summaries.last?.appID { Divider().opacity(0.3) }
+                    }
+                    Text(L("Counts only launches started from Playdock."))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+    }
+
+    private func gameName(for appID: String) -> String {
+        if let g = model.steamGames.first(where: { $0.appID == appID }) { return g.name }
+        if let c = model.customGames.first(where: { $0.id == appID }) { return c.effectiveName }
+        return L("Game") + " \(appID)"
+    }
+
+    private func relative(_ date: Date?) -> String {
+        guard let date else { return "—" }
+        return RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date())
     }
 
     // MARK: About

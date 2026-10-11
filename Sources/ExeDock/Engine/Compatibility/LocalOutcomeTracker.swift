@@ -28,6 +28,27 @@ enum LocalOutcomeTracker {
         loadAll().filter { $0.appID == appID }
     }
 
+    /// Per-game tallies across everything recorded, failures-most-recent-first - what the
+    /// Diagnostics settings card renders. Only Playdock-driven launches exist here at all,
+    /// so these lists never claim knowledge of games launched some other way.
+    static func summaries() -> [LaunchSummary] {
+        var grouped: [String: [LaunchOutcomeRecord]] = [:]
+        for record in loadAll() { grouped[record.appID, default: []].append(record) }
+        return grouped.map { appID, records in
+            LaunchSummary(appID: appID,
+                          total: records.count,
+                          failures: records.count { $0.launchErrored },
+                          lastFailure: records.filter { $0.launchErrored }.map(\.timestamp).max())
+        }.sorted { ($0.lastFailure ?? .distantPast) > ($1.lastFailure ?? .distantPast) }
+    }
+
+    struct LaunchSummary {
+        let appID: String
+        let total: Int
+        let failures: Int
+        let lastFailure: Date?
+    }
+
     private static func loadAll() -> [LaunchOutcomeRecord] {
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return [] }
         return (try? JSONDecoder().decode([LaunchOutcomeRecord].self, from: data)) ?? []
