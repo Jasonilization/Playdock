@@ -363,5 +363,11 @@ enum Localization {
         "Language": "Sprache",
         "Diagnostics": "Diagnose",
         "About": "Über",
+        "Advanced Mode": "Erweiterter Modus",
+        "Adds a settings button to each game so you can fine-tune its engine and graphics settings individually. Most people never need this.": "Fügt jedem Spiel eine Einstellungsschaltfläche hinzu, um Engine und Grafik einzeln anzupassen. Die meisten brauchen das nie.",
+        "Show Floating Steam Icon": "Schwebendes Steam-Symbol anzeigen",
+        "The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way).": "Das Symbol in der Ecke des Rasters, das Steam per Doppelklick öffnet. Ausschalten, um es zu einem kleinen Reiter am Rand einzuklappen (weiterhin da, nur aus dem Weg).",
+        "Preview With Sample Games": "Vorschau mit Beispielspielen",
+        "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "Fügt bekannte Spiele hinzu (echte Bilder und Wertungen, nichts installiert), um das Raster zu beurteilen. Zum Entfernen ausschalten.",
     ]
 }
