@@ -122,5 +122,9 @@
   "031-boot-to-dashboard-transition": {
     "commit": "8be541a5125461758fcea13b6a016e9bc68666a3",
     "shipped_at": "2026-10-11T09:04:18.000410+00:00"
+  },
+  "032-setup-failure-quit-button": {
+    "commit": "c5441227521fef5014e1836c219812b430fab778",
+    "shipped_at": "2026-10-11T09:07:49.659650+00:00"
   }
 }
