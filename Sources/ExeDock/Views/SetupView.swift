@@ -57,6 +57,17 @@ struct SetupView: View {
                 .buttonStyle(PlaydockButtonStyle())
                 .frame(maxWidth: 220)
                 .padding(.top, 4)
+                // A real, previously-missing gap: someone stuck here (genuinely offline, no
+                // network reachable at all) had no on-screen way out at all - only Cmd+Q, which
+                // isn't discoverable for everyone. A plain, deliberately-unstyled quit link right
+                // under the real retry action.
+                Button("Quit Playdock") {
+                    NSApp.terminate(nil)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .font(.callout)
+                .padding(.top, 2)
             }
             Spacer()
         }
