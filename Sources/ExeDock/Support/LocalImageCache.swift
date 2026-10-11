@@ -34,6 +34,12 @@ enum LocalImageCache {
     /// decoding full-resolution first and throwing most of it away.
     private static let maxDimension: CGFloat = 1000
 
+    /// Drops every decoded bitmap. Used by Settings' "Hard Refresh Game Info" so re-downloaded art
+    /// at the same file path isn't masked by the previous decode still sitting in memory.
+    static func clear() {
+        cache.removeAllObjects()
+    }
+
     static func image(atPath path: String) -> NSImage? {
         let key = path as NSString
         if let cached = cache.object(forKey: key) {
