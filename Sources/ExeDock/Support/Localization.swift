@@ -118,6 +118,7 @@ enum Localization {
         .french: french,
         .spanish: spanish,
         .german: german,
+        .japanese: japanese,
     ]
 
     private static let chineseSimplified: [String: String] = [
@@ -410,5 +411,23 @@ enum Localization {
         "Built on the Sikarugir engine.": "Basiert auf der Sikarugir-Engine.",
         "Contact": "Kontakt",
         "A Mac dashboard for the Windows games you run through Wine.": "Ein Mac-Dashboard für die Windows-Spiele, die du über Wine spielst.",
+    ]
+
+    private static let japanese: [String: String] = [
+        "System": "システム",
+        "Match your Mac": "Mac に合わせる",
+        "Settings": "設定",
+        "Done": "完了",
+        "Close": "閉じる",
+        "Cancel": "キャンセル",
+        "Refresh": "更新",
+        "Add Game": "ゲームを追加",
+        "Sort": "並び替え",
+        "Name": "名前",
+        "Recently Updated": "最近更新",
+        "Search your games": "ゲームを検索",
+        "No games installed": "インストール済みのゲームがありません",
+        "%lld game": "%lld 本のゲーム",
+        "%lld games": "%lld 本のゲーム",
     ]
 }
