@@ -400,6 +400,8 @@ struct GameModeView: View {
                 } onLaunch: {
                     self.detailGame = nil
                     launchOverlayGame = detailGame
+                } onOpenSimilar: { similar in
+                    self.detailGame = similar
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.92)))
                 .zIndex(1)
@@ -1447,6 +1449,8 @@ struct GameDetailView: View {
     let isAdvancedMode: Bool
     let onClose: () -> Void
     let onLaunch: () -> Void
+    /// Opens a different game's detail page in place ("More like this" taps).
+    let onOpenSimilar: (SteamGame) -> Void
     @LocalState private var storeInfo: SteamStoreInfo?
     @LocalState private var showingSettings = false
     /// Which action a controller's D-pad currently has highlighted - only ever shown/used while a
@@ -1462,6 +1466,9 @@ struct GameDetailView: View {
     /// reliability banner below describes right now, not session-stale state.
     @LocalState private var launchHistory: [LaunchOutcomeRecord] = []
     @LocalState private var showingCompatibilityFinder = false
+    /// Same-primary-genre Steam games, resolved asynchronously from the *cached* store info only
+    /// (see cachedSnapshot) - this rail never triggers a network fetch of its own.
+    @LocalState private var similarGames: [(game: SteamGame, headerPath: String?)] = []
 
     private var runningInfo: RunningProcessInfo? { runningTracker.runningGames[game.appID] }
     private var hasCustomSettings: Bool { model.perGameConfigs[game.appID] != nil }
@@ -1529,6 +1536,10 @@ struct GameDetailView: View {
                                 photoGrid
                             }
                         }
+
+                        if !similarGames.isEmpty {
+                            moreLikeThis
+                        }
                     }
                     .padding(32)
                     // The double .frame() is deliberate, not redundant: the first caps the content
@@ -1559,6 +1570,7 @@ struct GameDetailView: View {
             if let path = storeInfo?.headerImagePath { gameAccent = await GameArtColor.dominantColor(forImagePath: path) }
             reloadLaunchHistory()
         }
+        .task(id: storeInfo?.genres.first) { await reloadSimilarGames() }
         // A launch finishing while this page is open must update the banner in place.
         .onChange(of: model.launchingTarget) { _ in reloadLaunchHistory() }
         .onExitCommand { onClose() }
@@ -1740,6 +1752,61 @@ struct GameDetailView: View {
 
     /// True whenever there's actually something to put in `photoGrid`.
     private var hasPhotos: Bool { !allPhotoPaths.isEmpty }
+
+    // MARK: - More like this
+
+    /// Same primary genre, best rated first (Metacritic where known), self excluded. Cached data
+    /// only: genre coverage depends on what's already been fetched for some other reason - a
+    /// library with thin cache shows a short rail, and that's correct, not a bug to paper over.
+    private func reloadSimilarGames() async {
+        guard let primaryGenre = storeInfo?.genres.first else { similarGames = []; return }
+        var matches: [(SteamGame, String?, Int)] = []
+        for candidate in model.steamGames where candidate.appID != game.appID {
+            guard let info = await SteamStoreInfoCache.shared.cachedSnapshot(for: candidate.metadataAppID),
+                  info.genres.first == primaryGenre else { continue }
+            matches.append((candidate, info.headerImagePath, info.metacriticScore ?? -1))
+        }
+        matches.sort { $0.2 > $1.2 }
+        similarGames = Array(matches.prefix(10).map { ($0.0, $0.1) })
+    }
+
+    private var moreLikeThis: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L("More like this"))
+                .font(.headline)
+                .foregroundStyle(.white)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(similarGames, id: \.game.appID) { similar in
+                        Button {
+                            onOpenSimilar(similar.game)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                if let path = similar.headerPath, let image = LocalImageCache.image(atPath: path) {
+                                    Image(nsImage: image)
+                                        .resizable().aspectRatio(contentMode: .fill)
+                                        .frame(width: 148, height: 69)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(.white.opacity(0.07))
+                                        .frame(width: 148, height: 69)
+                                        .overlay(Image(systemName: "gamecontroller").foregroundStyle(.white.opacity(0.3)))
+                                }
+                                Text(similar.game.name)
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(.white.opacity(0.9))
+                                    .lineLimit(1)
+                                    .frame(width: 148, alignment: .leading)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
 
     // MARK: - Reliability
 

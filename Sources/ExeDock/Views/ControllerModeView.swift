@@ -70,6 +70,11 @@ struct ControllerModeView: View {
                     closeDetail()
                 } onLaunch: {
                     model.launchSteamGame(currentGame)
+                } onOpenSimilar: { similar in
+                    // "More like this" navigates within the same controller-mode detail layer:
+                    // the game may not even be on the carousel's current page, so jump the whole
+                    // selection to it and keep the overlay open.
+                    if let index = games.firstIndex(of: similar) { selectedIndex = index }
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.92)))
                 .zIndex(1)

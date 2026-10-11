@@ -152,6 +152,18 @@ actor SteamStoreInfoCache {
         (cacheDir as NSString).appendingPathComponent("\(appID).json")
     }
 
+    /// What's already cached for this app (memory or disk), WITHOUT any network. Powers the
+    /// "More like this" rail: it must never wake 40 fresh fetches just to decorate one page.
+    /// Stale entries still count as cached here - a genre is a genre.
+    func cachedSnapshot(for appID: String) -> SteamStoreInfo? {
+        if let cached = memoryCache[appID] { return cached }
+        if let info = readFromDisk(appID) {
+            memoryCache[appID] = info
+            return info
+        }
+        return nil
+    }
+
     private func readFromDisk(_ appID: String) -> SteamStoreInfo? {
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: metadataPath(for: appID))) else { return nil }
         return try? JSONDecoder().decode(SteamStoreInfo.self, from: data)
