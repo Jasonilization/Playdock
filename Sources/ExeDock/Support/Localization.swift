@@ -113,5 +113,25 @@ enum Localization {
     /// English is the key set itself - every other table only needs the keys it actually
     /// translates; anything missing falls through to English automatically. Populated one
     /// language at a time as each table is added below.
-    private static let tables: [AppLanguage: [String: String]] = [:]
+    private static let tables: [AppLanguage: [String: String]] = [
+        .chineseSimplified: chineseSimplified,
+    ]
+
+    private static let chineseSimplified: [String: String] = [
+        "System": "系统",
+        "Match your Mac": "跟随系统",
+        "Settings": "设置",
+        "Done": "完成",
+        "Close": "关闭",
+        "Cancel": "取消",
+        "Refresh": "刷新",
+        "Add Game": "添加游戏",
+        "Sort": "排序",
+        "Name": "名称",
+        "Recently Updated": "最近更新",
+        "Search your games": "搜索游戏",
+        "No games installed": "未安装游戏",
+        "%lld game": "%lld 个游戏",
+        "%lld games": "%lld 个游戏",
+    ]
 }
