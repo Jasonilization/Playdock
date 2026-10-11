@@ -13,6 +13,13 @@ actor SteamStoreInfoCache {
     private var memoryCache: [String: SteamStoreInfo?] = [:]
     private let cacheDir = ("~/Library/Application Support/ExeDock/StoreInfoCache" as NSString).expandingTildeInPath
 
+    /// Drops every in-memory result so the next `info(for:)` re-reads disk (or, after the on-disk
+    /// cache has also been wiped, re-fetches from Steam). Used by Settings' "Hard Refresh Game
+    /// Info" - clearing the disk files alone wouldn't be enough while a stale copy still sits here.
+    func clearMemoryCache() {
+        memoryCache.removeAll()
+    }
+
     func info(for appID: String) async -> SteamStoreInfo? {
         if let cached = memoryCache[appID] {
             return cached
