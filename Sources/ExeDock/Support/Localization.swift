@@ -141,5 +141,11 @@ enum Localization {
         "Language": "语言",
         "Diagnostics": "诊断",
         "About": "关于",
+        "Advanced Mode": "高级模式",
+        "Adds a settings button to each game so you can fine-tune its engine and graphics settings individually. Most people never need this.": "为每个游戏添加设置按钮，便于单独调整其引擎和图形设置。大多数人无需使用。",
+        "Show Floating Steam Icon": "显示悬浮 Steam 图标",
+        "The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way).": "网格角落中双击打开 Steam 的图标。关闭后会收拢为边缘的小标签（仍然可用，只是不碍事）。",
+        "Preview With Sample Games": "使用示例游戏预览",
+        "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "添加一些知名游戏（真实封面和评分，并未实际安装），以便查看网格效果。关闭即可移除。",
     ]
 }
