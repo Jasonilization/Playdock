@@ -193,6 +193,10 @@ input.search::placeholder{color:inherit;opacity:0.6;}
 .lst .title{font-family:'Public Sans';font-weight:600;font-size:13.5px;}
 .lst .badge{font-size:9.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;margin-left:6px;font-family:'Public Sans';}
 .lst .genre{color:var(--sub);}
+/* Play-time text inside a card's genre line - quieter than the genre itself, inherits the
+   skin's own subdued color so it never fights the palette. */
+.ptime{opacity:.75;}
+
 .lst .num{font-variant-numeric:tabular-nums;color:var(--sub);text-align:right;}
 .lst .status{text-align:right;}
 .lst .run-pill{color:#1a9c56;font-weight:600;font-size:11.5px;}

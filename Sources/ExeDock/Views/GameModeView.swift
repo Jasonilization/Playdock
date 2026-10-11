@@ -180,6 +180,10 @@ struct GameModeView: View {
                 isMac = false
                 sizeText = nil
             }
+            // Cards show local recorded play time ("7.5 h") instead of the permanent `nil` the
+            // grid used to ship with - ground truth from PlayActivityStore, nil (chip hidden) for
+            // a game with no recorded session yet.
+            let totalSecondsPlayed = playActivity.totalSeconds(for: entry.id)
             return SkinWebGridEntry(
                 id: entry.id,
                 title: entry.name,
@@ -190,9 +194,18 @@ struct GameModeView: View {
                 mac: isMac,
                 running: runningTracker.runningGames[entry.id] != nil,
                 size: sizeText,
-                hours: nil
+                hours: totalSecondsPlayed > 0 ? Self.playHoursText(totalSecondsPlayed) : nil
             )
         }
+    }
+
+    /// "5 m" / "2.5 h" - one decimal under 10h, whole hours above; minutes are rounded UP so any
+    /// real session at all shows at least "1 m" rather than a confusing "0 m".
+    private static func playHoursText(_ seconds: TimeInterval) -> String {
+        if seconds < 3600 { return "\(max(1, Int((seconds / 60).rounded(.up)))) m" }
+        let hours = seconds / 3600
+        if hours < 10 { return String(format: "%.1f h", hours) }
+        return "\(Int(hours.rounded())) h"
     }
 
     /// Resolves every entry currently in the library concurrently (already-resolved entries are

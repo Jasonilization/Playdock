@@ -103,7 +103,7 @@ const CARDS = {
       </div>
       <div class="body">
         <p class="title">${esc(gm.title)}</p>
-        <p class="genre">${esc(gm.genre)}</p>
+        <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
         <p class="desc">${esc(gm.desc)}</p>
         ${gm.running ? '<div class="run"><span class="dot"></span>Running</div>' : '<button class="cta">View Details</button>'}
       </div>
@@ -114,7 +114,7 @@ const CARDS = {
       <div class="art" style="${artStyle(gm, 80, 60)}">${badge(gm, 'Custom')}</div>
       <div class="body">
         <p class="title">${esc(gm.title)}</p>
-        <span class="genre">${esc(gm.genre)}</span>
+        <span class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</span>
         <p class="desc">${esc(gm.desc)}</p>
         ${gm.running ? '<button class="cta run">● Running</button>' : '<button class="cta">Launch →</button>'}
       </div>
@@ -125,7 +125,7 @@ const CARDS = {
       <div class="art" style="${artStyle(gm, 70, 140)}">${badge(gm, 'CUSTOM')}</div>
       <div class="body">
         <p class="title">${esc(gm.title)}</p>
-        <p class="genre">${esc(gm.genre)}</p>
+        <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
         <p class="desc">${esc(gm.desc)}</p>
         ${gm.running ? '<button class="cta run">● RUNNING</button>' : '<button class="cta">LAUNCH ▸</button>'}
       </div>
@@ -135,7 +135,7 @@ const CARDS = {
     <div class="card" ${click(gm.id)}>
       <div class="art" style="${artStyle(gm, 25, 100)}">${badge(gm, 'Custom')}</div>
       <p class="title">${esc(gm.title)}</p>
-      <p class="genre">${esc(gm.genre)}</p>
+      <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
       <p class="desc">${esc(gm.desc)}</p>
       ${gm.running ? '<button class="cta run">● Running</button>' : '<button class="cta">Launch</button>'}
     </div>`).join(''),
@@ -145,7 +145,7 @@ const CARDS = {
       <div class="art" style="${artStyle(gm, 90, 100)}">${badge(gm, 'MOD')}</div>
       <div class="body">
         <p class="title">${esc(gm.title)}</p>
-        <p class="genre">${esc(gm.genre)}</p>
+        <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
         <p class="desc">${esc(gm.desc)}</p>
         ${gm.running ? '<button class="cta run">■ LIVE</button>' : '<button class="cta">START ▶</button>'}
       </div>
