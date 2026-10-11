@@ -269,6 +269,16 @@ struct PlaydockCardShape: InsettableShape {
     }
 }
 
+/// A color that resolves light/dark itself, live - a file-scope twin of `PlaydockSkin.dynamicAccent`
+/// for the handful of skin tokens defined outside the enum (the hard-shadow ink below).
+private func dynamicColor(light: (r: Double, g: Double, b: Double), dark: (r: Double, g: Double, b: Double)) -> Color {
+    Color(nsColor: NSColor(name: nil) { appearance in
+        let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let c = isDark ? dark : light
+        return NSColor(red: c.r, green: c.g, blue: c.b, alpha: 1)
+    })
+}
+
 /// Skins whose real mockup card gets a hard, unblurred offset "twin shape" shadow instead of a soft
 /// `.shadow()` glow - Neobrutalist's `box-shadow: 8px 8px 0` and Pixel Arcade's `box-shadow: 6px 6px
 /// 0` are the same real technique, just different ink colors.
