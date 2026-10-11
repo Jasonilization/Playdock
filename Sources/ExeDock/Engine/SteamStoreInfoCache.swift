@@ -81,9 +81,13 @@ actor SteamStoreInfoCache {
         // gallery (some games ship dozens), and full-resolution shots aren't worth the bandwidth for
         // what's still just a supporting visual, not the main event.
         var screenshotPaths: [String] = []
+        var screenshotFullImageURLs: [String] = []
         let screenshots = (appData["screenshots"] as? [[String: Any]]) ?? []
         for (index, screenshot) in screenshots.prefix(6).enumerated() {
             guard let thumbURLString = screenshot["path_thumbnail"] as? String, let thumbURL = URL(string: thumbURLString) else { continue }
+            // Kept URL-only on purpose: the full image streams in lazily, the moment someone
+            // actually opens it in the lightbox - never as part of the strip's own fetch.
+            screenshotFullImageURLs.append((screenshot["path_full"] as? String) ?? thumbURLString)
             if let path = await downloadImage(thumbURL, appID: appID, suffix: "screenshot-\(index)") {
                 screenshotPaths.append(path)
             }
@@ -117,7 +121,8 @@ actor SteamStoreInfoCache {
             publishers: publishers,
             metacriticScore: metacriticScore,
             metacriticURL: metacriticURL,
-            categories: categories
+            categories: categories,
+            screenshotFullImageURLs: screenshotFullImageURLs
         )
     }
 

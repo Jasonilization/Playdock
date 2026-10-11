@@ -1453,8 +1453,9 @@ struct GameDetailView: View {
     /// controller is actually connected (see `availableActions`'s call sites), so mouse-only use
     /// never sees a stray focus ring.
     @LocalState private var focusedActionIndex = 0
-    /// Non-nil while a photo is shown full-size over everything else.
-    @LocalState private var expandedImagePath: String?
+    /// Non-nil while a photo is shown full-size: the index into `allPhotoPaths`, so the lightbox
+    /// can browse with arrows / D-pad instead of only closing.
+    @LocalState private var expandedPhotoIndex: Int?
     @LocalState private var gameAccent: Color?
     /// This game's Playdock-recorded launch outcomes (see LocalOutcomeTracker) - loaded with the
     /// rest of the page and refreshed whenever a launch finishes while it's open, so the
@@ -1545,8 +1546,8 @@ struct GameDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            if let expandedImagePath {
-                imageLightbox(expandedImagePath)
+            if let expandedPhotoIndex {
+                photoLightbox(at: expandedPhotoIndex)
                     .transition(.opacity)
                     .zIndex(10)
             }
@@ -1565,18 +1566,24 @@ struct GameDetailView: View {
         // mounted - it's rendered above everything else wherever it appears (a direct card tap, or
         // ControllerModeView's own drill-down), so there's nothing above it to defer to.
         .onChange(of: controllerObserver.directionPress?.token) { _ in
-            guard expandedImagePath == nil, let direction = controllerObserver.directionPress?.direction else { return }
+            guard let direction = controllerObserver.directionPress?.direction else { return }
+            if expandedPhotoIndex != nil {
+                // Inside the lightbox the D-pad browses photos instead of moving detail focus.
+                if direction == .left { stepExpandedPhoto(by: -1) }
+                if direction == .right { stepExpandedPhoto(by: 1) }
+                return
+            }
             moveActionFocus(direction)
         }
         .onChange(of: controllerObserver.primaryPress) { _ in
-            guard expandedImagePath == nil else { return }
+            guard expandedPhotoIndex == nil else { return }
             activateFocusedAction()
         }
         .onChange(of: controllerObserver.secondaryPress) { _ in
             // Back out one level at a time - close the expanded photo first if one's open, the
             // whole detail view otherwise.
-            if expandedImagePath != nil {
-                expandedImagePath = nil
+            if expandedPhotoIndex != nil {
+                expandedPhotoIndex = nil
             } else {
                 onClose()
             }
@@ -1794,39 +1801,35 @@ struct GameDetailView: View {
                     .skinArtTreatment()
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .contentShape(RoundedRectangle(cornerRadius: 10))
-                    .onTapGesture { expandedImagePath = path }
+                    .onTapGesture { expandedPhotoIndex = allPhotoPaths.firstIndex(of: path) }
             }
         }
     }
 
     /// A full-size, uncropped look at one photo - tap anywhere (or press Escape/B) to dismiss.
-    private func imageLightbox(_ path: String) -> some View {
-        ZStack {
-            Color.black.opacity(0.92).ignoresSafeArea()
-            if let image = LocalImageCache.image(atPath: path) {
-                Image(nsImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .padding(60)
-            }
-            VStack {
-                HStack {
-                    Spacer()
-                    Button {
-                        expandedImagePath = nil
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundStyle(.white, .black.opacity(0.4))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(24)
-                }
-                Spacer()
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { expandedImagePath = nil }
+    private func photoLightbox(at index: Int) -> some View {
+        PhotoLightboxView(
+            paths: allPhotoPaths,
+            fullImageURLs: fullImageURLsByPhotoPath,
+            index: index,
+            onStep: { step in stepExpandedPhoto(by: step) },
+            onClose: { expandedPhotoIndex = nil }
+        )
+    }
+
+    /// Full-resolution source URL per photo path where one exists (screenshots only - the header
+    /// art's cached copy is already full size). Parallel to `allPhotoPaths`, keyed by path.
+    private var fullImageURLsByPhotoPath: [String: String] {
+        var map: [String: String] = [:]
+        let shots = storeInfo?.screenshotPaths ?? []
+        let fulls = storeInfo?.screenshotFullImageURLs ?? []
+        for (path, url) in zip(shots, fulls) { map[path] = url }
+        return map
+    }
+
+    private func stepExpandedPhoto(by delta: Int) {
+        guard let current = expandedPhotoIndex, !allPhotoPaths.isEmpty else { return }
+        expandedPhotoIndex = (current + delta + allPhotoPaths.count) % allPhotoPaths.count
     }
 
     /// Same green/yellow/red convention Steam's own store pages use for Metacritic scores.
@@ -2380,5 +2383,95 @@ private struct GameCardSkeleton: View {
                 isShimmering = true
             }
         }
+    }
+}
+
+// MARK: - Photo lightbox
+
+/// Full-window photo viewer for a game's screenshots: browsable with the on-screen arrows or a
+/// controller's D-pad (one photo at a time, wrapping), and it lazily swaps each cached thumbnail
+/// for its full-resolution original the moment that page is actually opened, falling back to the
+/// cached copy if the server (or the network) doesn't cooperate. Closing: Esc / the X / a
+/// controller's secondary button / tapping the backdrop.
+private struct PhotoLightboxView: View {
+    let paths: [String]
+    let fullImageURLs: [String: String]
+    let index: Int
+    let onStep: (Int) -> Void
+    let onClose: () -> Void
+
+    // `@LocalState`, not `@State`: this repo builds with bare Command Line Tools, where the
+    // SwiftUI macro plugin that powers `@State` isn't wired up - every view in the codebase uses
+    // the hand-rolled equivalent for exactly that reason.
+    @LocalState private var fullImage: NSImage?
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.92).ignoresSafeArea()
+            Group {
+                if let fullImage {
+                    Image(nsImage: fullImage).resizable().aspectRatio(contentMode: .fit)
+                } else if let cached = LocalImageCache.image(atPath: paths[index]) {
+                    Image(nsImage: cached).resizable().aspectRatio(contentMode: .fit)
+                } else {
+                    ProgressView().controlSize(.large)
+                }
+            }
+            .padding(60)
+            .id(index) // reset per-photo so one shot's failed load never sticks to the next
+            .task(id: index) { await loadFullSize(index) }
+
+            if paths.count > 1 {
+                HStack {
+                    lightboxArrow(systemName: "chevron.left") { onStep(-1) }
+                    Spacer()
+                    lightboxArrow(systemName: "chevron.right") { onStep(1) }
+                }
+                .padding(.horizontal, 20)
+            }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Text("\(index + 1) of \(paths.count)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(.black.opacity(0.5), in: Capsule())
+                    Button { onClose() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(.white, .black.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(24)
+                }
+                Spacer()
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { onClose() }
+        .onExitCommand { onClose() }
+    }
+
+    private func lightboxArrow(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(.black.opacity(0.55), in: Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Fetch the full-size original through `URLCache` (disk-backed): first open costs one real
+    /// request, every later open of the same shot is local. A failure just keeps the thumbnail.
+    private func loadFullSize(_ index: Int) async {
+        guard let urlString = fullImageURLs[paths[index]], let url = URL(string: urlString) else { return }
+        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
+        guard let (data, _) = try? await URLSession.shared.data(for: request),
+              let image = NSImage(data: data) else { return }
+        fullImage = image
     }
 }

@@ -10,7 +10,7 @@ struct SteamStoreInfo: Codable, Equatable {
     /// guessing "is this incomplete?" from which fields happen to be empty (a genuinely sparse but
     /// fully-fetched entry - an obscure app with no Metacritic score, say - would otherwise look
     /// permanently stale under that heuristic).
-    static let currentSchemaVersion = 2
+    static let currentSchemaVersion = 3
 
     let shortDescription: String?
     /// The full "About This Game" text, HTML tags stripped down to plain text (with paragraph
@@ -32,11 +32,13 @@ struct SteamStoreInfo: Codable, Equatable {
     var metacriticScore: Int?
     var metacriticURL: String?
     var categories: [String] = []
+    var screenshotFullImageURLs: [String] = []
     var schemaVersion: Int = Self.currentSchemaVersion
 
     init(shortDescription: String?, aboutTheGame: String? = nil, headerImagePath: String?, backgroundImagePath: String? = nil,
          screenshotPaths: [String] = [], genres: [String] = [], releaseDate: String? = nil, developers: [String] = [],
-         publishers: [String] = [], metacriticScore: Int? = nil, metacriticURL: String? = nil, categories: [String] = []) {
+         publishers: [String] = [], metacriticScore: Int? = nil, metacriticURL: String? = nil, categories: [String] = [],
+         screenshotFullImageURLs: [String] = []) {
         self.shortDescription = shortDescription
         self.aboutTheGame = aboutTheGame
         self.headerImagePath = headerImagePath
@@ -49,6 +51,10 @@ struct SteamStoreInfo: Codable, Equatable {
         self.metacriticScore = metacriticScore
         self.metacriticURL = metacriticURL
         self.categories = categories
+        /// Parallel to `screenshotPaths`: the full-resolution source URL each cached thumbnail
+        /// came from, so the lightbox can lazy-load the real image on demand instead of pinning
+        /// 6 full-size shots per game on disk for everyone.
+        self.screenshotFullImageURLs = screenshotFullImageURLs
         self.schemaVersion = Self.currentSchemaVersion
     }
 
@@ -75,7 +81,17 @@ struct SteamStoreInfo: Codable, Equatable {
         metacriticScore = try container.decodeIfPresent(Int.self, forKey: .metacriticScore)
         metacriticURL = try container.decodeIfPresent(String.self, forKey: .metacriticURL)
         categories = try container.decodeIfPresent([String].self, forKey: .categories) ?? []
+        screenshotFullImageURLs = try container.decodeIfPresent([String].self, forKey: .screenshotFullImageURLs) ?? []
         schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 0
+    }
+
+    /// Explicit so the synthesized *encoder* covers every field (the custom decoder reads
+    /// leniently; without this list, `screenshotFullImageURLs` would silently never be saved).
+    private enum CodingKeys: String, CodingKey {
+        case shortDescription, aboutTheGame, headerImagePath, backgroundImagePath
+        case screenshotPaths, screenshotFullImageURLs
+        case genres, categories, releaseDate, developers, publishers
+        case metacriticScore, metacriticURL, schemaVersion
     }
 
     /// Turns Steam's own HTML-formatted "about the game" copy into plain text: `<br>` becomes a
