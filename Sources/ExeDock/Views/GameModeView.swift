@@ -575,9 +575,9 @@ struct GameModeView: View {
                     sortOption = option
                 } label: {
                     if option == sortOption {
-                        Label(option.rawValue, systemImage: "checkmark")
+                        Label(L(option.rawValue), systemImage: "checkmark")
                     } else {
-                        Text(option.rawValue)
+                        Text(L(option.rawValue))
                     }
                 }
             }
@@ -585,7 +585,7 @@ struct GameModeView: View {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.up.arrow.down")
                     .font(.caption.weight(.semibold))
-                Text(sortOption.rawValue)
+                Text(L(sortOption.rawValue))
                     .font(.callout.weight(.medium))
                 Image(systemName: "chevron.down")
                     .font(.caption2.weight(.bold))
@@ -883,7 +883,7 @@ struct GameModeView: View {
         HStack(spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search your games", text: $search)
+                TextField(L("Search your games"), text: $search)
                     .textFieldStyle(.plain)
                     .font(.title3)
                 if !search.isEmpty {
@@ -904,9 +904,9 @@ struct GameModeView: View {
                     .strokeBorder(Color.primary.opacity(0.06))
             )
 
-            Picker("Sort", selection: $sortOption) {
+            Picker(L("Sort"), selection: $sortOption) {
                 ForEach(GameSortOption.allCases) { option in
-                    Text(option.rawValue).tag(option)
+                    Text(L(option.rawValue)).tag(option)
                 }
             }
             .frame(maxWidth: 220)
