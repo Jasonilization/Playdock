@@ -15,7 +15,10 @@ struct SkinBackground: View {
         case .luxury:
             Color(nsColor: .windowBackgroundColor)
         case .brutalist:
-            isDark ? Color(red: 0.09, green: 0.078, blue: 0.063) : Color(red: 0.996, green: 0.965, blue: 0.894)
+            // Dark ground lifted from a crushed near-black (#171410) to a readable warm charcoal
+            // (#1b1712) - paired with the retuned red accent and the no-longer-pure-white hard
+            // shadows, this is the "colour scheme looks very bad" fix for Brutalist's dark mode.
+            isDark ? Color(red: 0.106, green: 0.090, blue: 0.071) : Color(red: 0.996, green: 0.965, blue: 0.894)
         case .cyber:
             ZStack {
                 isDark ? Color(red: 0.02, green: 0.027, blue: 0.039) : Color(red: 0.933, green: 0.961, blue: 0.969)
