@@ -138,6 +138,15 @@ final class AppModel: ObservableObject {
     /// never invalidates) watch this and re-resolve from scratch when it changes.
     @Published private(set) var gameInfoGeneration = 0
 
+    private static let lastHardRefreshKey = "com.exedock.lastGameInfoRefresh"
+
+    /// When "Hard Refresh Game Info" was last run, or `nil` if never - shown in Settings so the
+    /// action doesn't feel like it did nothing.
+    var lastGameInfoRefresh: Date? {
+        let stamp = UserDefaults.standard.double(forKey: Self.lastHardRefreshKey)
+        return stamp > 0 ? Date(timeIntervalSince1970: stamp) : nil
+    }
+
     /// Settings that actually apply to a given library item - its own override if it has one,
     /// otherwise the shared default. Advanced Mode is the only place a user can create an override.
     /// Keyed by plain `id` so the exact same storage/lookup works for both Steam games (appID) and
