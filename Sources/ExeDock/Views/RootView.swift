@@ -16,10 +16,17 @@ struct RootView: View {
                     .sheet(isPresented: $showingWizard) {
                         SetupWizardView()
                     }
+                    .transition(.opacity)
             } else {
                 SetupView(setup: setup)
+                    .transition(.opacity)
             }
         }
+        // A real, previously-missing transition - the moment setup actually finishes (the boot
+        // screen above) was a hard, instant cut straight to the dashboard, the single most jarring
+        // beat in the whole first-launch experience. `.animation(value:)` here is enough on its
+        // own (no withAnimation needed at the mutation site) since `setup.stage` is Equatable.
+        .animation(.easeInOut(duration: 0.35), value: setup.stage)
         .onAppear {
             setup.runSetup()
         }
