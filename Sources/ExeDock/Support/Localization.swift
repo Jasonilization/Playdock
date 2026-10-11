@@ -548,5 +548,15 @@ enum Localization {
         "These are the same engines already downloaded by Sikarugir Creator.": "São os mesmos motores que o Sikarugir Creator já baixou.",
         "Fast Sync (ESYNC + MSYNC)": "Sincronização rápida (ESYNC + MSYNC)",
         "Playdock's Wine engine comes from Sikarugir's public releases. Checking never downloads anything by itself.": "O motor Wine do Playdock vem das versões públicas do Sikarugir. Verificar não baixa nada por conta própria.",
+        "Open Logs Folder": "Abrir a pasta de registros",
+        "Open Crash Reports": "Abrir os relatórios de falha",
+        "Every launch writes its own log here, plus a record of background checks. If something's not working, look here first.": "Cada início grava seu próprio registro aqui, além de um histórico de verificações em segundo plano. Se algo não funcionar, olhe aqui primeiro.",
+        "Choose the language Playdock's interface uses.": "Escolha o idioma usado pela interface do Playdock.",
+        "Changes apply immediately.": "As alterações são aplicadas imediatamente.",
+        "Some text may stay in English until its translation is finished.": "Alguns textos podem permanecer em inglês até a tradução ser concluída.",
+        "Version %@": "Versão %@",
+        "Built on the Sikarugir engine.": "Construído sobre o motor Sikarugir.",
+        "Contact": "Contato",
+        "A Mac dashboard for the Windows games you run through Wine.": "Um painel de Mac para os jogos de Windows que você roda pelo Wine.",
     ]
 }
