@@ -127,6 +127,17 @@ final class AppModel: ObservableObject {
         }
     }
 
+    // MARK: - Hard refresh of downloadable game info
+
+    /// True only while `hardRefreshGameInfo()` is doing its cache wipe - drives the Settings
+    /// button's spinner and keeps a second tap from stacking.
+    @Published private(set) var isHardRefreshingGameInfo = false
+
+    /// Bumped every time a hard refresh finishes. Views that cache a game's resolved art/
+    /// description in their own `@State` (keyed on the entry id, which a plain `refreshSteamGames()`
+    /// never invalidates) watch this and re-resolve from scratch when it changes.
+    @Published private(set) var gameInfoGeneration = 0
+
     /// Settings that actually apply to a given library item - its own override if it has one,
     /// otherwise the shared default. Advanced Mode is the only place a user can create an override.
     /// Keyed by plain `id` so the exact same storage/lookup works for both Steam games (appID) and
