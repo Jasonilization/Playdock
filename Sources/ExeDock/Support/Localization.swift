@@ -133,5 +133,13 @@ enum Localization {
         "No games installed": "未安装游戏",
         "%lld game": "%lld 个游戏",
         "%lld games": "%lld 个游戏",
+        "General": "通用",
+        "Appearance": "外观",
+        "Personalization": "个性化",
+        "Library": "游戏库",
+        "Games & Data": "游戏与数据",
+        "Language": "语言",
+        "Diagnostics": "诊断",
+        "About": "关于",
     ]
 }
