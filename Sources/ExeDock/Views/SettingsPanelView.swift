@@ -228,6 +228,8 @@ struct SettingsPanelView: View {
     @AppStorage(PlaydockArtSource.storageKey) private var artSourceRaw = PlaydockArtSource.banner.rawValue
     @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = true
     @AppStorage(SettingsLauncher.showLauncherKey) private var showSettingsButton = true
+    /// Depends on the badge-wiring unit that defines this key - see this unit's notes.md.
+    @AppStorage(GameModeView.hideBadgesKey) private var hideLibraryBadges = false
 
     private var personalizationTab: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -264,6 +266,15 @@ struct SettingsPanelView: View {
                         isOn: $showSettingsButton
                     )
                 }
+            }
+
+            SettingsCard(skin: skin, title: L("Hide Library Badges")) {
+                SettingsToggle(
+                    skin: skin,
+                    title: L("Hide Library Badges"),
+                    subtitle: L("The Custom/Mac/Windows label every game's art shows to say where it came from. Turn on to hide all three everywhere - every layout, every appearance."),
+                    isOn: $hideLibraryBadges
+                )
             }
         }
     }
