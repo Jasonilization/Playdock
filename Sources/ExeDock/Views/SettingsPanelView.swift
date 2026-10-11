@@ -15,6 +15,7 @@ import AppKit
 /// Built one category at a time (see the other commits in this unit) - this first cut is just the
 /// shell plus General, enough to be a working (if minimal) panel on its own.
 struct SettingsPanelView: View {
+    @ObservedObject private var curation = LibraryCurationStore.shared
     var onClose: () -> Void
 
     @EnvironmentObject private var model: AppModel
@@ -330,6 +331,8 @@ struct SettingsPanelView: View {
 
             EngineUpdatePanelSection(skin: skin)
 
+            hiddenGamesCard
+
             if isAdvancedMode {
                 SettingsCard(skin: skin, title: L("Engine")) {
                     advancedEngineControls
@@ -421,6 +424,45 @@ struct SettingsPanelView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// The "undo" half of hiding a game: whatever was hidden shows here with an Unhide button.
+    /// Empty state gets no card at all - no dead UI on a fresh install.
+    @ViewBuilder
+    private var hiddenGamesCard: some View {
+        let hiddenIDs = curation.hidden
+        if !hiddenIDs.isEmpty {
+            SettingsCard(skin: skin, title: L("Hidden Games")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(sortedHidden(hiddenIDs), id: \.id) { entry in
+                        HStack {
+                            Text(entry.name).font(.callout)
+                            Spacer()
+                            Button(L("Unhide")) { curation.unhide(entry.id) }
+                                .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
+                        }
+                    }
+                    Text(L("Hidden games stay installed; they're just removed from the library grid. Everything about them (play time, configs, launch history) is kept."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private struct HiddenEntry: Identifiable {
+        let id: String
+        let name: String
+    }
+
+    private func sortedHidden(_ ids: Set<String>) -> [HiddenEntry] {
+        ids.map { id in
+            let name = model.steamGames.first(where: { $0.appID == id })?.name
+                ?? model.customGames.first(where: { $0.id == id })?.effectiveName
+                ?? id
+            return HiddenEntry(id: id, name: name)
+        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     // MARK: Diagnostics

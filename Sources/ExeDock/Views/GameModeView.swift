@@ -81,6 +81,8 @@ struct GameModeView: View {
     @LocalState private var showingSettings = false
     @LocalState private var showingAddGameSheet = false
     @LocalState private var sortOption: GameSortOption = .name
+    /// Narrow the grid to favorites only. Off by default; a heart toggle in the header.
+    @LocalState private var favoritesOnly = false
     @LocalState private var launchOverlayGame: SteamGame?
     @LocalState private var launchOverlayCustomGame: CustomGame?
     @LocalState private var showingControllerMode = false
@@ -135,8 +137,12 @@ struct GameModeView: View {
     /// keyed off `model.steamGames`/`filteredGames` directly; this is specifically what the grid
     /// itself, and controller focus over it, iterate.
     private var libraryEntries: [LibraryEntry] {
-        let all = model.steamGames.map(LibraryEntry.steam) + model.customGames.map(LibraryEntry.custom)
-        let filtered = search.isEmpty ? all : all.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        // Hidden games are *gone* from the library entirely (settings offers unhide); favorites
+        // filtering is the cheap positive selection on what's left.
+        let all = (model.steamGames.map(LibraryEntry.steam) + model.customGames.map(LibraryEntry.custom))
+            .filter { !curation.isHidden($0.id) }
+        var filtered = search.isEmpty ? all : all.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        if favoritesOnly { filtered = filtered.filter { curation.isFavorite($0.id) } }
         switch sortOption {
         case .name:
             return filtered.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
@@ -559,6 +565,7 @@ struct GameModeView: View {
             // Add/Refresh/Settings instead of being dropped - it still governs every layout's
             // ordering, not just Grid's.
             HStack(spacing: 6) {
+                favoritesToggle
                 sortMenu
                 headerIconButton(systemImage: "plus", help: L("Add Game"), isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(0)) {
                     showingAddGameSheet = true
@@ -607,6 +614,21 @@ struct GameModeView: View {
     /// replaced rendered as bare system menu chrome with no relationship to the active skin at
     /// all. A themed pill - icon, current value, chevron - in the skin's own accent, matching the
     /// same capsule/border language `PlaydockButtonStyle`'s compact buttons already use elsewhere.
+    /// Heart toggles the whole-lists favorites-only filter - matches the sort capsule's chrome
+    /// exactly so the pair reads as one control family.
+    private var favoritesToggle: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) { favoritesOnly.toggle() }
+        } label: {
+            Image(systemName: favoritesOnly ? "heart.fill" : "heart")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(favoritesOnly ? .pink : .secondary)
+        }
+        .buttonStyle(.plain)
+        .help(L(favoritesOnly ? "Show all games" : "Show only favorites"))
+        .accessibilityLabel(L("Favorites filter"))
+    }
+
     private var sortMenu: some View {
         Menu {
             ForEach(GameSortOption.allCases) { option in
@@ -1655,6 +1677,23 @@ struct GameDetailView: View {
                 .buttonStyle(.plain)
                 .help(L(curation.isFavorite(game.appID) ? "Remove from Favorites" : "Mark as Favorite"))
             }
+
+                // Second-class actions tucked into one menu, not another visible circle -
+                // "hide this game" is rare, reversible (Settings > Hidden Games), and out of the
+                // way here instead of competing with the favorite heart.
+                Menu {
+                    Button(L("Hide This Game from Library"), role: .destructive) {
+                        curation.hide(game.appID)
+                        onClose()
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.title3)
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
             if storeInfo?.metacriticScore != nil || !(storeInfo?.genres.isEmpty ?? true) {
                 HStack(spacing: 10) {
                     if let score = storeInfo?.metacriticScore {
