@@ -24,8 +24,11 @@ struct PlaySession: Codable, Equatable {
 final class PlayActivityStore: ObservableObject {
     static let shared = PlayActivityStore()
 
-    /// Same support folder convention `LocalOutcomeTracker` already uses.
-    static let defaultPath =
+    /// Same support folder convention `LocalOutcomeTracker` already uses. `nonisolated` because
+    /// it is read as an init default argument, which is evaluated in the caller's isolation -
+    /// a pure path constant needs no MainActor guarantee (and under Swift 6 the isolated form
+    /// would be a hard error from every nonisolated caller).
+    nonisolated static let defaultPath =
         ("~/Library/Application Support/ExeDock/PlayActivity.json" as NSString).expandingTildeInPath
 
     /// Sessions under 30s are process noise (the 5s poll can double-count a fast exit/re-check

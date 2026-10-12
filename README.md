@@ -114,6 +114,22 @@ No Xcode required, just Swift + Command Line Tools:
 
 ## What's new
 
+**Playtime, favorites, and a real settings panel (1.3.0)** - Playdock finally answers "how much
+have I actually played this?": real play sessions recorded by watching game processes (no Steam
+API, no network), shown as hours on grid cards and an activity summary in Game Detail, with
+Recently Played and Most Played sorts to match. Favorites are real: a heart on every card and
+the detail pane, a favorites filter in the header, games you never want to see can be hidden
+outright, and a Recently Added sort joins the library sorts. Every card now shows which kind of
+game it is (Mac / Windows / Custom badges) with one setting to hide them all. Controller
+navigation got the rest of the way there: focus rings that follow the real focused card on
+every web-rendered layout (matched by game id, not position), analog thumbstick navigation,
+and banner transitions between screens. The whole app is localized into Chinese, French,
+Spanish, German, Japanese, and Portuguese. Settings moved out of a bolted-on sheet into a real
+in-app panel (Appearance, Personalization, Games, Language, Diagnostics, Engine, About).
+Game Detail grew capability chips, a More Like This rail, a full-size screenshot lightbox,
+and an honest reliability banner backed by a diagnostics overview. And the whole thing got
+quieter: hero/sidebar/filter cross-fades instead of hard cuts.
+
 **Real per-skin visual identity + library layouts (1.2.0)** - the dashboard's "Library Look" setting
 (Settings → Library Look) now has real teeth: 6 structurally different layouts (Grid, Shelves,
 Sidebar, Steam-style, Carousel, Spotlight) and 6 real visual skins (Luxury, Brutalist, Terminal,

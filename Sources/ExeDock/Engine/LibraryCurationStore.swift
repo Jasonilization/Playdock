@@ -9,7 +9,10 @@ import Foundation
 final class LibraryCurationStore: ObservableObject {
     static let shared = LibraryCurationStore()
 
-    static let defaultPath =
+    /// `nonisolated` because it is read as an init default argument, which is evaluated in
+    /// the caller's isolation - a pure path constant needs no MainActor guarantee (and under
+    /// Swift 6 the isolated form would be a hard error from every nonisolated caller).
+    nonisolated static let defaultPath =
         ("~/Library/Application Support/ExeDock/LibraryCuration.json" as NSString).expandingTildeInPath
 
     @Published private(set) var favorites: Set<String> = []
