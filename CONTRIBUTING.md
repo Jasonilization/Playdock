@@ -69,12 +69,11 @@ swift test
 
 ## Shipping small changes (maintainer workflow)
 
-Real, independently-reviewable changes get prepared as small "upgrades" under `upgrade-queue/`
-(each one is `meta.json` + a real `patch.diff` + `notes.md`) rather than committed straight to
-`main`. `./Scripts/ship_manager.sh` launches a local dashboard (`http://127.0.0.1:8765`) to
-browse/search them, dry-run one in an isolated `git worktree` (build + test, main tree untouched),
-and ship one for real - a two-phase apply → build → test → review-the-diff → confirm-commit flow,
-never a silent auto-commit. See `upgrade-queue/ship_manager/README.md` for the full contract.
+Commit straight to `main` - small, focused commits, one fix or feature each, built and tested
+before pushing (`swift build -c release && swift test`, then `./Scripts/build_app.sh` for a
+real launch check). Keep every commit individually reviewable, exactly as the old queue's
+"upgrades" were; the upgrade-queue/Ship Manager machinery is retired (it landed everything
+it had queued before going away).
 
 ## Pull requests
 

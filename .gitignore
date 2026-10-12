@@ -1,3 +1,4 @@
+# Build artifacts
 .build/
 build/
 dist/
@@ -5,12 +6,4 @@ dist/
 *.xcodeproj
 .vscode/
 
-# Ship Manager runtime state (local only)
-upgrade-queue/ship_manager/.state.json
-upgrade-queue/ship_manager/.sessions.json
-upgrade-queue/ship_manager/auto_shipper.log
-upgrade-queue/ship_manager/auto_shipper_state.json
-upgrade-queue/ship_manager/auto_shipper.lock
-upgrade-queue/ship_manager/auto_shipper.launchd.log
-upgrade-queue/ship_manager/server.launchd.log
 __pycache__/
