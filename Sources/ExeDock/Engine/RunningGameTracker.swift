@@ -56,7 +56,11 @@ final class RunningGameTracker: ObservableObject {
     /// aren't necessarily installed anywhere near a `steamapps` folder at all. Games no longer
     /// present are dropped from `runningGames` immediately rather than waiting for the next poll.
     func syncWatchedGames(_ items: [(id: String, matchFragment: String)]) {
-        let newWatch = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0.matchFragment) })
+        // Uniquing on purpose: a duplicate id in the list (the same game installed in two Steam
+        // library folders produces two manifests with the same appid, both surfaced by the
+        // multi-library scan) must simply keep one fragment - `Dictionary(uniqueKeysWithValues:)`
+        // would trap and take the whole app down over a library quirk.
+        let newWatch = Dictionary(items.map { ($0.id, $0.matchFragment) }, uniquingKeysWith: { first, _ in first })
         watchedGames = newWatch
         runningGames = runningGames.filter { newWatch[$0.key] != nil }
         knownStartTimes = knownStartTimes.filter { newWatch[$0.key] != nil }

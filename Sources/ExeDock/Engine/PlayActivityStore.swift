@@ -79,10 +79,17 @@ final class PlayActivityStore: ObservableObject {
         sessions = (try? JSONDecoder().decode([PlaySession].self, from: data)) ?? []
     }
 
+    /// Atomic so a crash mid-write can never leave a truncated file that fails decode (and so
+    /// silently wipes the whole history) on the next launch; a failed save is logged rather
+    /// than swallowed so "my playtime vanished" has a diagnosable trail.
     private func save() {
         let dir = (path as NSString).deletingLastPathComponent
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
         guard let data = try? JSONEncoder().encode(sessions) else { return }
-        try? data.write(to: URL(fileURLWithPath: path))
+        do {
+            try data.write(to: URL(fileURLWithPath: path), options: .atomic)
+        } catch {
+            DiagnosticsLog.log("PlayActivityStore: couldn't save \(sessions.count) session(s) - \(error.localizedDescription)")
+        }
     }
 }

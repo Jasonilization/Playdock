@@ -76,6 +76,9 @@ final class AppModel: ObservableObject {
         refreshSteamProfile()
         customGames = CustomGameStore.loadAll()
         observeAppActivation()
+        // Off the main thread on purpose: retention lists and stats a directory that can hold
+        // hundreds of files after months of use - startup shouldn't wait on that.
+        Task.detached(priority: .utility) { LaunchLogRetention.prune() }
     }
 
     /// Re-scans everything worth re-scanning whenever Playdock comes back to the foreground. A

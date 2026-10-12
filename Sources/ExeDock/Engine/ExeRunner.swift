@@ -162,3 +162,27 @@ enum ExeRunner {
         return process
     }
 }
+
+/// Keeps `ExeRunner.logsDir` from growing without bound: every launch, wineboot, and winetricks
+/// run creates a new log file there and nothing ever pruned them, so months of daily use quietly
+/// piled up thousands of stale files (and made "Open Logs Folder" unusable). Retention is
+/// newest-first over the per-run logs only - `diagnostics.log` is the app's own append-only
+/// history and is deliberately never swept.
+enum LaunchLogRetention {
+    static func prune(keeping newest: Int = 300, in dir: String = ExeRunner.logsDir) {
+        let fm = FileManager.default
+        guard let names = try? fm.contentsOfDirectory(atPath: dir) else { return }
+        var candidates: [(path: String, modified: Date)] = []
+        for name in names where name.hasSuffix(".log") && name != "diagnostics.log" {
+            let path = (dir as NSString).appendingPathComponent(name)
+            let modified = (try? fm.attributesOfItem(atPath: path))?[.modificationDate] as? Date ?? .distantPast
+            candidates.append((path, modified))
+        }
+        guard candidates.count > newest else { return }
+        candidates.sort { $0.modified > $1.modified }
+        for stale in candidates.suffix(candidates.count - newest) {
+            try? fm.removeItem(atPath: stale.path)
+        }
+        DiagnosticsLog.log("LaunchLogRetention: pruned \(candidates.count - newest) log file(s) beyond the newest \(newest)")
+    }
+}

@@ -12,8 +12,14 @@ enum GameSettingsStore {
     }
 
     static func load() -> (defaults: GameModeConfig, perGame: [String: GameModeConfig]) {
-        guard let data = UserDefaults.standard.data(forKey: key),
-              let payload = try? JSONDecoder().decode(Payload.self, from: data) else {
+        guard let data = UserDefaults.standard.data(forKey: key) else {
+            return (GameModeConfig(), [:])
+        }
+        guard let payload = try? JSONDecoder().decode(Payload.self, from: data) else {
+            // If a future schema change ever makes old data undecodable, the user's settings
+            // visibly reset - this line is the breadcrumb that explains why in diagnostics.log
+            // instead of it looking like Playdock just decided to forget them.
+            DiagnosticsLog.log("GameSettingsStore: saved settings failed to decode - starting from defaults")
             return (GameModeConfig(), [:])
         }
         return (payload.defaults, payload.perGame)

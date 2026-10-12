@@ -34,19 +34,66 @@ enum SteamLibrary {
     private static func nativeMacSteamAppsPaths() -> [String] {
         let defaultPath = (nativeMacSteamRoot as NSString).appendingPathComponent("steamapps")
         let vdfPath = (defaultPath as NSString).appendingPathComponent("libraryfolders.vdf")
-        guard let text = try? String(contentsOfFile: vdfPath, encoding: .utf8),
-              let regex = try? NSRegularExpression(pattern: "\"path\"\\s+\"([^\"]*)\"") else {
+        guard let text = try? String(contentsOfFile: vdfPath, encoding: .utf8) else {
             return FileManager.default.fileExists(atPath: defaultPath) ? [defaultPath] : []
         }
+        let paths = libraryPaths(fromLibraryFoldersVDF: text)
+        return paths.isEmpty ? [defaultPath] : paths
+    }
+
+    /// The pure half of `libraryfolders.vdf` parsing - every `"path"` entry with Steam's own
+    /// separator escaping undone and `/steamapps` appended, no disk access, so it's directly
+    /// unit-testable against fixture text. The disk-reading wrapper above owns the fallback to
+    /// the default library when the file (or its entries) don't exist.
+    static func libraryPaths(fromLibraryFoldersVDF text: String) -> [String] {
+        guard let regex = try? NSRegularExpression(pattern: "\"path\"\\s+\"([^\"]*)\"") else { return [] }
         let range = NSRange(text.startIndex..., in: text)
-        let paths = regex.matches(in: text, range: range).compactMap { match -> String? in
+        return regex.matches(in: text, range: range).compactMap { match -> String? in
             guard let valueRange = Range(match.range(at: 1), in: text) else { return nil }
             // Steam escapes its own path separators in this file (e.g. "\\" for a literal "/") -
             // undo that before treating it as a real filesystem path.
             let raw = String(text[valueRange]).replacingOccurrences(of: "\\\\", with: "/")
             return (raw as NSString).appendingPathComponent("steamapps")
         }
-        return paths.isEmpty ? [defaultPath] : paths
+    }
+
+    /// The fields `parseManifest` extracts from one `appmanifest_*.acf`.
+    struct ParsedManifest: Equatable {
+        let appID: String
+        let name: String
+        let installDir: String
+        let sizeOnDisk: Int64?
+        let buildID: String?
+        let lastUpdated: Date?
+    }
+
+    /// The pure half of manifest parsing - field extraction plus both "is this actually a
+    /// launchable game" gates, with no disk access so it's directly unit-testable. `nil` means
+    /// not worth listing: a required field is missing, the download isn't finished, or it's one
+    /// of Steam's shared runtime payloads rather than a game.
+    static func parseManifest(_ text: String) -> ParsedManifest? {
+        guard let appID = value(for: "appid", in: text),
+              let name = value(for: "name", in: text),
+              let installDir = value(for: "installdir", in: text),
+              !ignoredNames.contains(name.lowercased()) else { return nil }
+
+        // Steam sets bit 0x4 in StateFlags once an app is fully installed and playable -
+        // without this check, a game whose download is still in progress (its folder
+        // already exists, just incomplete) would show up as launchable. Treat a missing/
+        // unparseable StateFlags leniently (include it) rather than hiding a real game.
+        if let stateFlags = value(for: "StateFlags", in: text).flatMap({ Int($0) }), stateFlags & 0x4 == 0 {
+            return nil
+        }
+
+        return ParsedManifest(
+            appID: appID,
+            name: name,
+            installDir: installDir,
+            sizeOnDisk: value(for: "SizeOnDisk", in: text).flatMap { Int64($0) },
+            buildID: value(for: "buildid", in: text),
+            lastUpdated: value(for: "LastUpdated", in: text).flatMap { TimeInterval($0) }
+                .flatMap { $0 > 0 ? Date(timeIntervalSince1970: $0) : nil }
+        )
     }
 
     private static func installedGames(inSteamAppsPath steamAppsPath: String, source: SteamGameSource, idPrefix: String?) -> [SteamGame] {
@@ -58,35 +105,19 @@ enum SteamLibrary {
             .filter { $0.hasPrefix("appmanifest_") && $0.hasSuffix(".acf") }
             .compactMap { manifestName -> SteamGame? in
                 let manifestPath = (steamAppsPath as NSString).appendingPathComponent(manifestName)
-                guard let text = try? String(contentsOfFile: manifestPath, encoding: .utf8) else { return nil }
-                guard let appID = value(for: "appid", in: text),
-                      let name = value(for: "name", in: text),
-                      let installDir = value(for: "installdir", in: text),
-                      !ignoredNames.contains(name.lowercased()) else { return nil }
+                guard let text = try? String(contentsOfFile: manifestPath, encoding: .utf8),
+                      let parsed = parseManifest(text) else { return nil }
 
-                // Steam sets bit 0x4 in StateFlags once an app is fully installed and playable -
-                // without this check, a game whose download is still in progress (its folder
-                // already exists, just incomplete) would show up as launchable. Treat a missing/
-                // unparseable StateFlags leniently (include it) rather than hiding a real game.
-                if let stateFlags = value(for: "StateFlags", in: text).flatMap({ Int($0) }), stateFlags & 0x4 == 0 {
-                    return nil
-                }
-
-                let gameFolder = (commonPath as NSString).appendingPathComponent(installDir)
+                let gameFolder = (commonPath as NSString).appendingPathComponent(parsed.installDir)
                 guard fm.fileExists(atPath: gameFolder) else { return nil }
 
-                let sizeOnDisk = value(for: "SizeOnDisk", in: text).flatMap { Int64($0) }
-                let buildID = value(for: "buildid", in: text)
-                let lastUpdated = value(for: "LastUpdated", in: text).flatMap { TimeInterval($0) }
-                    .flatMap { $0 > 0 ? Date(timeIntervalSince1970: $0) : nil }
-
                 return SteamGame(
-                    appID: (idPrefix ?? "") + appID, name: name, installDir: installDir,
+                    appID: (idPrefix ?? "") + parsed.appID, name: parsed.name, installDir: parsed.installDir,
                     installFolderPath: gameFolder,
                     iconExePath: source == .wineBottle ? iconExecutable(inFolder: gameFolder) : nil,
-                    sizeOnDisk: (sizeOnDisk ?? 0) > 0 ? sizeOnDisk : nil,
-                    buildID: (buildID != "0") ? buildID : nil,
-                    lastUpdated: lastUpdated,
+                    sizeOnDisk: (parsed.sizeOnDisk ?? 0) > 0 ? parsed.sizeOnDisk : nil,
+                    buildID: (parsed.buildID != "0") ? parsed.buildID : nil,
+                    lastUpdated: parsed.lastUpdated,
                     source: source
                 )
             }

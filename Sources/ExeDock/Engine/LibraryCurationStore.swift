@@ -41,12 +41,18 @@ final class LibraryCurationStore: ObservableObject {
         hiddenTimestamps = disk.hiddenTimestamps
     }
 
+    /// Atomic so a crash mid-write can never leave a truncated file that fails decode (and so
+    /// silently wipes favorites/hidden state) on the next launch; a failed save is logged
+    /// rather than swallowed so it leaves a diagnosable trail.
     private func save() {
         let dir = (path as NSString).deletingLastPathComponent
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
         let disk = OnDisk(favorites: favorites.sorted(), hidden: hidden.sorted(), hiddenTimestamps: hiddenTimestamps)
-        if let data = try? JSONEncoder().encode(disk) {
-            try? data.write(to: URL(fileURLWithPath: path))
+        guard let data = try? JSONEncoder().encode(disk) else { return }
+        do {
+            try data.write(to: URL(fileURLWithPath: path), options: .atomic)
+        } catch {
+            DiagnosticsLog.log("LibraryCurationStore: couldn't save - \(error.localizedDescription)")
         }
     }
 

@@ -172,6 +172,12 @@ actor SteamStoreInfoCache {
     private func writeToDisk(_ appID: String, _ info: SteamStoreInfo) {
         try? FileManager.default.createDirectory(atPath: cacheDir, withIntermediateDirectories: true)
         guard let data = try? JSONEncoder().encode(info) else { return }
-        try? data.write(to: URL(fileURLWithPath: metadataPath(for: appID)))
+        do {
+            try data.write(to: URL(fileURLWithPath: metadataPath(for: appID)), options: .atomic)
+        } catch {
+            // Only a cache (a failed write just means a refetch), but a truncated file would
+            // have failed decode on read and looked identical to "no cache" - log the real story.
+            DiagnosticsLog.log("SteamStoreInfoCache: couldn't cache info for \(appID) - \(error.localizedDescription)")
+        }
     }
 }
