@@ -178,6 +178,61 @@ def is_shipped(uid, shipments=None):
     return uid in (shipments if shipments is not None else load_shipments())
 
 
+def _subject(meta):
+    msg = (meta.get("commit_message") or meta.get("title") or "").strip()
+    return msg.splitlines()[0].strip() if msg else ""
+
+
+def find_landed_unrecorded(metas=None, shipments=None):
+    """Upgrades with no ledger entry whose content already landed on HEAD's history as a
+    plain commit (a direct-to-main stretch, or a ship whose receipt never got written).
+    Match = a commit on HEAD with the upgrade's exact commit subject that touches at least
+    one of the upgrade's files. Returns {uid: {"commit", "shipped_at"}} - oldest matching
+    commit wins, so a later same-subject commit can't steal an earlier landing."""
+    metas = metas or all_metas()
+    shipments = shipments if shipments is not None else load_shipments()
+    wanted = {}
+    for uid, meta in metas.items():
+        if uid in shipments:
+            continue
+        subj = _subject(meta)
+        if subj:
+            wanted.setdefault(subj, []).append(uid)
+    if not wanted:
+        return {}
+    code, out, _ = git("log", "--reverse", "--format=%x00%H%x09%cI%x09%s", "--name-only", "HEAD")
+    if code != 0:
+        return {}
+    found = {}
+    for record in out.split("\x00"):
+        if not record.strip():
+            continue
+        header, _, names = record.partition("\n")
+        parts = header.split("\t", 2)
+        if len(parts) != 3:
+            continue
+        sha, date, subj = parts
+        touched = {n.strip() for n in names.splitlines() if n.strip()}
+        for uid in wanted.get(subj, []):
+            if uid in found:
+                continue
+            if touched & set(metas[uid].get("files", [])):
+                found[uid] = {"commit": sha, "shipped_at": date}
+    return found
+
+
+def backfill_landed(write=False):
+    """Record every find_landed_unrecorded() hit in the ledger (tagged so it's clear the
+    entry came from history, not from a Ship). Never commits; returns the hits."""
+    shipments = load_shipments()
+    found = find_landed_unrecorded(shipments=shipments)
+    if write and found:
+        for uid, entry in found.items():
+            shipments[uid] = {**entry, "recorded_by": "backfill"}
+        write_json(SHIPMENTS_PATH, shipments)
+    return found
+
+
 def unshipped_deps(uid, metas=None, shipments=None):
     """Direct deps that aren't SHIPPED. Returns list of {id, title} for UI reasons."""
     metas = metas or all_metas()
@@ -444,6 +499,12 @@ def _ship_prepare(uid):
         return ShipError("dependency-check",
                          "Unshipped dependencies: " + ", ".join(d["id"] for d in missing),
                          blocked_by=blocked_reasons(uid)).as_dict()
+    landed = find_landed_unrecorded().get(uid)
+    if landed:
+        return ShipError("already-landed",
+                         f"{uid} already landed as {landed['commit'][:10]} but has no ledger entry. "
+                         "Run `python3 upgrade-queue/ship_manager/backfill_ledger.py --write` "
+                         "and commit shipments.json instead of shipping it twice.").as_dict()
 
     try:
         ship_preflight(uid)

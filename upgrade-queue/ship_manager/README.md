@@ -79,6 +79,11 @@ Statuses are **derived**, never guessed:
   invariants, regenerates patches, validates byte-identical final state, then writes.
   Uses curated resolutions in `upgrade-queue/fixups/<id>/` when a merge has genuine
   semantic conflicts (see `fixups/119-.../_README.md`).
+- `python3 upgrade-queue/ship_manager/backfill_ledger.py [--write]` — finds upgrades that
+  already landed on HEAD as plain commits (same commit subject, overlapping files) but have
+  no ledger entry, and records them in `shipments.json` (tagged `recorded_by: backfill`).
+  Ship refuses such an upgrade with stage `already-landed` until the ledger is backfilled,
+  so nothing gets applied twice. Never commits or pushes.
 - `bash upgrade-queue/ship_manager/e2e_clone_test.sh` — the refusal/failure battery
   (dirty tree, tamper, abort-restore, failed push, restart reconcile) inside a throwaway
   clone.

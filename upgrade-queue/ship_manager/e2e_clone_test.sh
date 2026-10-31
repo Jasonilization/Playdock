@@ -114,6 +114,27 @@ expect(code == 0 and any(l.strip() for l in out.splitlines()), "origin really co
 changed = engine.reconcile_committed()
 expect(changed == [], "post-push reconcile is a no-op")
 
+# --- landed-without-receipt: refused, then backfilled ------------------------------
+twin = "998-selftest-landed-twin"
+td = engine.UPGRADES_DIR / twin
+td.mkdir(parents=True)
+(td / "patch.diff").write_text((d / "patch.diff").read_text())
+(td / "meta.json").write_text(json.dumps({
+    "id": twin, "title": "landed twin", "commit_message": "e2e selftest commit",
+    "files": ["E2E_SELFTEST.txt"], "dependencies": [], "tests": ["true"],
+    "status": "READY", "schema_version": 2, "base_commit": engine.head_sha()}))
+man = engine.load_manifest()
+man["upgrades"] = man.get("upgrades", []) + [twin]
+engine.write_json(engine.MANIFEST_PATH, man)
+head_before = engine.head_sha()
+r = engine.ship_prepare(twin)
+expect(not r.get("ok") and r.get("stage") == "already-landed", f"landed twin refused (stage={r.get('stage')})")
+expect(engine.head_sha() == head_before and engine.load_state() == {}, "refusal touched nothing")
+found = engine.backfill_landed(write=True)
+expect(found.get(twin, {}).get("commit") == sha, "backfill matched the twin to its real commit")
+expect(engine.effective_status(twin)[0] == "SHIPPED", "backfilled twin reads SHIPPED")
+expect(engine.backfill_landed() == {}, "second backfill is a no-op")
+
 print("\nALL CLONE E2E CHECKS PASSED")
 PYEOF
 echo "=== e2e done; clone left at /tmp/shipmgr-e2e for inspection ==="

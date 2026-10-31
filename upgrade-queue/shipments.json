@@ -126,5 +126,460 @@
   "032-setup-failure-quit-button": {
     "commit": "c5441227521fef5014e1836c219812b430fab778",
     "shipped_at": "2026-10-11T09:07:49.659650+00:00"
+  },
+  "033-dmg-window-layout": {
+    "commit": "b4a81efaa6a790e4bc7dfafc0e201cc9e7cde1a8",
+    "shipped_at": "2026-10-11T21:27:00+07:00",
+    "recorded_by": "backfill"
+  },
+  "034-addgame-stale-error-clear": {
+    "commit": "8f70cec7d116ffab3d84ca8d76a42b2b0ed81766",
+    "shipped_at": "2026-10-11T21:27:00+07:00",
+    "recorded_by": "backfill"
+  },
+  "035-addgame-silent-drop-failure": {
+    "commit": "47921a4c40f0456320334e6fc7da70dbcd1ac43c",
+    "shipped_at": "2026-10-11T21:27:00+07:00",
+    "recorded_by": "backfill"
+  },
+  "036-cdrive-breadcrumb-accent": {
+    "commit": "c64693bcc0e654d090d2d3695bed44001f7cf56f",
+    "shipped_at": "2026-10-11T21:27:00+07:00",
+    "recorded_by": "backfill"
+  },
+  "037-cdrive-row-hover-highlight": {
+    "commit": "ac9718aa678b395bac0bd3f5ab0e0f75b395f6fc",
+    "shipped_at": "2026-10-11T21:27:00+07:00",
+    "recorded_by": "backfill"
+  },
+  "038-cdrive-row-theming": {
+    "commit": "6f90bda95dca9484e2284b0854088057eb001a76",
+    "shipped_at": "2026-10-11T21:27:00+07:00",
+    "recorded_by": "backfill"
+  },
+  "051-hard-refresh-steamstoreinfo-clear-memory": {
+    "commit": "1f30de256805d72aba7e3993e7aa7fdfdf452f53",
+    "shipped_at": "2026-10-11T21:27:00+07:00",
+    "recorded_by": "backfill"
+  },
+  "052-hard-refresh-localimage-clear": {
+    "commit": "495ad2297665cb713ab98b70536f13c18cc2591f",
+    "shipped_at": "2026-10-11T21:27:00+07:00",
+    "recorded_by": "backfill"
+  },
+  "053-hard-refresh-gameartcolor-clear-cache": {
+    "commit": "4a5f94083a81389c81596d83051818b0ed966eaa",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "054-hard-refresh-cache-reset-engine": {
+    "commit": "3aa14d8ee750b7848413a10768a7c29cdea0cbdc",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "055-hard-refresh-appmodel-published-state": {
+    "commit": "0277affa3bb8da40723f6afb694ffc86da693448",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "056-hard-refresh-appmodel-last-refresh-accessor": {
+    "commit": "5b5597762588e9a0b70820056f0682ff53a16397",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "057-hard-refresh-appmodel-action": {
+    "commit": "d03f87c8b4ac11ef6e4d1aaefade43e0ca388cc4",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "058-localization-engine": {
+    "commit": "25a02aecb3db8df861622f391f25d93ebf71edfc",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "059-localization-chinese-nav-and-actions": {
+    "commit": "ff5fc18b7610d43de377ad5495ffb527b991c4c9",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "060-localization-chinese-settings-categories": {
+    "commit": "fc9cdf65a3453b79f48a5d0b3eb1447c77e2e7f9",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "061-localization-chinese-general-and-steam-toggles": {
+    "commit": "22c49e46f4464b5c1b1ad0d983cd38ef50b14793",
+    "shipped_at": "2026-10-11T21:27:01+07:00",
+    "recorded_by": "backfill"
+  },
+  "062-localization-chinese-appearance-and-personalization": {
+    "commit": "18b754c83a82e124c9fd15efb48fee1029e7bb12",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "063-localization-chinese-games-data-and-engine": {
+    "commit": "0a2aff0a6ff98d3f1c3deb0822c00d34999bee03",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "064-localization-chinese-diagnostics-language-about": {
+    "commit": "f77ef96f58cf6e0f2486aa4ad7b369aa6d741fc7",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "065-localization-french-nav-and-actions": {
+    "commit": "a00cf4f29cddc4caa5b6cbe177a73835805f1957",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "066-localization-french-settings-categories": {
+    "commit": "b7bf1c47b0fe4147e107ef14ff7852ff901fde09",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "067-localization-french-general-and-steam-toggles": {
+    "commit": "a8a9d87827bf49cca0f78cb5bbcb64f9df486122",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "068-localization-french-appearance-and-personalization": {
+    "commit": "c45820bf5e5a0b57e6f825df5f2936fc33754928",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "069-localization-french-games-data-and-engine": {
+    "commit": "d15f3fe492d3e6e830dd3e6e938b0e1fa9ebf1d7",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "070-localization-french-diagnostics-language-about": {
+    "commit": "1aa373ca79d5a6e6964365a1881aff6121778ef6",
+    "shipped_at": "2026-10-11T21:27:02+07:00",
+    "recorded_by": "backfill"
+  },
+  "071-localization-spanish-nav-and-actions": {
+    "commit": "43651884db3a50f26cd9477f7b981a94881674f0",
+    "shipped_at": "2026-10-11T21:27:03+07:00",
+    "recorded_by": "backfill"
+  },
+  "072-localization-spanish-settings-categories": {
+    "commit": "3fc86b9aaa768e4bc0db2a1e211020bcf58adb98",
+    "shipped_at": "2026-10-11T21:27:03+07:00",
+    "recorded_by": "backfill"
+  },
+  "073-localization-spanish-general-and-steam-toggles": {
+    "commit": "5767e84c1502003cf1f72db0e42ddb3a0bb1930a",
+    "shipped_at": "2026-10-11T21:27:03+07:00",
+    "recorded_by": "backfill"
+  },
+  "074-localization-spanish-appearance-and-personalization": {
+    "commit": "38b893d68832201485c6e64069924937664c6956",
+    "shipped_at": "2026-10-11T21:27:04+07:00",
+    "recorded_by": "backfill"
+  },
+  "075-localization-spanish-games-data-and-engine": {
+    "commit": "73e3b2bd2c439e879de4b7454b95a0274685800c",
+    "shipped_at": "2026-10-11T21:27:04+07:00",
+    "recorded_by": "backfill"
+  },
+  "076-localization-spanish-diagnostics-language-about": {
+    "commit": "b1222f67ce22335760c4af016293b0ae153a6353",
+    "shipped_at": "2026-10-11T21:27:04+07:00",
+    "recorded_by": "backfill"
+  },
+  "077-localization-german-nav-and-actions": {
+    "commit": "3ca08ffb5058d3045b6edd83a6e724e4edc9d5ab",
+    "shipped_at": "2026-10-11T21:27:04+07:00",
+    "recorded_by": "backfill"
+  },
+  "078-localization-german-settings-categories": {
+    "commit": "26fb86c6c10cbf782de25af454bfc0f8b205a6f8",
+    "shipped_at": "2026-10-11T21:27:04+07:00",
+    "recorded_by": "backfill"
+  },
+  "079-localization-german-general-and-steam-toggles": {
+    "commit": "52e283f9a651d423d88b9a3cd6e2b7a912f86e3a",
+    "shipped_at": "2026-10-11T21:27:04+07:00",
+    "recorded_by": "backfill"
+  },
+  "080-localization-german-appearance-and-personalization": {
+    "commit": "812cef871a7164dd11edec563d57e38adda06f7d",
+    "shipped_at": "2026-10-11T21:27:05+07:00",
+    "recorded_by": "backfill"
+  },
+  "081-localization-german-games-data-and-engine": {
+    "commit": "47013ebc36dd6032b54d25407fee70f8a6a020a6",
+    "shipped_at": "2026-10-11T21:27:05+07:00",
+    "recorded_by": "backfill"
+  },
+  "082-localization-german-diagnostics-language-about": {
+    "commit": "e41756175218eb1287a32d81e451fc871bf37adb",
+    "shipped_at": "2026-10-11T21:27:05+07:00",
+    "recorded_by": "backfill"
+  },
+  "083-localization-japanese-nav-and-actions": {
+    "commit": "5870be6d482e2becbad875ce7bf588d242542fdb",
+    "shipped_at": "2026-10-11T21:27:05+07:00",
+    "recorded_by": "backfill"
+  },
+  "084-localization-japanese-settings-categories": {
+    "commit": "6da9cde4b4b9181bc6d21b5147332b0ba680d0a5",
+    "shipped_at": "2026-10-11T21:27:05+07:00",
+    "recorded_by": "backfill"
+  },
+  "085-localization-japanese-general-and-steam-toggles": {
+    "commit": "348a31c38f386038f196ae1d036116a851c71d24",
+    "shipped_at": "2026-10-11T21:27:05+07:00",
+    "recorded_by": "backfill"
+  },
+  "086-localization-japanese-appearance-and-personalization": {
+    "commit": "19f9131a5e3a605e7c0496b71d19a3da8183f156",
+    "shipped_at": "2026-10-11T21:27:05+07:00",
+    "recorded_by": "backfill"
+  },
+  "087-localization-japanese-games-data-and-engine": {
+    "commit": "7743dfba7db16be7b37e548d0139e5c450be2766",
+    "shipped_at": "2026-10-11T21:27:05+07:00",
+    "recorded_by": "backfill"
+  },
+  "088-localization-japanese-diagnostics-language-about": {
+    "commit": "4a886c9abc7a3cd87f0f62303fcb61597eca9219",
+    "shipped_at": "2026-10-11T21:27:06+07:00",
+    "recorded_by": "backfill"
+  },
+  "089-localization-portuguese-nav-and-actions": {
+    "commit": "ece632582f70aedccffa9e24e35708784afbc532",
+    "shipped_at": "2026-10-11T21:27:06+07:00",
+    "recorded_by": "backfill"
+  },
+  "090-localization-portuguese-settings-categories": {
+    "commit": "35ed97399f17de4da9343d5cce2a9707f884c921",
+    "shipped_at": "2026-10-11T21:27:06+07:00",
+    "recorded_by": "backfill"
+  },
+  "091-localization-portuguese-general-and-steam-toggles": {
+    "commit": "583ecb842ca807c50410ee008ce0e961cf4525fd",
+    "shipped_at": "2026-10-11T21:27:06+07:00",
+    "recorded_by": "backfill"
+  },
+  "092-localization-portuguese-appearance-and-personalization": {
+    "commit": "33c0c223cae2300e556b27303b0f39682a9a298e",
+    "shipped_at": "2026-10-11T21:27:06+07:00",
+    "recorded_by": "backfill"
+  },
+  "093-localization-portuguese-games-data-and-engine": {
+    "commit": "5dd36f6802b19888aa0567386fd99911c4c134a2",
+    "shipped_at": "2026-10-11T21:27:06+07:00",
+    "recorded_by": "backfill"
+  },
+  "094-localization-portuguese-diagnostics-language-about": {
+    "commit": "4df3a801ae6c6a3cf6b47020263c7091240e4a56",
+    "shipped_at": "2026-10-11T21:27:06+07:00",
+    "recorded_by": "backfill"
+  },
+  "095-brutalist-dynamiccolor-helper": {
+    "commit": "94cd0912c86d5dd4d5686dde3c5b1a576378a1de",
+    "shipped_at": "2026-10-11T21:27:07+07:00",
+    "recorded_by": "backfill"
+  },
+  "096-brutalist-accent-retune": {
+    "commit": "32d58079228232f0ba0fe45358d3c768b4ce9659",
+    "shipped_at": "2026-10-11T21:27:07+07:00",
+    "recorded_by": "backfill"
+  },
+  "097-brutalist-accent2-drop": {
+    "commit": "85448ed8e20681269ea3c5e87572ad785321a083",
+    "shipped_at": "2026-10-11T21:27:07+07:00",
+    "recorded_by": "backfill"
+  },
+  "098-brutalist-topbar-dark-ground": {
+    "commit": "c8c57dcc1dbff21f7dcd8afe8df80f10005a5da2",
+    "shipped_at": "2026-10-11T21:27:07+07:00",
+    "recorded_by": "backfill"
+  },
+  "099-brutalist-skinbackground-dark-ground": {
+    "commit": "dcb16b4d956ee91a4c925fb6aae4f7eef0ef1dfe",
+    "shipped_at": "2026-10-11T21:27:07+07:00",
+    "recorded_by": "backfill"
+  },
+  "100-brutalist-hard-shadow-fix": {
+    "commit": "60e03791df5bc6c71e7e42054b30e007aaef877a",
+    "shipped_at": "2026-10-11T21:27:07+07:00",
+    "recorded_by": "backfill"
+  },
+  "101-brutalist-button-fill-invert": {
+    "commit": "c3d5604a06549a772a4556c5b672ad38ea84d2ab",
+    "shipped_at": "2026-10-11T21:27:07+07:00",
+    "recorded_by": "backfill"
+  },
+  "102-brutalist-css-vars-light": {
+    "commit": "4dcd3c5417c17348e2bce6202e2b919cb195f29c",
+    "shipped_at": "2026-10-11T21:27:07+07:00",
+    "recorded_by": "backfill"
+  },
+  "103-brutalist-css-vars-dark": {
+    "commit": "132995beeb9ac84feb139ee85209979b775fa635",
+    "shipped_at": "2026-10-11T21:27:08+07:00",
+    "recorded_by": "backfill"
+  },
+  "104-brutalist-css-search-color": {
+    "commit": "a736bc179a660270e626aafc696c1ef8c1deb6a5",
+    "shipped_at": "2026-10-11T21:27:08+07:00",
+    "recorded_by": "backfill"
+  },
+  "105-brutalist-css-badge-colors": {
+    "commit": "0f4bd0ecae5d3f552d0baf206737d2041a324cc6",
+    "shipped_at": "2026-10-11T21:27:08+07:00",
+    "recorded_by": "backfill"
+  },
+  "106-brutalist-css-cta-run-colors": {
+    "commit": "6617a5922ef08843c8433d0c59f106c52147ad88",
+    "shipped_at": "2026-10-11T21:27:08+07:00",
+    "recorded_by": "backfill"
+  },
+  "107-settings-panel-scaffold": {
+    "commit": "d91496785e4b291b69eab8d9b51f3d595e1e3d7c",
+    "shipped_at": "2026-10-11T21:27:08+07:00",
+    "recorded_by": "backfill"
+  },
+  "108-gamemodeview-settings-launcher-scaffold": {
+    "commit": "87a2c9cb263c0341e833bf27dc28d1db701045ed",
+    "shipped_at": "2026-10-11T21:27:08+07:00",
+    "recorded_by": "backfill"
+  },
+  "109-settings-panel-appearance-tab": {
+    "commit": "e8d5f1a330564e5643ce0e52bc999604893d1c60",
+    "shipped_at": "2026-10-11T21:27:08+07:00",
+    "recorded_by": "backfill"
+  },
+  "110-settings-panel-personalization-tab": {
+    "commit": "b2beb9c6d79bbfefe5ac5a9df6992a760e15748f",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "111-settings-panel-hide-badges-toggle": {
+    "commit": "c0282f3b5c1b781b069f9afeffeb4f115fecd4b9",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "112-settings-panel-games-tab": {
+    "commit": "6da4adcc3e67229aff2f1dd6c38801c0b82eed33",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "113-settings-panel-language-tab": {
+    "commit": "23b0b41427e10a436f74af7af76246dacf9c2e2f",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "114-settings-panel-diagnostics-tab": {
+    "commit": "a89894a3823a90a95f6b0265d185b788b9a21e16",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "115-settings-panel-engine-updates": {
+    "commit": "ab68146e0ef25e954848471a85bdbe62b5f35779",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "116-settings-panel-about-tab": {
+    "commit": "2f89261623ef8a488a9ee7c102381e370778f7d9",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "117-gamemodeview-wire-launcher-into-body": {
+    "commit": "d9ed0f79874b2932aed08efe27122e026729b711",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "118-gamemodeview-redirect-settings-triggers": {
+    "commit": "d8c207b02183440709bbcab45755b5bca30c60a9",
+    "shipped_at": "2026-10-11T21:27:09+07:00",
+    "recorded_by": "backfill"
+  },
+  "119-gamemodeview-remove-legacy-settings-sheet": {
+    "commit": "9d53f86b5ac630be169f0e3b7d6830b4b9614589",
+    "shipped_at": "2026-10-11T21:27:10+07:00",
+    "recorded_by": "backfill"
+  },
+  "120-gamemodeview-localize-header-chrome": {
+    "commit": "c482f00e9073437fc2f85bbc969c1ae170ff5af1",
+    "shipped_at": "2026-10-11T21:27:10+07:00",
+    "recorded_by": "backfill"
+  },
+  "121-gamemodeview-localize-sort-search": {
+    "commit": "a59f1aeb05a60289f65b65308999eb5210dbebec",
+    "shipped_at": "2026-10-11T21:27:10+07:00",
+    "recorded_by": "backfill"
+  },
+  "122-playtime-activity-store": {
+    "commit": "0c4edafbb6be47978b020f9f5e91c29f85b87c5d",
+    "shipped_at": "2026-10-11T21:27:10+07:00",
+    "recorded_by": "backfill"
+  },
+  "123-playtime-tracker-records-sessions": {
+    "commit": "86b5e17a53b42951ab65cfa5801f4940c2d1f84f",
+    "shipped_at": "2026-10-11T21:27:10+07:00",
+    "recorded_by": "backfill"
+  },
+  "124-playtime-sort-recently-and-most-played": {
+    "commit": "ea5fcd30fce4a8662753e078109a4f7862e981da",
+    "shipped_at": "2026-10-11T21:27:10+07:00",
+    "recorded_by": "backfill"
+  },
+  "125-playtime-on-grid-cards": {
+    "commit": "42bef586068f0d56e52bdcf0b031c2265f27a772",
+    "shipped_at": "2026-10-11T21:27:10+07:00",
+    "recorded_by": "backfill"
+  },
+  "126-playtime-detail-activity-summary": {
+    "commit": "ee44a9c1758a2e7af2732cbe3290b56ccb78cecf",
+    "shipped_at": "2026-10-11T21:27:10+07:00",
+    "recorded_by": "backfill"
+  },
+  "127-reliability-detail-banner": {
+    "commit": "2757cd89bd2db61a0704298061b2caa9e451d7cc",
+    "shipped_at": "2026-10-11T21:27:11+07:00",
+    "recorded_by": "backfill"
+  },
+  "128-reliability-diagnostics-overview": {
+    "commit": "03a80caa5b1b9d37eec4b4d546b4b5e3c9006641",
+    "shipped_at": "2026-10-11T21:27:11+07:00",
+    "recorded_by": "backfill"
+  },
+  "129-screenshots-fullsize-lightbox-browse": {
+    "commit": "da07fd05bda3de1c50d6ad460130dec4e7af0861",
+    "shipped_at": "2026-10-11T21:27:11+07:00",
+    "recorded_by": "backfill"
+  },
+  "130-detail-capability-chips": {
+    "commit": "dfc628dad4c121b8b472d506eb80f5420980f81f",
+    "shipped_at": "2026-10-11T21:27:11+07:00",
+    "recorded_by": "backfill"
+  },
+  "131-detail-more-like-this-rail": {
+    "commit": "4551286f3aa2eb5dbd544243fe57e20b31ae1acb",
+    "shipped_at": "2026-10-11T21:27:11+07:00",
+    "recorded_by": "backfill"
+  },
+  "132-library-curation-store": {
+    "commit": "ac78a9e5cc5456b8ddbef30d831adee692f7e944",
+    "shipped_at": "2026-10-11T21:27:11+07:00",
+    "recorded_by": "backfill"
+  },
+  "133-favorites-ui-everywhere": {
+    "commit": "19f51e5185aa63d822273349ef1950daaa5b65f2",
+    "shipped_at": "2026-10-11T21:27:11+07:00",
+    "recorded_by": "backfill"
+  },
+  "134-favorites-filter-and-hide-games": {
+    "commit": "59bd82e6fbce88b09328c145713de793f9b3509c",
+    "shipped_at": "2026-10-11T21:27:11+07:00",
+    "recorded_by": "backfill"
+  },
+  "135-sort-recently-added": {
+    "commit": "ea562e615153454752c575f4a02d766e7aaab01f",
+    "shipped_at": "2026-10-11T21:27:12+07:00",
+    "recorded_by": "backfill"
   }
 }
