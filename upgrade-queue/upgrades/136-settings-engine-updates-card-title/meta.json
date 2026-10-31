@@ -1,0 +1,27 @@
+{
+  "id": "136-settings-engine-updates-card-title",
+  "title": "Settings: title the engine-update card \"Engine Updates\"",
+  "description": "With Advanced Mode on, Games & Data showed two cards both titled ENGINE (the update checker and the engine/graphics picker). The update card is now \"Engine Updates\", translated in all six shipped languages.",
+  "category": "settings",
+  "commit_message": "Settings: title the engine-update card \"Engine Updates\" so it no longer duplicates the Engine card",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift",
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [],
+  "parent": null,
+  "base_commit": "4d8b362c8678522bfe2662ce217d1c5cbf33daba",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-10-31T16:15:52.150487+00:00",
+  "author": "prepare-session:0d6113ee",
+  "schema_version": 2,
+  "provenance": {
+    "captured_from_session": "0d6113ee",
+    "queue_tip_size": 0
+  }
+}

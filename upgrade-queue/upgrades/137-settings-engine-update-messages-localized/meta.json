@@ -1,0 +1,30 @@
+{
+  "id": "137-settings-engine-update-messages-localized",
+  "title": "Settings: localize the engine-update status messages",
+  "description": "The engine-update card's four status lines (newer engine available, none found, already latest, downloaded) were hard-coded English. They now go through L/LF with translations in all six shipped languages. Adds Localization.string(_:in:) plus a test suite that checks every translation keeps its key's format placeholders (a mismatch is a String(format:) crash) and that these messages substitute the engine name in every language.",
+  "category": "settings",
+  "commit_message": "Settings: localize the engine-update status messages; test translation placeholders",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift",
+    "Sources/ExeDock/Views/SettingsPanelView.swift",
+    "Tests/ExeDockTests/LocalizationTests.swift"
+  ],
+  "dependencies": [
+    "136-settings-engine-updates-card-title"
+  ],
+  "parent": "136-settings-engine-updates-card-title",
+  "base_commit": "4d8b362c8678522bfe2662ce217d1c5cbf33daba",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-10-31T16:19:51.159800+00:00",
+  "author": "prepare-session:428a3944",
+  "schema_version": 2,
+  "provenance": {
+    "captured_from_session": "428a3944",
+    "queue_tip_size": 1
+  }
+}

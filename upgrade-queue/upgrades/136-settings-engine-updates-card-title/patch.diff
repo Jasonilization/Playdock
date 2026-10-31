@@ -1,0 +1,65 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index 6a6976dbb46a88cfb21a205873404978cb741f1e..ab7fd7fa9d49d7bc7e48192e5050cdea7f1e0c53 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -177,6 +177,7 @@ enum Localization {
+         "Downloading…": "正在下载…",
+         "Download Update": "下载更新",
+         "Engine": "引擎",
++        "Engine Updates": "引擎更新",
+         "Graphics": "图形",
+         "Sync": "同步",
+         "Wine engine": "Wine 引擎",
+@@ -250,6 +251,7 @@ enum Localization {
+         "Downloading…": "Téléchargement…",
+         "Download Update": "Télécharger la mise à jour",
+         "Engine": "Moteur",
++        "Engine Updates": "Mises à jour du moteur",
+         "Graphics": "Graphismes",
+         "Sync": "Synchronisation",
+         "Wine engine": "Moteur Wine",
+@@ -323,6 +325,7 @@ enum Localization {
+         "Downloading…": "Descargando…",
+         "Download Update": "Descargar actualización",
+         "Engine": "Motor",
++        "Engine Updates": "Actualizaciones del motor",
+         "Graphics": "Gráficos",
+         "Sync": "Sincronización",
+         "Wine engine": "Motor Wine",
+@@ -396,6 +399,7 @@ enum Localization {
+         "Downloading…": "Wird geladen…",
+         "Download Update": "Update herunterladen",
+         "Engine": "Engine",
++        "Engine Updates": "Engine-Updates",
+         "Graphics": "Grafik",
+         "Sync": "Synchronisierung",
+         "Wine engine": "Wine-Engine",
+@@ -469,6 +473,7 @@ enum Localization {
+         "Downloading…": "ダウンロード中…",
+         "Download Update": "更新をダウンロード",
+         "Engine": "エンジン",
++        "Engine Updates": "エンジンのアップデート",
+         "Graphics": "グラフィック",
+         "Sync": "同期",
+         "Wine engine": "Wine エンジン",
+@@ -542,6 +547,7 @@ enum Localization {
+         "Downloading…": "Baixando…",
+         "Download Update": "Baixar atualização",
+         "Engine": "Motor",
++        "Engine Updates": "Atualizações do motor",
+         "Graphics": "Gráficos",
+         "Sync": "Sincronização",
+         "Wine engine": "Motor Wine",
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 358f701270152bd74e5e78565c814435f8ebb951..3d386f672360196aeaf33f81fff1f4fb57badf58 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -670,7 +670,7 @@ private struct EngineUpdatePanelSection: View {
+     @LocalState private var statusText: String?
+ 
+     var body: some View {
+-        SettingsCard(skin: skin, title: L("Engine")) {
++        SettingsCard(skin: skin, title: L("Engine Updates")) {
+             VStack(alignment: .leading, spacing: 10) {
+                 if let updateAvailable {
+                     Text("A newer engine is available: \(updateAvailable.name)")

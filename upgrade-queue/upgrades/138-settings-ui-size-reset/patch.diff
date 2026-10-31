@@ -1,0 +1,70 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index 2c9d9c105b0042a25b30bc65bceb7341e9a1b3eb..f5a7e57e8a90dd3caef0445c034badc2a665f0e4 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -156,6 +156,7 @@ enum Localization {
+         "Preview With Sample Games": "使用示例游戏预览",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "添加一些知名游戏（真实封面和评分，并未实际安装），以便查看网格效果。关闭即可移除。",
+         "UI Size": "界面大小",
++        "Reset to 100%": "重置为 100%",
+         "Look": "风格",
+         "Layout": "布局",
+         "Card Art": "卡片封面",
+@@ -234,6 +235,7 @@ enum Localization {
+         "Preview With Sample Games": "Aperçu avec des jeux d'exemple",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "Ajoute des jeux connus (vraies jaquettes et notes, rien d'installé) pour voir le rendu de la grille. Désactivez pour les retirer.",
+         "UI Size": "Taille de l'interface",
++        "Reset to 100%": "Rétablir à 100 %",
+         "Look": "Style",
+         "Layout": "Disposition",
+         "Card Art": "Illustration des cartes",
+@@ -312,6 +314,7 @@ enum Localization {
+         "Preview With Sample Games": "Vista previa con juegos de ejemplo",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "Añade juegos conocidos (carátulas y valoraciones reales, nada instalado) para ver cómo queda la cuadrícula. Desactívalo para quitarlos.",
+         "UI Size": "Tamaño de la interfaz",
++        "Reset to 100%": "Restablecer al 100 %",
+         "Look": "Estilo",
+         "Layout": "Distribución",
+         "Card Art": "Arte de las tarjetas",
+@@ -390,6 +393,7 @@ enum Localization {
+         "Preview With Sample Games": "Vorschau mit Beispielspielen",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "Fügt bekannte Spiele hinzu (echte Bilder und Wertungen, nichts installiert), um das Raster zu beurteilen. Zum Entfernen ausschalten.",
+         "UI Size": "Oberflächengröße",
++        "Reset to 100%": "Auf 100 % zurücksetzen",
+         "Look": "Stil",
+         "Layout": "Layout",
+         "Card Art": "Kartenbild",
+@@ -468,6 +472,7 @@ enum Localization {
+         "Preview With Sample Games": "サンプルゲームでプレビュー",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "有名なゲーム（実際のアートと評価。実際のインストールはなし）を追加し、グリッドの見え方を確認できます。オフにすると削除されます。",
+         "UI Size": "UI サイズ",
++        "Reset to 100%": "100% に戻す",
+         "Look": "スタイル",
+         "Layout": "レイアウト",
+         "Card Art": "カードアート",
+@@ -546,6 +551,7 @@ enum Localization {
+         "Preview With Sample Games": "Pré-visualizar com jogos de exemplo",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "Adiciona jogos conhecidos (arte e notas reais, nada instalado) para ver como a grade fica. Desative para removê-los.",
+         "UI Size": "Tamanho da interface",
++        "Reset to 100%": "Redefinir para 100%",
+         "Look": "Estilo",
+         "Layout": "Disposição",
+         "Card Art": "Arte dos cartões",
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 3c52c7011d134b0768d6a9d80d235ad255ae1536..2206c4627c890bc1f47d43b8f7d194b9c5c3fde9 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -187,6 +187,13 @@ struct SettingsPanelView: View {
+                             .foregroundStyle(.secondary)
+                             .frame(width: 46, alignment: .trailing)
+                     }
++                    // The corner slider's five stops skip 100%, so this is the only way back to it.
++                    if abs(uiScale - 1.0) > 0.005 {
++                        Button(L("Reset to 100%")) {
++                            withAnimation(.easeInOut(duration: 0.2)) { uiScale = 1.0 }
++                        }
++                        .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
++                    }
+                 }
+             }
+ 

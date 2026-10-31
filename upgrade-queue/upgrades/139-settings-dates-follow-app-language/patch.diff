@@ -1,0 +1,69 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index f5a7e57e8a90dd3caef0445c034badc2a665f0e4..72d87fd6fb179d60a3430c7734000a41db702446 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -98,6 +98,22 @@ enum Localization {
+         string(key, in: active)
+     }
+ 
++    /// For date/number formatters, which otherwise follow the Mac's locale and would print
++    /// "3 hours ago" in the middle of an otherwise-French screen.
++    static var locale: Locale {
++        locale(for: active, current: .current)
++    }
++
++    /// Keeps the Mac's own locale (and so its region's date style) whenever it already speaks
++    /// `language`; only a language the Mac isn't set to gets a bare language locale.
++    static func locale(for language: AppLanguage, current: Locale) -> Locale {
++        let target = Locale(identifier: language.rawValue).language
++        let mac = current.language
++        let sameScript = target.script == nil || mac.script == nil || target.script == mac.script
++        if target.languageCode == mac.languageCode && sameScript { return current }
++        return Locale(identifier: language.rawValue)
++    }
++
+     static func string(_ key: String, in language: AppLanguage) -> String {
+         if language == .english { return key }
+         return tables[language]?[key] ?? key
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 2206c4627c890bc1f47d43b8f7d194b9c5c3fde9..75bd75692a5c422793eac330f39951dbe8bda9f9 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -376,6 +376,7 @@ struct SettingsPanelView: View {
+     private var lastRefreshText: String {
+         guard let date = model.lastGameInfoRefresh else { return L("Never refreshed") }
+         let formatter = DateFormatter()
++        formatter.locale = Localization.locale
+         formatter.dateStyle = .medium
+         formatter.timeStyle = .short
+         return LF("Last refreshed %@", formatter.string(from: date))
+@@ -549,7 +550,9 @@ struct SettingsPanelView: View {
+ 
+     private func relative(_ date: Date?) -> String {
+         guard let date else { return "—" }
+-        return RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date())
++        let formatter = RelativeDateTimeFormatter()
++        formatter.locale = Localization.locale
++        return formatter.localizedString(for: date, relativeTo: Date())
+     }
+ 
+     // MARK: About
+diff --git a/Tests/ExeDockTests/LocalizationTests.swift b/Tests/ExeDockTests/LocalizationTests.swift
+index 403b221a27c3ab247de73bd68f656fd50ffef8a4..1e71bef05930fb4e901c92c363f160566d8798e9 100644
+--- a/Tests/ExeDockTests/LocalizationTests.swift
++++ b/Tests/ExeDockTests/LocalizationTests.swift
+@@ -20,6 +20,14 @@ struct LocalizationTests {
+         }
+     }
+ 
++    @Test func formatterLocaleKeepsTheMacsRegionWhenTheLanguageMatches() {
++        let britishMac = Locale(identifier: "en_GB")
++        #expect(Localization.locale(for: .english, current: britishMac).identifier == "en_GB")
++        #expect(Localization.locale(for: .french, current: britishMac).identifier == "fr")
++        #expect(Localization.locale(for: .french, current: Locale(identifier: "fr_CA")).identifier == "fr_CA")
++        #expect(Localization.locale(for: .chineseSimplified, current: britishMac).identifier == "zh-Hans")
++    }
++
+     @Test func engineUpdateMessagesSubstituteTheEngineName() {
+         let keys = [
+             "A newer engine is available: %@",

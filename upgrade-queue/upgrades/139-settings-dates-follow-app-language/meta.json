@@ -1,0 +1,31 @@
+{
+  "id": "139-settings-dates-follow-app-language",
+  "title": "Settings: dates follow the in-app language",
+  "description": "Last refreshed and the launch-reliability relative times used the Mac's locale, so a French Playdock still said \"3 hours ago\". Adds Localization.locale, which keeps the Mac's own locale (and region date style) when it already speaks the chosen language and otherwise uses the chosen language. Settings formatters now use it. GameModeView's detail-page relative time is left for a follow-up.",
+  "category": "settings",
+  "commit_message": "Settings: format dates in the in-app language, keeping the Mac's region when it matches",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift",
+    "Sources/ExeDock/Views/SettingsPanelView.swift",
+    "Tests/ExeDockTests/LocalizationTests.swift"
+  ],
+  "dependencies": [
+    "137-settings-engine-update-messages-localized",
+    "138-settings-ui-size-reset"
+  ],
+  "parent": "138-settings-ui-size-reset",
+  "base_commit": "4d8b362c8678522bfe2662ce217d1c5cbf33daba",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-10-31T16:24:13.057017+00:00",
+  "author": "prepare-session:e583aa72",
+  "schema_version": 2,
+  "provenance": {
+    "captured_from_session": "e583aa72",
+    "queue_tip_size": 3
+  }
+}

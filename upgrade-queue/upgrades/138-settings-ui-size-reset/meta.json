@@ -1,0 +1,29 @@
+{
+  "id": "138-settings-ui-size-reset",
+  "title": "Settings: Reset to 100% button for UI Size",
+  "description": "The corner UI-size slider snaps to five stops (75, 93.75, 112.5, 131.25, 150%) that skip the 100% default, and the Settings slider is continuous, so once moved there was no exact way back. UI Size now shows a Reset to 100% button whenever the scale is off-default. Translated in all six shipped languages.",
+  "category": "settings",
+  "commit_message": "Settings: add Reset to 100% to UI Size (the corner slider's stops skip 100%)",
+  "files": [
+    "Sources/ExeDock/Support/Localization.swift",
+    "Sources/ExeDock/Views/SettingsPanelView.swift"
+  ],
+  "dependencies": [
+    "137-settings-engine-update-messages-localized"
+  ],
+  "parent": "137-settings-engine-update-messages-localized",
+  "base_commit": "4d8b362c8678522bfe2662ce217d1c5cbf33daba",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-10-31T16:22:13.125804+00:00",
+  "author": "prepare-session:13b11ab9",
+  "schema_version": 2,
+  "provenance": {
+    "captured_from_session": "13b11ab9",
+    "queue_tip_size": 2
+  }
+}

@@ -1,0 +1,174 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index ab7fd7fa9d49d7bc7e48192e5050cdea7f1e0c53..2c9d9c105b0042a25b30bc65bceb7341e9a1b3eb 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -95,7 +95,10 @@ enum Localization {
+     }
+ 
+     static func string(_ key: String) -> String {
+-        let language = active
++        string(key, in: active)
++    }
++
++    static func string(_ key: String, in language: AppLanguage) -> String {
+         if language == .english { return key }
+         return tables[language]?[key] ?? key
+     }
+@@ -113,7 +116,7 @@ enum Localization {
+     /// English is the key set itself - every other table only needs the keys it actually
+     /// translates; anything missing falls through to English automatically. Populated one
+     /// language at a time as each table is added below.
+-    private static let tables: [AppLanguage: [String: String]] = [
++    static let tables: [AppLanguage: [String: String]] = [
+         .chineseSimplified: chineseSimplified,
+         .french: french,
+         .spanish: spanish,
+@@ -178,6 +181,10 @@ enum Localization {
+         "Download Update": "下载更新",
+         "Engine": "引擎",
+         "Engine Updates": "引擎更新",
++        "A newer engine is available: %@": "有更新的引擎可用：%@",
++        "No engines found.": "未找到引擎。",
++        "You already have the latest recommended engine (%@).": "你已拥有最新的推荐引擎（%@）。",
++        "Downloaded %@ - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing.": "已下载 %@。可在高级模式的引擎列表中选择它，或在下次需要（重新）初始化容器时自动提供。",
+         "Graphics": "图形",
+         "Sync": "同步",
+         "Wine engine": "Wine 引擎",
+@@ -252,6 +259,10 @@ enum Localization {
+         "Download Update": "Télécharger la mise à jour",
+         "Engine": "Moteur",
+         "Engine Updates": "Mises à jour du moteur",
++        "A newer engine is available: %@": "Un moteur plus récent est disponible : %@",
++        "No engines found.": "Aucun moteur trouvé.",
++        "You already have the latest recommended engine (%@).": "Vous avez déjà le dernier moteur recommandé (%@).",
++        "Downloaded %@ - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing.": "%@ téléchargé - choisissez-le dans la liste des moteurs du mode avancé, ou il sera proposé la prochaine fois qu'une bouteille devra être (ré)initialisée.",
+         "Graphics": "Graphismes",
+         "Sync": "Synchronisation",
+         "Wine engine": "Moteur Wine",
+@@ -326,6 +337,10 @@ enum Localization {
+         "Download Update": "Descargar actualización",
+         "Engine": "Motor",
+         "Engine Updates": "Actualizaciones del motor",
++        "A newer engine is available: %@": "Hay un motor más reciente disponible: %@",
++        "No engines found.": "No se encontraron motores.",
++        "You already have the latest recommended engine (%@).": "Ya tienes el motor recomendado más reciente (%@).",
++        "Downloaded %@ - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing.": "%@ descargado: elígelo en la lista de motores del modo avanzado, o se ofrecerá la próxima vez que una botella necesite (re)inicializarse.",
+         "Graphics": "Gráficos",
+         "Sync": "Sincronización",
+         "Wine engine": "Motor Wine",
+@@ -400,6 +415,10 @@ enum Localization {
+         "Download Update": "Update herunterladen",
+         "Engine": "Engine",
+         "Engine Updates": "Engine-Updates",
++        "A newer engine is available: %@": "Eine neuere Engine ist verfügbar: %@",
++        "No engines found.": "Keine Engines gefunden.",
++        "You already have the latest recommended engine (%@).": "Du hast bereits die neueste empfohlene Engine (%@).",
++        "Downloaded %@ - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing.": "%@ heruntergeladen – wähle sie in der Engine-Liste des erweiterten Modus, oder sie wird angeboten, wenn eine Bottle das nächste Mal (neu) initialisiert werden muss.",
+         "Graphics": "Grafik",
+         "Sync": "Synchronisierung",
+         "Wine engine": "Wine-Engine",
+@@ -474,6 +493,10 @@ enum Localization {
+         "Download Update": "更新をダウンロード",
+         "Engine": "エンジン",
+         "Engine Updates": "エンジンのアップデート",
++        "A newer engine is available: %@": "新しいエンジンがあります：%@",
++        "No engines found.": "エンジンが見つかりません。",
++        "You already have the latest recommended engine (%@).": "最新の推奨エンジン（%@）はすでに入っています。",
++        "Downloaded %@ - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing.": "%@ をダウンロードしました。詳細モードのエンジン一覧で選ぶか、次にボトルの（再）初期化が必要になったときに使われます。",
+         "Graphics": "グラフィック",
+         "Sync": "同期",
+         "Wine engine": "Wine エンジン",
+@@ -548,6 +571,10 @@ enum Localization {
+         "Download Update": "Baixar atualização",
+         "Engine": "Motor",
+         "Engine Updates": "Atualizações do motor",
++        "A newer engine is available: %@": "Há um motor mais recente disponível: %@",
++        "No engines found.": "Nenhum motor encontrado.",
++        "You already have the latest recommended engine (%@).": "Você já tem o motor recomendado mais recente (%@).",
++        "Downloaded %@ - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing.": "%@ baixado - escolha-o na lista de motores do modo avançado, ou ele será oferecido na próxima vez que uma garrafa precisar ser (re)inicializada.",
+         "Graphics": "Gráficos",
+         "Sync": "Sincronização",
+         "Wine engine": "Motor Wine",
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 3d386f672360196aeaf33f81fff1f4fb57badf58..3c52c7011d134b0768d6a9d80d235ad255ae1536 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -673,7 +673,7 @@ private struct EngineUpdatePanelSection: View {
+         SettingsCard(skin: skin, title: L("Engine Updates")) {
+             VStack(alignment: .leading, spacing: 10) {
+                 if let updateAvailable {
+-                    Text("A newer engine is available: \(updateAvailable.name)")
++                    Text(LF("A newer engine is available: %@", updateAvailable.name))
+                         .font(.callout)
+                     Button {
+                         downloadUpdate(updateAvailable)
+@@ -718,13 +718,13 @@ private struct EngineUpdatePanelSection: View {
+                 let assets = try await SikarugirEnginesRemote.fetchAvailableAssets()
+                 guard let recommended = SikarugirEnginesRemote.recommendedAsset(among: assets) else {
+                     isChecking = false
+-                    statusText = "No engines found."
++                    statusText = L("No engines found.")
+                     return
+                 }
+                 let alreadyHave = Set(SikarugirEngine.availableEngineNames()).contains(recommended.name)
+                 isChecking = false
+                 if alreadyHave {
+-                    statusText = "You already have the latest recommended engine (\(recommended.name))."
++                    statusText = LF("You already have the latest recommended engine (%@).", recommended.name)
+                 } else {
+                     updateAvailable = recommended
+                 }
+@@ -744,7 +744,7 @@ private struct EngineUpdatePanelSection: View {
+                 }
+                 isDownloading = false
+                 updateAvailable = nil
+-                statusText = "Downloaded \(asset.name) - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing."
++                statusText = LF("Downloaded %@ - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing.", asset.name)
+             } catch {
+                 isDownloading = false
+                 statusText = error.localizedDescription
+diff --git a/Tests/ExeDockTests/LocalizationTests.swift b/Tests/ExeDockTests/LocalizationTests.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..403b221a27c3ab247de73bd68f656fd50ffef8a4
+--- /dev/null
++++ b/Tests/ExeDockTests/LocalizationTests.swift
+@@ -0,0 +1,39 @@
++import Foundation
++import Testing
++@testable import ExeDock
++
++@Suite("Localization")
++struct LocalizationTests {
++    /// `LF` hands translations straight to `String(format:)`, so a translation whose
++    /// placeholders differ from its English key can print garbage or crash.
++    private func placeholders(_ text: String) -> [String] {
++        let regex = try! NSRegularExpression(pattern: "%(lld|ld|d|@|\\.?\\d*f)")
++        let range = NSRange(text.startIndex..., in: text)
++        return regex.matches(in: text, range: range).compactMap { Range($0.range, in: text).map { String(text[$0]) } }
++    }
++
++    @Test func translationsKeepTheirKeysPlaceholders() {
++        for (language, table) in Localization.tables {
++            for (key, value) in table {
++                #expect(placeholders(key) == placeholders(value), "\(language.rawValue): \(key)")
++            }
++        }
++    }
++
++    @Test func engineUpdateMessagesSubstituteTheEngineName() {
++        let keys = [
++            "A newer engine is available: %@",
++            "You already have the latest recommended engine (%@).",
++            "Downloaded %@ - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing.",
++        ]
++        for language in AppLanguage.allCases where language != .system {
++            for key in keys {
++                let text = String(format: Localization.string(key, in: language), "Engine-X")
++                #expect(text.contains("Engine-X"), "\(language.rawValue): \(key)")
++                if language != .english {
++                    #expect(Localization.string(key, in: language) != key, "\(language.rawValue) missing: \(key)")
++                }
++            }
++        }
++    }
++}

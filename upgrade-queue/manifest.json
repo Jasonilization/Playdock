@@ -123,6 +123,10 @@
     "132-library-curation-store",
     "133-favorites-ui-everywhere",
     "134-favorites-filter-and-hide-games",
-    "135-sort-recently-added"
+    "135-sort-recently-added",
+    "136-settings-engine-updates-card-title",
+    "137-settings-engine-update-messages-localized",
+    "138-settings-ui-size-reset",
+    "139-settings-dates-follow-app-language"
   ]
 }
