@@ -1,0 +1,27 @@
+diff --git a/Sources/ExeDock/AppModel.swift b/Sources/ExeDock/AppModel.swift
+index a51b97d8c2ac51600d7257aabb712321e3706e77..955a0c85f1297c5c9a709c6f171b50d09690247c 100644
+--- a/Sources/ExeDock/AppModel.swift
++++ b/Sources/ExeDock/AppModel.swift
+@@ -147,6 +147,22 @@ final class AppModel: ObservableObject {
+         return stamp > 0 ? Date(timeIntervalSince1970: stamp) : nil
+     }
+ 
++    /// Clears every copy of downloadable game metadata Playdock caches itself (`GameInfoCacheReset`)
++    /// and then re-scans the library, so every card and detail view re-fetches art/description/
++    /// details straight from Steam. For when a game is showing the wrong art, stale art, or none.
++    func hardRefreshGameInfo() {
++        guard !isHardRefreshingGameInfo else { return }
++        isHardRefreshingGameInfo = true
++        Task {
++            await GameInfoCacheReset.run()
++            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Self.lastHardRefreshKey)
++            isHardRefreshingGameInfo = false
++            gameInfoGeneration += 1
++            refreshSteamGames()
++            refreshSteamProfile()
++        }
++    }
++
+     /// Settings that actually apply to a given library item - its own override if it has one,
+     /// otherwise the shared default. Advanced Mode is the only place a user can create an override.
+     /// Keyed by plain `id` so the exact same storage/lookup works for both Steam games (appID) and

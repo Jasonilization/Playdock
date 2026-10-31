@@ -1,0 +1,28 @@
+{
+  "id": "130-detail-capability-chips",
+  "title": "Detail page: controller/co-op/Workshop capability chips (from data Steam already gives us)",
+  "description": "Steam's store categories were being downloaded and then mostly ignored. The detail page now renders the decision-relevant ones as chips - Full Controller Support first, then co-op/multiplayer/Cloud/Workshop/Achievements/Leaderboards/Remote Play/HDR/Family Sharing - in a fixed order so they scan identically game-to-game. Unrecognized categories stay hidden (no cryptic raw strings).",
+  "category": "detail",
+  "commit_message": "Detail page: capability chips from Steam categories",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "129-screenshots-fullsize-lightbox-browse"
+  ],
+  "parent": "129-screenshots-fullsize-lightbox-browse",
+  "base_commit": "36008665fb01fa21887855e0d8a594309a62540b",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-22T10:31:28.766291+00:00",
+  "author": "prepare-chain:claude",
+  "schema_version": 2,
+  "provenance": {
+    "prepared_in_chain": true,
+    "queue_tip_size": 106
+  }
+}

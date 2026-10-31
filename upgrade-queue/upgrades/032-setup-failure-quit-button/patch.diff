@@ -1,0 +1,22 @@
+diff --git a/Sources/ExeDock/Views/SetupView.swift b/Sources/ExeDock/Views/SetupView.swift
+index 40245cf32a1055f131bc76392e064a1391828005..b34eaf130e497fddb846d6aaff83964ee2b41c31 100644
+--- a/Sources/ExeDock/Views/SetupView.swift
++++ b/Sources/ExeDock/Views/SetupView.swift
+@@ -50,6 +50,17 @@ struct SetupView: View {
+                 .buttonStyle(PlaydockButtonStyle())
+                 .frame(maxWidth: 220)
+                 .padding(.top, 4)
++                // A real, previously-missing gap: someone stuck here (genuinely offline, no
++                // network reachable at all) had no on-screen way out at all - only Cmd+Q, which
++                // isn't discoverable for everyone. A plain, deliberately-unstyled quit link right
++                // under the real retry action.
++                Button("Quit Playdock") {
++                    NSApp.terminate(nil)
++                }
++                .buttonStyle(.plain)
++                .foregroundStyle(.secondary)
++                .font(.callout)
++                .padding(.top, 2)
+             }
+             Spacer()
+         }

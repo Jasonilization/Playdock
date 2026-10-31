@@ -1,0 +1,123 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..6960caf288c8bb9393874544a7a151bbb4e0f66e
+--- /dev/null
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -0,0 +1,117 @@
++import SwiftUI
++
++/// Playdock's own small localization layer. This is a SwiftPM executable built with Command Line
++/// Tools only (no Xcode project), and `Package.swift` deliberately `exclude`s the `Resources`
++/// folder from the target - so the usual `.lproj`/`String(localized:)` bundle machinery isn't
++/// wired up and can't be relied on here. Instead every user-facing string is looked up by its
++/// English source text as the key, against an in-memory table per language, falling back to the
++/// key itself (i.e. English) for anything not yet translated. That means a partially-translated
++/// language still renders - it just shows English for the gaps - rather than showing raw keys.
++///
++/// Call sites use the free `L(_:)` function: `Text(L("Settings"))`. A view that needs to re-render
++/// when the language changes reads `@AppStorage(AppLanguage.storageKey)` the same way views
++/// already read `PlaydockSkin.storageKey` for the active skin - `L(_:)` itself just reads
++/// `UserDefaults` directly, so the `@AppStorage` is purely the redraw trigger.
++enum AppLanguage: String, CaseIterable, Identifiable {
++    case system
++    case english = "en"
++    case chineseSimplified = "zh-Hans"
++    case french = "fr"
++    case spanish = "es"
++    case german = "de"
++    case japanese = "ja"
++    case portuguese = "pt"
++
++    var id: String { rawValue }
++
++    static let storageKey = "com.exedock.language"
++
++    /// Each language's name written in that language itself (an endonym), the convention every
++    /// real app's language picker follows - "Deutsch", not "German".
++    var endonym: String {
++        switch self {
++        case .system: return L("System")
++        case .english: return "English"
++        case .chineseSimplified: return "简体中文"
++        case .french: return "Français"
++        case .spanish: return "Español"
++        case .german: return "Deutsch"
++        case .japanese: return "日本語"
++        case .portuguese: return "Português"
++        }
++    }
++
++    /// The English name, shown as a subtitle under the endonym so someone who can't yet read the
++    /// endonym can still find their language.
++    var englishName: String {
++        switch self {
++        case .system: return L("Match your Mac")
++        case .english: return "English"
++        case .chineseSimplified: return "Chinese (Simplified)"
++        case .french: return "French"
++        case .spanish: return "Spanish"
++        case .german: return "German"
++        case .japanese: return "Japanese"
++        case .portuguese: return "Portuguese"
++        }
++    }
++}
++
++/// Look up `key` (its own English text) in the active language's table. Falls back to English,
++/// then to the key itself, so nothing ever renders blank or as a raw identifier.
++func L(_ key: String) -> String {
++    Localization.string(key)
++}
++
++/// `L(_:)` with `String(format:)` applied - `LF("Version %@", "1.2.0")`.
++func LF(_ key: String, _ arguments: CVarArg...) -> String {
++    String(format: Localization.string(key), arguments: arguments)
++}
++
++enum Localization {
++    /// What the user picked, verbatim - `.system` included.
++    static var selected: AppLanguage {
++        AppLanguage(rawValue: UserDefaults.standard.string(forKey: AppLanguage.storageKey) ?? "") ?? .system
++    }
++
++    /// The language actually used to render, resolving `.system` against the Mac's own preferred
++    /// languages - the first one Playdock has a table for, else English.
++    static var active: AppLanguage {
++        let picked = selected
++        guard picked == .system else { return picked }
++        for identifier in Locale.preferredLanguages {
++            let lower = identifier.lowercased()
++            if lower.hasPrefix("zh-hans") || lower == "zh" || lower.hasPrefix("zh-cn") || lower.hasPrefix("zh-sg") {
++                return .chineseSimplified
++            }
++            if let match = AppLanguage.allCases.first(where: { candidate in
++                guard candidate != .system else { return false }
++                return lower == candidate.rawValue.lowercased() || lower.hasPrefix(candidate.rawValue.lowercased() + "-")
++            }) {
++                return match
++            }
++        }
++        return .english
++    }
++
++    static func string(_ key: String) -> String {
++        let language = active
++        if language == .english { return key }
++        return tables[language]?[key] ?? key
++    }
++
++    /// Picks the singular or plural key by `count`, then substitutes it - keeps plural handling
++    /// out of call sites without pulling in a full ICU plural engine (none of the shipping
++    /// languages here need more than a two-form singular/plural split for the one place this is
++    /// used, the game count).
++    static func plural(_ count: Int, singular: String, plural pluralKey: String) -> String {
++        String(format: string(count == 1 ? singular : pluralKey), count)
++    }
++
++    // MARK: - Tables
++
++    /// English is the key set itself - every other table only needs the keys it actually
++    /// translates; anything missing falls through to English automatically. Populated one
++    /// language at a time as each table is added below.
++    private static let tables: [AppLanguage: [String: String]] = [:]
++}

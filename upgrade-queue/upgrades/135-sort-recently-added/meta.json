@@ -1,0 +1,29 @@
+{
+  "id": "135-sort-recently-added",
+  "title": "Sort the library by Recently Added",
+  "description": "Adds a Recently Added sort: the install folder's own filesystem creation date for Steam games (the moment Steam finished downloading into it) and the import timestamp for custom games. `LibraryEntry.addedDate` memoizes the stat calls so sorting stays cheap.",
+  "category": "curation",
+  "commit_message": "Add Recently Added library sort",
+  "files": [
+    "Sources/ExeDock/Models/LibraryEntry.swift",
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "134-favorites-filter-and-hide-games"
+  ],
+  "parent": "134-favorites-filter-and-hide-games",
+  "base_commit": "36008665fb01fa21887855e0d8a594309a62540b",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-22T14:23:05.272997+00:00",
+  "author": "prepare-chain:claude",
+  "schema_version": 2,
+  "provenance": {
+    "prepared_in_chain": true,
+    "queue_tip_size": 106
+  }
+}

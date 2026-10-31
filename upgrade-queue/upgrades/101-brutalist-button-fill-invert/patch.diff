@@ -1,0 +1,26 @@
+diff --git a/Sources/ExeDock/Support/DesignSystem.swift b/Sources/ExeDock/Support/DesignSystem.swift
+index 3c4a4e08c6c2c9a9e752444be8e9847c3275bc19..4eebaf61db2ad0de483b7481fc40f01cf952f320 100644
+--- a/Sources/ExeDock/Support/DesignSystem.swift
++++ b/Sources/ExeDock/Support/DesignSystem.swift
+@@ -530,13 +530,14 @@ func playdockButtonLook(skin: PlaydockSkin, prominent: Bool, isPressed: Bool, ac
+         // tactile object rather than a plain color chip.
+         return PlaydockButtonLook(fill: AnyShapeStyle(Color.primary), labelColor: Color(nsColor: .windowBackgroundColor), cornerRadius: 9, neumorphic: true)
+     case .brutalist:
+-        // .brut .cta{border:3px solid var(--line);background:#111;color:#fff;} - fixed ink fill
+-        // regardless of light/dark (the mockup never overrides it), theme-aware border. The real
+-        // CSS gives the button itself no shadow, but Brutalist's own *card* already pops off the
+-        // page with a hard offset twin (hardShadowColor) - carrying that same real technique onto
+-        // the button (not Soft's soft blur, which would contradict Brutalist's flat-ink identity)
+-        // gives it the same kind of raised, tactile presence in its own idiom.
+-        return PlaydockButtonLook(fill: AnyShapeStyle(Color(red: 0.067, green: 0.067, blue: 0.067)), labelColor: .white, borderColor: .primary, borderWidth: skin.borderWidth, cornerRadius: 0, hardOffsetColor: hardShadowColor(for: .brutalist), pressOffsetX: 2, pressOffsetY: 2, scalesOnPress: false)
++        // .brut .cta was a fixed `#111` ink fill regardless of mode - on Brutalist's own dark
++        // ground (`#1b1712`) that's a near-invisible fill, so the button read as just a hollow
++        // white outline: half of "the colour scheme looks very bad." Inverted to a theme-aware
++        // solid the way Luxury's real `.cta` already is - a near-black block with cream text on
++        // paper, a cream block with dark text on the dark ground - keeping every other Brutalist
++        // button trait (hard 3px border, sharp corners, hard offset twin, diagonal press, no
++        // scale). skins.css's `.brut .cta` is updated to the same `var(--fg)`/`var(--bg)` pair.
++        return PlaydockButtonLook(fill: AnyShapeStyle(Color.primary), labelColor: Color(nsColor: .windowBackgroundColor), borderColor: .primary, borderWidth: skin.borderWidth, cornerRadius: 0, hardOffsetColor: hardShadowColor(for: .brutalist), pressOffsetX: 2, pressOffsetY: 2, scalesOnPress: false)
+     case .cyber:
+         // .cyber .cta{border:1px solid var(--accent);background:transparent;color:var(--accent);}
+         // .cyber .cta:active{background:var(--accent);color:#00131a;} - inverts solid on press.

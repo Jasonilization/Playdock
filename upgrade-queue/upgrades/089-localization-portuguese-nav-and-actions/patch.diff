@@ -1,0 +1,35 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index b64b7859646ea41a7791e92c97f0d8cf578c52fb..62937760dfe2e4eb1a08a40d04b66daeff6633f8 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -119,6 +119,7 @@ enum Localization {
+         .spanish: spanish,
+         .german: german,
+         .japanese: japanese,
++        .portuguese: portuguese,
+     ]
+ 
+     private static let chineseSimplified: [String: String] = [
+@@ -485,4 +486,22 @@ enum Localization {
+         "Contact": "連絡先",
+         "A Mac dashboard for the Windows games you run through Wine.": "Wine で動かす Windows ゲームのための Mac 向けダッシュボードです。",
+     ]
++
++    private static let portuguese: [String: String] = [
++        "System": "Sistema",
++        "Match your Mac": "Acompanhar o Mac",
++        "Settings": "Ajustes",
++        "Done": "Concluído",
++        "Close": "Fechar",
++        "Cancel": "Cancelar",
++        "Refresh": "Atualizar",
++        "Add Game": "Adicionar jogo",
++        "Sort": "Ordenar",
++        "Name": "Nome",
++        "Recently Updated": "Atualizados recentemente",
++        "Search your games": "Buscar seus jogos",
++        "No games installed": "Nenhum jogo instalado",
++        "%lld game": "%lld jogo",
++        "%lld games": "%lld jogos",
++    ]
+ }

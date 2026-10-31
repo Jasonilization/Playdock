@@ -1,0 +1,42 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 345fef4f100dc2c3c15f1025460b73ff6c548e3f..41d081eeb84c42d23e484dadf60a2af61abd1542 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -1439,6 +1439,10 @@ struct GameDetailView: View {
+     @EnvironmentObject private var model: AppModel
+     @ObservedObject private var runningTracker = RunningGameTracker.shared
+     @ObservedObject private var controllerObserver = ControllerObserver.shared
++    /// Live play-activity for this game - totals, session count, last-played - from the local
++    /// recorder (see PlayActivityStore). Observed so a finishing session updates the header in
++    /// place while the page is open.
++    @ObservedObject private var playActivity = PlayActivityStore.shared
+     let game: SteamGame
+     let isAdvancedMode: Bool
+     let onClose: () -> Void
+@@ -1624,9 +1628,26 @@ struct GameDetailView: View {
+                     .font(.callout)
+                     .foregroundStyle(.white.opacity(0.6))
+             }
++            if let activity = activitySummary {
++                Label(activity, systemImage: "gamecontroller")
++                    .font(.callout)
++                    .foregroundStyle(.white.opacity(0.75))
++            }
+         }
+     }
+ 
++    /// "18.5 h over 14 sessions · last played 2 days ago" - nil (row hidden) for a game with no
++    /// recorded session yet; the card-style empty state would just read as UI clutter here.
++    private var activitySummary: String? {
++        let total = playActivity.totalSeconds(for: game.appID)
++        guard total > 0, let last = playActivity.lastPlayed(game.appID) else { return nil }
++        let hours = total / 3600
++        let hoursText = hours < 1 ? "\(max(1, Int((total / 60).rounded(.up)))) min" : (hours < 10 ? String(format: "%.1f h", hours) : "\(Int(hours.rounded())) h")
++        let sessions = playActivity.sessionCount(for: game.appID)
++        let relative = RelativeDateTimeFormatter().localizedString(for: last, relativeTo: Date())
++        return "\(hoursText) over \(sessions) session\(sessions == 1 ? "" : "s") · last played \(relative)"
++    }
++
+     /// The full "About This Game" copy, styled as its own card rather than plain running text.
+     /// Falls back to the short description for anything fetched before this field existed, or with
+     /// no fuller write-up.

@@ -1,0 +1,145 @@
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index b61530e461f79935ecda3caa05424af0958425f0..9143b94b9e81049e1258666bdbd77571c34ea2b2 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -313,6 +313,39 @@ struct SettingsPanelView: View {
+                     }
+                 }
+             }
++
++            EngineUpdatePanelSection(skin: skin)
++
++            if isAdvancedMode {
++                SettingsCard(skin: skin, title: L("Engine")) {
++                    advancedEngineControls
++                }
++            }
++        }
++    }
++
++    @ViewBuilder
++    private var advancedEngineControls: some View {
++        VStack(alignment: .leading, spacing: 14) {
++            labeledPicker(L("Wine engine"), selection: Binding(
++                get: { model.gameModeConfig.engineName ?? "" },
++                set: { model.gameModeConfig.engineName = $0.isEmpty ? nil : $0 }
++            )) {
++                ForEach(SikarugirEngine.availableEngineNames(), id: \.self) { name in
++                    Text(name).tag(name)
++                }
++            }
++            Text(L("These are the same engines already downloaded by Sikarugir Creator."))
++                .font(.caption)
++                .foregroundStyle(.secondary)
++            Divider().overlay(skin.accent.opacity(0.1))
++            Text(L("Graphics")).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
++            SettingsToggle(skin: skin, title: "D3DMETAL", subtitle: nil, isOn: $model.gameModeConfig.d3dMetal)
++            SettingsToggle(skin: skin, title: "MoltenVK CX", subtitle: nil, isOn: $model.gameModeConfig.moltenVKCX)
++            SettingsToggle(skin: skin, title: "DXVK", subtitle: nil, isOn: $model.gameModeConfig.dxvk)
++            SettingsToggle(skin: skin, title: "DXMT", subtitle: nil, isOn: $model.gameModeConfig.dxmt)
++            Divider().overlay(skin.accent.opacity(0.1))
++            SettingsToggle(skin: skin, title: L("Fast Sync (ESYNC + MSYNC)"), subtitle: nil, isOn: $model.gameModeConfig.fastSync)
+         }
+     }
+ 
+@@ -486,6 +519,100 @@ private struct MiniSkinTile: View {
+     }
+ }
+ 
++/// "Check for Engine Updates", card-styled for the settings panel. Same two-step flow as before
++/// (check is free/instant; the potentially large download only happens on an explicit tap) - only
++/// the chrome changed from a `Form` `Section` to a `SettingsCard`.
++private struct EngineUpdatePanelSection: View {
++    let skin: PlaydockSkin
++    @LocalState private var isChecking = false
++    @LocalState private var isDownloading = false
++    @LocalState private var updateAvailable: RemoteEngineAsset?
++    @LocalState private var statusText: String?
++
++    var body: some View {
++        SettingsCard(skin: skin, title: L("Engine")) {
++            VStack(alignment: .leading, spacing: 10) {
++                if let updateAvailable {
++                    Text("A newer engine is available: \(updateAvailable.name)")
++                        .font(.callout)
++                    Button {
++                        downloadUpdate(updateAvailable)
++                    } label: {
++                        if isDownloading {
++                            HStack(spacing: 6) { ProgressView().controlSize(.small); Text(L("Downloading…")) }
++                        } else {
++                            Text(L("Download Update"))
++                        }
++                    }
++                    .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
++                    .disabled(isDownloading)
++                } else {
++                    Button {
++                        checkForUpdates()
++                    } label: {
++                        if isChecking {
++                            HStack(spacing: 6) { ProgressView().controlSize(.small); Text(L("Checking…")) }
++                        } else {
++                            Label(L("Check for Engine Updates"), systemImage: "arrow.triangle.2.circlepath")
++                        }
++                    }
++                    .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
++                    .disabled(isChecking)
++                }
++                if let statusText {
++                    Text(statusText).font(.caption).foregroundStyle(.secondary)
++                }
++                Text(L("Playdock's Wine engine comes from Sikarugir's public releases. Checking never downloads anything by itself."))
++                    .font(.caption)
++                    .foregroundStyle(.secondary)
++                    .fixedSize(horizontal: false, vertical: true)
++            }
++        }
++    }
++
++    private func checkForUpdates() {
++        isChecking = true
++        statusText = nil
++        Task {
++            do {
++                let assets = try await SikarugirEnginesRemote.fetchAvailableAssets()
++                guard let recommended = SikarugirEnginesRemote.recommendedAsset(among: assets) else {
++                    isChecking = false
++                    statusText = "No engines found."
++                    return
++                }
++                let alreadyHave = Set(SikarugirEngine.availableEngineNames()).contains(recommended.name)
++                isChecking = false
++                if alreadyHave {
++                    statusText = "You already have the latest recommended engine (\(recommended.name))."
++                } else {
++                    updateAvailable = recommended
++                }
++            } catch {
++                isChecking = false
++                statusText = error.localizedDescription
++            }
++        }
++    }
++
++    private func downloadUpdate(_ asset: RemoteEngineAsset) {
++        isDownloading = true
++        Task {
++            do {
++                try await SikarugirEnginesRemote.download(asset) { message in
++                    Task { @MainActor in statusText = message }
++                }
++                isDownloading = false
++                updateAvailable = nil
++                statusText = "Downloaded \(asset.name) - pick it in Advanced Mode's engine list, or it'll be offered next time a bottle needs (re)initializing."
++            } catch {
++                isDownloading = false
++                statusText = error.localizedDescription
++            }
++        }
++    }
++}
++
+ private struct SettingsToggle: View {
+     let skin: PlaydockSkin
+     let title: String

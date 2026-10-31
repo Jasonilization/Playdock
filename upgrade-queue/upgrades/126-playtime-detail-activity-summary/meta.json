@@ -1,0 +1,29 @@
+{
+  "id": "126-playtime-detail-activity-summary",
+  "title": "Detail page shows your play activity for the game",
+  "description": "The detail header gains a quiet line from the local recorder: total time, session count, and relative last-played ('18.5 h over 14 sessions \u00b7 last played 2 days ago'). Hidden for a game with no recorded sessions - no useless 'never played' chrome.",
+  "category": "playtime",
+  "commit_message": "Show play activity on the game detail page",
+  "files": [
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "122-playtime-activity-store",
+    "125-playtime-on-grid-cards"
+  ],
+  "parent": "125-playtime-on-grid-cards",
+  "base_commit": "36008665fb01fa21887855e0d8a594309a62540b",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-21T23:42:05.223854+00:00",
+  "author": "prepare-chain:claude",
+  "schema_version": 2,
+  "provenance": {
+    "prepared_in_chain": true,
+    "queue_tip_size": 106
+  }
+}

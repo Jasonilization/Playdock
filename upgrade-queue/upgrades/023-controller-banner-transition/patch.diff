@@ -1,0 +1,53 @@
+diff --git a/Sources/ExeDock/Engine/ControllerObserver.swift b/Sources/ExeDock/Engine/ControllerObserver.swift
+index 99bea25790caff8000e01a8b4a60ab408e53d9fd..a6a147d51b284191551eb760748d24bfd6a2ce52 100644
+--- a/Sources/ExeDock/Engine/ControllerObserver.swift
++++ b/Sources/ExeDock/Engine/ControllerObserver.swift
+@@ -1,5 +1,6 @@
+ import Foundation
+ import GameController
++import SwiftUI
+ 
+ enum ControllerDirection {
+     case up, down, left, right
+@@ -120,9 +121,16 @@ final class ControllerObserver: ObservableObject {
+     }
+ 
+     private func refresh(justConnected: Bool = false) {
+-        isConnected = !GCController.controllers().isEmpty
++        // Animated so the dashboard's own controller banner (gated on isConnected/bannerDismissed)
++        // slides in/out instead of popping - a real, previously-missing transition, paired with a
++        // matching `.transition()` on the banner itself in GameModeView.
++        withAnimation(.easeInOut(duration: 0.3)) {
++            isConnected = !GCController.controllers().isEmpty
++            if justConnected, isConnected {
++                bannerDismissed = false
++            }
++        }
+         if justConnected, isConnected {
+-            bannerDismissed = false
+             connectedPulse = UUID()
+         }
+     }
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 037f60ea7b053561f75a5834f5bc2e4ea7e634e7..3246681e15900b389fcf2fb1234f4162386a4e33 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -243,6 +243,7 @@ struct GameModeView: View {
+                 header
+                 if controllerObserver.isConnected && !controllerObserver.bannerDismissed {
+                     controllerBanner
++                        .transition(.move(edge: .top).combined(with: .opacity))
+                 }
+                 // No separate Divider() here anymore - header's own new skin-accent bottom border
+                 // (see header's doc comment) already does this row's job, and a plain gray divider
+@@ -473,7 +474,9 @@ struct GameModeView: View {
+             .buttonStyle(.borderedProminent)
+             .controlSize(.regular)
+             Button {
+-                controllerObserver.bannerDismissed = true
++                withAnimation(.easeInOut(duration: 0.25)) {
++                    controllerObserver.bannerDismissed = true
++                }
+             } label: {
+                 Image(systemName: "xmark")
+             }

@@ -1,0 +1,116 @@
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index ba8d7303f1769580620245850eba3e0e6897cc30..5d0a47937d54be85b5079531a0b929dbdf53d5ce 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -24,18 +24,20 @@ struct SettingsPanelView: View {
+     private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
+ 
+     enum Category: String, CaseIterable, Identifiable {
+-        case general
++        case general, appearance
+         var id: String { rawValue }
+ 
+         var titleKey: String {
+             switch self {
+             case .general: return "General"
++            case .appearance: return "Appearance"
+             }
+         }
+ 
+         var icon: String {
+             switch self {
+             case .general: return "gearshape"
++            case .appearance: return "paintpalette"
+             }
+         }
+     }
+@@ -133,6 +135,7 @@ struct SettingsPanelView: View {
+     private var content: some View {
+         switch category {
+         case .general: generalTab
++        case .appearance: appearanceTab
+         }
+     }
+ 
+@@ -182,6 +185,40 @@ struct SettingsPanelView: View {
+         }
+     }
+ 
++    // MARK: Appearance
++
++    @LocalState private var showingWizard = false
++
++    private var appearanceTab: some View {
++        VStack(alignment: .leading, spacing: 18) {
++            tabHeader(.appearance)
++
++            SettingsCard(skin: skin, title: L("Look")) {
++                VStack(alignment: .leading, spacing: 12) {
++                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
++                        ForEach(PlaydockSkin.allCases) { candidate in
++                            MiniSkinTile(skin: candidate, isSelected: candidate == skin) {
++                                withAnimation(.easeInOut(duration: 0.25)) { skinRaw = candidate.rawValue }
++                            }
++                        }
++                    }
++                    Text(L("Every control here is drawn in the look you pick, so this screen is a live preview of it."))
++                        .font(.caption)
++                        .foregroundStyle(.secondary)
++                    Label(L("Follows your Mac's light or dark appearance automatically."), systemImage: "circle.lefthalf.filled")
++                        .font(.caption)
++                        .foregroundStyle(.secondary)
++                }
++            }
++
++            SettingsCard(skin: skin, title: L("Run Setup Wizard Again")) {
++                Button(L("Run Setup Wizard Again")) { showingWizard = true }
++                    .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
++            }
++        }
++        .sheet(isPresented: $showingWizard) { SetupWizardView() }
++    }
++
+     // MARK: - Shared bits
+ 
+     private func tabHeader(_ item: Category) -> some View {
+@@ -229,6 +266,40 @@ private struct SettingsCard<Content: View>: View {
+     }
+ }
+ 
++/// A small selectable swatch showing one skin's real background + a real `cardSurface()` sample,
++/// each rendered explicitly as that candidate skin via the primitives' own `skinOverride` - the
++/// same technique the setup wizard's picker uses, kept local here so the two can diverge in size/
++/// density without fighting over one shared tile.
++private struct MiniSkinTile: View {
++    let skin: PlaydockSkin
++    let isSelected: Bool
++    let onSelect: () -> Void
++
++    var body: some View {
++        let shape = PlaydockCardShape(skin: skin, cornerRadius: skin.cardRadius)
++        Button(action: onSelect) {
++            VStack(spacing: 6) {
++                ZStack {
++                    SkinBackground(skin: skin)
++                    VStack(spacing: 3) {
++                        Circle().fill(skin.accent).frame(width: 12, height: 12)
++                        SkinTitleText(text: skin.displayName, size: 10, skinOverride: skin)
++                    }
++                    .padding(8)
++                    .cardSurface(skinOverride: skin)
++                }
++                .frame(height: 66)
++                .clipShape(shape)
++                .overlay(shape.strokeBorder(isSelected ? skin.accent : Color.primary.opacity(0.12), lineWidth: isSelected ? 2.5 : 1))
++                Text(skin.displayName)
++                    .font(.caption2.weight(isSelected ? .semibold : .regular))
++                    .foregroundStyle(isSelected ? skin.accent : .primary)
++            }
++        }
++        .buttonStyle(.plain)
++    }
++}
++
+ private struct SettingsToggle: View {
+     let skin: PlaydockSkin
+     let title: String

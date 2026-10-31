@@ -1,0 +1,37 @@
+diff --git a/Sources/ExeDock/Support/SkinWebGridFragmentView.swift b/Sources/ExeDock/Support/SkinWebGridFragmentView.swift
+index 03c881a61bf3d3b5abf8009ce2b1cc58f8de6516..7a2b3ed0a55dab09407a321d6eafe78aada0333b 100644
+--- a/Sources/ExeDock/Support/SkinWebGridFragmentView.swift
++++ b/Sources/ExeDock/Support/SkinWebGridFragmentView.swift
+@@ -14,6 +14,10 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
+     let isDark: Bool
+     /// "a setting to hide labels" - see `SkinWebGridView.hideBadges`'s identical contract.
+     var hideBadges: Bool = false
++    /// See `SkinWebGridView.focusedID`'s identical contract - matched by real game id, which is
++    /// what makes this safe against this exact view rendering a *filtered* subset (Steam-style's
++    /// All/Custom filter, Spotlight's featured-game exclusion).
++    var focusedID: String?
+     let onOpen: (String) -> Void
+ 
+     func makeCoordinator() -> Coordinator { Coordinator(onOpen: onOpen) }
+@@ -39,6 +43,7 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
+     func updateNSView(_ webView: WKWebView, context: Context) {
+         context.coordinator.onOpen = onOpen
+         context.coordinator.render(skin: skin, entries: entries, isDark: isDark, hideBadges: hideBadges)
++        context.coordinator.setFocus(focusedID)
+     }
+ 
+     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
+@@ -76,6 +81,13 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
+             webView.evaluateJavaScript(js, completionHandler: nil)
+         }
+ 
++        /// See `SkinWebGridView.Coordinator.setFocus(_:)` - identical contract, id-matched.
++        func setFocus(_ id: String?) {
++            guard isPageReady, let webView else { return }
++            let arg = id.map(jsLiteral) ?? "null"
++            webView.evaluateJavaScript("window.PlaydockSetFocus && window.PlaydockSetFocus(\(arg));", completionHandler: nil)
++        }
++
+         private struct WebTheme: Encodable { let theme: String; let hideBadges: Bool }
+ 
+         private func jsonString<T: Encodable>(_ value: T) -> String? {

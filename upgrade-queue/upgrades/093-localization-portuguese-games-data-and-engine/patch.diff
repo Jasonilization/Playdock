@@ -1,0 +1,27 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index 63f0e81fec7c3ef5d920aee9a2e2c0a75ca0f771..6125320453b95120bf00240ae76a8687d3ad6e27 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -531,5 +531,22 @@ enum Localization {
+         "Steam": "Steam",
+         "C: Drive": "Disco C:",
+         "Which screen Playdock opens to.": "A tela com que o Playdock abre.",
++        "Hard Refresh Game Info": "Recarregar informações dos jogos",
++        "Re-downloads every game's art, description, and details from Steam. Use this if a game shows the wrong or missing art.": "Rebaixa da Steam a arte, a descrição e os detalhes de cada jogo. Use isto se um jogo mostrar arte errada ou ausente.",
++        "Refreshing…": "Atualizando…",
++        "Refresh complete.": "Atualização concluída.",
++        "Last refreshed %@": "Última atualização: %@",
++        "Never refreshed": "Nunca atualizado",
++        "Check for Engine Updates": "Procurar atualizações do motor",
++        "Checking…": "Verificando…",
++        "Downloading…": "Baixando…",
++        "Download Update": "Baixar atualização",
++        "Engine": "Motor",
++        "Graphics": "Gráficos",
++        "Sync": "Sincronização",
++        "Wine engine": "Motor Wine",
++        "These are the same engines already downloaded by Sikarugir Creator.": "São os mesmos motores que o Sikarugir Creator já baixou.",
++        "Fast Sync (ESYNC + MSYNC)": "Sincronização rápida (ESYNC + MSYNC)",
++        "Playdock's Wine engine comes from Sikarugir's public releases. Checking never downloads anything by itself.": "O motor Wine do Playdock vem das versões públicas do Sikarugir. Verificar não baixa nada por conta própria.",
+     ]
+ }

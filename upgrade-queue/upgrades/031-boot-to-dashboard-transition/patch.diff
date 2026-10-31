@@ -1,0 +1,22 @@
+diff --git a/Sources/ExeDock/Views/RootView.swift b/Sources/ExeDock/Views/RootView.swift
+index c4eba4902b2af51bf84e192161a989972c365091..e9e893c6ffbd0d37fd098dace08d56a196b3a57a 100644
+--- a/Sources/ExeDock/Views/RootView.swift
++++ b/Sources/ExeDock/Views/RootView.swift
+@@ -16,10 +16,17 @@ struct RootView: View {
+                     .sheet(isPresented: $showingWizard) {
+                         SetupWizardView()
+                     }
++                    .transition(.opacity)
+             } else {
+                 SetupView(setup: setup)
++                    .transition(.opacity)
+             }
+         }
++        // A real, previously-missing transition - the moment setup actually finishes (the boot
++        // screen above) was a hard, instant cut straight to the dashboard, the single most jarring
++        // beat in the whole first-launch experience. `.animation(value:)` here is enough on its
++        // own (no withAnimation needed at the mutation site) since `setup.stage` is Equatable.
++        .animation(.easeInOut(duration: 0.35), value: setup.stage)
+         .onAppear {
+             setup.runSetup()
+         }

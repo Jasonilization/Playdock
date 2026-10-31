@@ -1,0 +1,30 @@
+diff --git a/Sources/ExeDock/Views/CDriveView.swift b/Sources/ExeDock/Views/CDriveView.swift
+index 29413941aa1c6d0f5131fcda95594fd46616ffbb..85575c68e374228aeaacb98f6cc645375c0ab2e4 100644
+--- a/Sources/ExeDock/Views/CDriveView.swift
++++ b/Sources/ExeDock/Views/CDriveView.swift
+@@ -172,6 +172,12 @@ private struct CDriveRow: View {
+     let isFocused: Bool
+     let onActivate: () -> Void
+     let onReveal: () -> Void
++    /// A real, confirmed gap: with no `List(selection:)` binding (deliberate - `focusedIndex`
++    /// already owns keyboard/controller selection, see `CDriveView`'s own comment on `.skinned()`),
++    /// AppKit's own row hover/pressed feedback never engaged either - a row gave zero visual
++    /// response to the mouse at all, unlike every other tappable row/tile in this app
++    /// (`LibraryEntryTile` has had its own `.onHover` all along).
++    @LocalState private var isHovering = false
+ 
+     var body: some View {
+         // A real, confirmed bug: this used to be one outer Button wrapping the whole row *and* a
+@@ -196,8 +202,12 @@ private struct CDriveRow: View {
+             }
+             .buttonStyle(.borderless)
+         }
++        .padding(.vertical, 2)
++        .padding(.horizontal, 6)
++        .background(isHovering ? Color.primary.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 6))
+         .contentShape(Rectangle())
+         .onTapGesture(perform: onActivate)
++        .onHover { isHovering = $0 }
+         .focusRing(isFocused)
+     }
+ }

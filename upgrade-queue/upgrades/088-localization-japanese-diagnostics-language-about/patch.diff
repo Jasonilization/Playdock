@@ -1,0 +1,20 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index c268333b0f4be588d921c9bc1387f2da5026f966..b64b7859646ea41a7791e92c97f0d8cf578c52fb 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -474,5 +474,15 @@ enum Localization {
+         "These are the same engines already downloaded by Sikarugir Creator.": "これらは Sikarugir Creator がすでにダウンロードしたエンジンと同じものです。",
+         "Fast Sync (ESYNC + MSYNC)": "高速同期（ESYNC + MSYNC）",
+         "Playdock's Wine engine comes from Sikarugir's public releases. Checking never downloads anything by itself.": "Playdock の Wine エンジンは Sikarugir の公開リリースから取得されます。確認するだけでは何もダウンロードされません。",
++        "Open Logs Folder": "ログフォルダを開く",
++        "Open Crash Reports": "クラッシュレポートを開く",
++        "Every launch writes its own log here, plus a record of background checks. If something's not working, look here first.": "起動のたびにここへログが書き込まれ、バックグラウンド確認の記録も残ります。うまく動かないときはまずここを確認してください。",
++        "Choose the language Playdock's interface uses.": "Playdock のインターフェースで使う言語を選択します。",
++        "Changes apply immediately.": "変更はすぐに反映されます。",
++        "Some text may stay in English until its translation is finished.": "翻訳が完了するまで、一部のテキストは英語のまま表示されることがあります。",
++        "Version %@": "バージョン %@",
++        "Built on the Sikarugir engine.": "Sikarugir エンジンを基に構築されています。",
++        "Contact": "連絡先",
++        "A Mac dashboard for the Windows games you run through Wine.": "Wine で動かす Windows ゲームのための Mac 向けダッシュボードです。",
+     ]
+ }

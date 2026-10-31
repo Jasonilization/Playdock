@@ -1,0 +1,104 @@
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 75686abb4b82aff40ce8865b44d8939cf563fb8d..ca3b54a7acc2b8f1fd8c8961825f91f6ddfeaf75 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -19,12 +19,15 @@ struct SettingsPanelView: View {
+ 
+     @EnvironmentObject private var model: AppModel
+     @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
++    /// Purely a redraw trigger - `L(_:)` reads `UserDefaults` directly. Same pattern the rest of
++    /// the app uses for `PlaydockSkin.storageKey`.
++    @AppStorage(AppLanguage.storageKey) private var languageRaw = AppLanguage.system.rawValue
+     @LocalState private var category: Category = .general
+ 
+     private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
+ 
+     enum Category: String, CaseIterable, Identifiable {
+-        case general, appearance, personalization, games
++        case general, appearance, personalization, games, language
+         var id: String { rawValue }
+ 
+         var titleKey: String {
+@@ -33,6 +36,7 @@ struct SettingsPanelView: View {
+             case .appearance: return "Appearance"
+             case .personalization: return "Personalization"
+             case .games: return "Games & Data"
++            case .language: return "Language"
+             }
+         }
+ 
+@@ -42,6 +46,7 @@ struct SettingsPanelView: View {
+             case .appearance: return "paintpalette"
+             case .personalization: return "slider.horizontal.3"
+             case .games: return "gamecontroller"
++            case .language: return "globe"
+             }
+         }
+     }
+@@ -142,6 +147,7 @@ struct SettingsPanelView: View {
+         case .appearance: appearanceTab
+         case .personalization: personalizationTab
+         case .games: gamesTab
++        case .language: languageTab
+         }
+     }
+ 
+@@ -315,6 +321,58 @@ struct SettingsPanelView: View {
+         return LF("Last refreshed %@", formatter.string(from: date))
+     }
+ 
++    // MARK: Language
++
++    private var languageTab: some View {
++        VStack(alignment: .leading, spacing: 18) {
++            tabHeader(.language)
++
++            SettingsCard(skin: skin, title: L("Language")) {
++                VStack(alignment: .leading, spacing: 10) {
++                    Text(L("Choose the language Playdock's interface uses."))
++                        .font(.callout)
++                        .foregroundStyle(.secondary)
++                    ForEach(AppLanguage.allCases) { option in
++                        languageRow(option)
++                        if option != AppLanguage.allCases.last {
++                            Divider().overlay(skin.accent.opacity(0.08))
++                        }
++                    }
++                    Text(L("Changes apply immediately."))
++                        .font(.caption)
++                        .foregroundStyle(.secondary)
++                        .padding(.top, 2)
++                    Text(L("Some text may stay in English until its translation is finished."))
++                        .font(.caption)
++                        .foregroundStyle(.secondary)
++                }
++            }
++        }
++    }
++
++    private func languageRow(_ option: AppLanguage) -> some View {
++        let isSelected = languageRaw == option.rawValue
++        return Button {
++            languageRaw = option.rawValue
++        } label: {
++            HStack(spacing: 10) {
++                VStack(alignment: .leading, spacing: 1) {
++                    Text(option.endonym).font(.callout.weight(isSelected ? .semibold : .regular))
++                    if option.englishName != option.endonym {
++                        Text(option.englishName).font(.caption2).foregroundStyle(.secondary)
++                    }
++                }
++                Spacer()
++                if isSelected {
++                    Image(systemName: "checkmark").foregroundStyle(skin.accent)
++                }
++            }
++            .padding(.vertical, 5)
++            .contentShape(Rectangle())
++        }
++        .buttonStyle(.plain)
++    }
++
+     // MARK: - Shared bits
+ 
+     private func tabHeader(_ item: Category) -> some View {

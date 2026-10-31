@@ -1,0 +1,97 @@
+diff --git a/Sources/ExeDock/Engine/Compatibility/LocalOutcomeTracker.swift b/Sources/ExeDock/Engine/Compatibility/LocalOutcomeTracker.swift
+index f358d35af049e67d9ecb0db1f3e9f87a2dc90b0f..d72060b795fed58490500e8d0a4b384979d5fa1c 100644
+--- a/Sources/ExeDock/Engine/Compatibility/LocalOutcomeTracker.swift
++++ b/Sources/ExeDock/Engine/Compatibility/LocalOutcomeTracker.swift
+@@ -28,6 +28,27 @@ enum LocalOutcomeTracker {
+         loadAll().filter { $0.appID == appID }
+     }
+ 
++    /// Per-game tallies across everything recorded, failures-most-recent-first - what the
++    /// Diagnostics settings card renders. Only Playdock-driven launches exist here at all,
++    /// so these lists never claim knowledge of games launched some other way.
++    static func summaries() -> [LaunchSummary] {
++        var grouped: [String: [LaunchOutcomeRecord]] = [:]
++        for record in loadAll() { grouped[record.appID, default: []].append(record) }
++        return grouped.map { appID, records in
++            LaunchSummary(appID: appID,
++                          total: records.count,
++                          failures: records.count { $0.launchErrored },
++                          lastFailure: records.filter { $0.launchErrored }.map(\.timestamp).max())
++        }.sorted { ($0.lastFailure ?? .distantPast) > ($1.lastFailure ?? .distantPast) }
++    }
++
++    struct LaunchSummary {
++        let appID: String
++        let total: Int
++        let failures: Int
++        let lastFailure: Date?
++    }
++
+     private static func loadAll() -> [LaunchOutcomeRecord] {
+         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return [] }
+         return (try? JSONDecoder().decode([LaunchOutcomeRecord].self, from: data)) ?? []
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index d80f862b2dc6080023d089325a5dcecbcbb1d715..36e7b8a9e7dba10e14176661c72fa4b16745ec0e 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -449,9 +449,60 @@ struct SettingsPanelView: View {
+                         .fixedSize(horizontal: false, vertical: true)
+                 }
+             }
++
++            launchReliabilityCard
++        }
++    }
++
++    /// A per-game tally of Playdock-driven launch outcomes - the same evidence the detail page's
++    /// banner uses, collected in one place. Only surfaces at all once at least one launch has been
++    /// recorded (no empty-state noise on a fresh install).
++    @ViewBuilder
++    private var launchReliabilityCard: some View {
++        let summaries = LocalOutcomeTracker.summaries()
++        if !summaries.isEmpty {
++            SettingsCard(skin: skin, title: L("Launch Reliability")) {
++                VStack(alignment: .leading, spacing: 10) {
++                    ForEach(summaries, id: \.appID) { summary in
++                        HStack(spacing: 10) {
++                            VStack(alignment: .leading, spacing: 2) {
++                                Text(gameName(for: summary.appID))
++                                    .font(.callout.weight(.medium))
++                                if summary.failures > 0 {
++                                    Text(LF("%lld/%lld launches OK · last failure %@", summary.total - summary.failures, summary.total, relative(summary.lastFailure)))
++                                        .font(.caption)
++                                        .foregroundStyle(.secondary)
++                                } else {
++                                    Text(LF("%lld launches, no errors", summary.total))
++                                        .font(.caption)
++                                        .foregroundStyle(.secondary)
++                                }
++                            }
++                            Spacer()
++                            Image(systemName: summary.failures == 0 ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
++                                .foregroundStyle(summary.failures == 0 ? .green : .yellow)
++                        }
++                        if summary.appID != summaries.last?.appID { Divider().opacity(0.3) }
++                    }
++                    Text(L("Counts only launches started from Playdock."))
++                        .font(.caption2)
++                        .foregroundStyle(.tertiary)
++                }
++            }
+         }
+     }
+ 
++    private func gameName(for appID: String) -> String {
++        if let g = model.steamGames.first(where: { $0.appID == appID }) { return g.name }
++        if let c = model.customGames.first(where: { $0.id == appID }) { return c.effectiveName }
++        return L("Game") + " \(appID)"
++    }
++
++    private func relative(_ date: Date?) -> String {
++        guard let date else { return "—" }
++        return RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date())
++    }
++
+     // MARK: About
+ 
+     private var aboutTab: some View {

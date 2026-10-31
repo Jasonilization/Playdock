@@ -1,0 +1,21 @@
+diff --git a/Sources/ExeDock/Views/SetupView.swift b/Sources/ExeDock/Views/SetupView.swift
+index e89dbfec20dae65cb6d65b4e31972ebdcae002c0..e4e05f17fdc64c4be7cce0d3e6f34c2362946259 100644
+--- a/Sources/ExeDock/Views/SetupView.swift
++++ b/Sources/ExeDock/Views/SetupView.swift
+@@ -221,14 +221,14 @@ private struct EngineChoiceView: View {
+                             VStack(alignment: .leading, spacing: 2) {
+                                 Text(name).font(.headline)
+                                 if name == recommended {
+-                                    Text("Recommended").font(.caption).foregroundStyle(Color.accentColor)
++                                    Text("Recommended").font(.caption).foregroundStyle(skin.accent)
+                                 }
+                             }
+                             Spacer()
+                             Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                         }
+                         .padding(12)
+-                        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
++                        .cardSurface()
+                     }
+                     .buttonStyle(.plain)
+                 }

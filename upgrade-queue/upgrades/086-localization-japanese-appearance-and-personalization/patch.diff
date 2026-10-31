@@ -1,0 +1,24 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index 3a03a9493d89b6e188533cea828b1423bdaf74f5..65d013e2ccdd28955defb322a8fc9c7d7d2b3653 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -443,5 +443,19 @@ enum Localization {
+         "The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way).": "グリッドの隅にある、ダブルクリックで Steam を開くアイコンです。オフにすると端の小さなタブに畳まれます（消えるわけではなく、邪魔にならなくなります）。",
+         "Preview With Sample Games": "サンプルゲームでプレビュー",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "有名なゲーム（実際のアートと評価。実際のインストールはなし）を追加し、グリッドの見え方を確認できます。オフにすると削除されます。",
++        "UI Size": "UI サイズ",
++        "Look": "スタイル",
++        "Layout": "レイアウト",
++        "Card Art": "カードアート",
++        "Banner": "バナー",
++        "Box Art": "ボックスアート",
++        "Follows your Mac's light or dark appearance automatically.": "Mac のライト/ダーク外観に自動的に従います。",
++        "Run Setup Wizard Again": "セットアップウィザードを再実行",
++        "Every control here is drawn in the look you pick, so this screen is a live preview of it.": "ここのすべてのコントロールは選んだスタイルで描画されるため、この画面がそのライブプレビューになります。",
++        "Default Sort": "デフォルトの並び順",
++        "Opening Screen": "起動画面",
++        "Steam": "Steam",
++        "C: Drive": "C: ドライブ",
++        "Which screen Playdock opens to.": "Playdock を開いたときに表示する画面です。",
+     ]
+ }

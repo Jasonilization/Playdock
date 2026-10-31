@@ -1,0 +1,16 @@
+diff --git a/Sources/ExeDock/Resources/SkinTemplate/skins.css b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+index 98cc4fab06b8d7dcbfdfecf1eae8055dd67d7f7a..1cf93465cfe3b14b46992d6f011afd4bf96ebb6c 100644
+--- a/Sources/ExeDock/Resources/SkinTemplate/skins.css
++++ b/Sources/ExeDock/Resources/SkinTemplate/skins.css
+@@ -33,6 +33,11 @@ input.search::placeholder{color:inherit;opacity:0.6;}
+    it reads as "this is what kind of game," not "this skin's own accent happens to be blue." */
+ .badge-mac{background:#0071e3 !important;color:#fff !important;}
+ 
++/* A game running through Playdock's own Windows Steam bottle (the real majority case) - same
++   contract as .badge-mac above, just teal instead of Apple blue so the two read as distinct
++   at a glance. */
++.badge-windows{background:#0d9488 !important;color:#fff !important;}
++
+ /* ================= 1. Luxury (native macOS) ================= */
+ .lux{ --bg:#f6f5f3; --panel:#ffffffcc; --line:rgba(0,0,0,.08); --fg:#1c1b19; --sub:#6b6863; --accent:#b08d57; }
+ [data-stage-theme="dark"] .lux{ --bg:#151412; --panel:#211f1caa; --line:rgba(255,255,255,.08); --fg:#f1efe9; --sub:#9b968c; }

@@ -1,0 +1,16 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index f72e628cb1c3e710d83a617ae440390e0c3bb539..3a03a9493d89b6e188533cea828b1423bdaf74f5 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -437,5 +437,11 @@ enum Localization {
+         "Language": "言語",
+         "Diagnostics": "診断",
+         "About": "情報",
++        "Advanced Mode": "詳細モード",
++        "Adds a settings button to each game so you can fine-tune its engine and graphics settings individually. Most people never need this.": "各ゲームに設定ボタンを追加し、エンジンとグラフィックを個別に調整できるようにします。ほとんどの場合は不要です。",
++        "Show Floating Steam Icon": "フローティング Steam アイコンを表示",
++        "The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way).": "グリッドの隅にある、ダブルクリックで Steam を開くアイコンです。オフにすると端の小さなタブに畳まれます（消えるわけではなく、邪魔にならなくなります）。",
++        "Preview With Sample Games": "サンプルゲームでプレビュー",
++        "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "有名なゲーム（実際のアートと評価。実際のインストールはなし）を追加し、グリッドの見え方を確認できます。オフにすると削除されます。",
+     ]
+ }

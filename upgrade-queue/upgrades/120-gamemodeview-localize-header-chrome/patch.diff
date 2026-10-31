@@ -1,0 +1,50 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 90eff021742b2aef9ccb8d88c76154d38a386da9..f7ecab56833d35917835a418d3fd6fb4b242aebd 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -503,8 +503,8 @@ struct GameModeView: View {
+     private var header: some View {
+         HStack(spacing: 10) {
+             profileAvatar
+-            SkinTitleText(text: model.steamProfile?.personaName ?? "Steam", size: 17, lineLimit: 1)
+-            Text(model.steamGames.isEmpty ? "No games installed" : "\(model.steamGames.count) game\(model.steamGames.count == 1 ? "" : "s")")
++            SkinTitleText(text: model.steamProfile?.personaName ?? L("Steam"), size: 17, lineLimit: 1)
++            Text(model.steamGames.isEmpty ? L("No games installed") : Localization.plural(model.steamGames.count, singular: "%lld game", plural: "%lld games"))
+                 .font(.caption)
+                 .foregroundStyle(.secondary)
+             Spacer()
+@@ -518,19 +518,19 @@ struct GameModeView: View {
+             // ordering, not just Grid's.
+             HStack(spacing: 6) {
+                 sortMenu
+-                headerIconButton(systemImage: "plus", help: "Add Game", isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(0)) {
++                headerIconButton(systemImage: "plus", help: L("Add Game"), isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(0)) {
+                     showingAddGameSheet = true
+                 }
+                 .keyboardShortcut("n", modifiers: .command)
+ 
+-                headerIconButton(systemImage: "arrow.clockwise", help: "Refresh", isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(1)) {
++                headerIconButton(systemImage: "arrow.clockwise", help: L("Refresh"), isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(1)) {
+                     model.refreshSteamGames()
+                     model.refreshSteamProfile()
+                 }
+                 .keyboardShortcut("r", modifiers: .command)
+                 .disabled(model.isLoadingSteamGames)
+ 
+-                headerIconButton(systemImage: "gearshape", help: "Settings", isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(2)) {
++                headerIconButton(systemImage: "gearshape", help: L("Settings"), isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(2)) {
+                     openSettings()
+                 }
+             }
+@@ -1161,9 +1161,9 @@ struct GameModeView: View {
+             Image(systemName: "square.grid.2x2")
+                 .font(.system(size: 36))
+                 .foregroundStyle(.tertiary)
+-            Text("No games installed yet")
++            Text(L("No games installed yet"))
+                 .font(.title3).bold()
+-            Text("Install something from the Steam store, or use \u{201C}+\u{201D} above to add a game you already have.")
++            Text(L("Install something from the Steam store, or use \u{201C}+\u{201D} above to add a game you already have."))
+                 .font(.callout)
+                 .foregroundStyle(.secondary)
+         }

@@ -1,0 +1,24 @@
+diff --git a/Sources/ExeDock/Support/Localization.swift b/Sources/ExeDock/Support/Localization.swift
+index 38e49d4ef2a9e08d738e2d94e1269fbf73dee43d..63f0e81fec7c3ef5d920aee9a2e2c0a75ca0f771 100644
+--- a/Sources/ExeDock/Support/Localization.swift
++++ b/Sources/ExeDock/Support/Localization.swift
+@@ -517,5 +517,19 @@ enum Localization {
+         "The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way).": "O ícone no canto da grade que abre a Steam com um clique duplo. Desative para recolhê-lo em uma pequena aba na borda (continua lá, apenas fora do caminho).",
+         "Preview With Sample Games": "Pré-visualizar com jogos de exemplo",
+         "Adds well-known games (real art and ratings, nothing installed) so you can see how the grid looks. Turn off to remove them.": "Adiciona jogos conhecidos (arte e notas reais, nada instalado) para ver como a grade fica. Desative para removê-los.",
++        "UI Size": "Tamanho da interface",
++        "Look": "Estilo",
++        "Layout": "Disposição",
++        "Card Art": "Arte dos cartões",
++        "Banner": "Banner",
++        "Box Art": "Capa",
++        "Follows your Mac's light or dark appearance automatically.": "Acompanha automaticamente a aparência clara ou escura do seu Mac.",
++        "Run Setup Wizard Again": "Executar o assistente novamente",
++        "Every control here is drawn in the look you pick, so this screen is a live preview of it.": "Cada controle aqui é desenhado no estilo escolhido, então esta tela é uma prévia ao vivo dele.",
++        "Default Sort": "Ordenação padrão",
++        "Opening Screen": "Tela inicial",
++        "Steam": "Steam",
++        "C: Drive": "Disco C:",
++        "Which screen Playdock opens to.": "A tela com que o Playdock abre.",
+     ]
+ }

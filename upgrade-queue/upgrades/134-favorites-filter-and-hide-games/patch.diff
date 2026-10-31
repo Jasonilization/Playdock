@@ -1,0 +1,149 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 2ee7245587c0330def2516d72d3def90a07b2fad..cedb7ad55b7f66209919e58896faea65d7746143 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -81,6 +81,8 @@ struct GameModeView: View {
+     @LocalState private var showingSettings = false
+     @LocalState private var showingAddGameSheet = false
+     @LocalState private var sortOption: GameSortOption = .name
++    /// Narrow the grid to favorites only. Off by default; a heart toggle in the header.
++    @LocalState private var favoritesOnly = false
+     @LocalState private var launchOverlayGame: SteamGame?
+     @LocalState private var launchOverlayCustomGame: CustomGame?
+     @LocalState private var showingControllerMode = false
+@@ -135,8 +137,12 @@ struct GameModeView: View {
+     /// keyed off `model.steamGames`/`filteredGames` directly; this is specifically what the grid
+     /// itself, and controller focus over it, iterate.
+     private var libraryEntries: [LibraryEntry] {
+-        let all = model.steamGames.map(LibraryEntry.steam) + model.customGames.map(LibraryEntry.custom)
+-        let filtered = search.isEmpty ? all : all.filter { $0.name.localizedCaseInsensitiveContains(search) }
++        // Hidden games are *gone* from the library entirely (settings offers unhide); favorites
++        // filtering is the cheap positive selection on what's left.
++        let all = (model.steamGames.map(LibraryEntry.steam) + model.customGames.map(LibraryEntry.custom))
++            .filter { !curation.isHidden($0.id) }
++        var filtered = search.isEmpty ? all : all.filter { $0.name.localizedCaseInsensitiveContains(search) }
++        if favoritesOnly { filtered = filtered.filter { curation.isFavorite($0.id) } }
+         switch sortOption {
+         case .name:
+             return filtered.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+@@ -559,6 +565,7 @@ struct GameModeView: View {
+             // Add/Refresh/Settings instead of being dropped - it still governs every layout's
+             // ordering, not just Grid's.
+             HStack(spacing: 6) {
++                favoritesToggle
+                 sortMenu
+                 headerIconButton(systemImage: "plus", help: L("Add Game"), isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(0)) {
+                     showingAddGameSheet = true
+@@ -607,6 +614,21 @@ struct GameModeView: View {
+     /// replaced rendered as bare system menu chrome with no relationship to the active skin at
+     /// all. A themed pill - icon, current value, chevron - in the skin's own accent, matching the
+     /// same capsule/border language `PlaydockButtonStyle`'s compact buttons already use elsewhere.
++    /// Heart toggles the whole-lists favorites-only filter - matches the sort capsule's chrome
++    /// exactly so the pair reads as one control family.
++    private var favoritesToggle: some View {
++        Button {
++            withAnimation(.easeInOut(duration: 0.15)) { favoritesOnly.toggle() }
++        } label: {
++            Image(systemName: favoritesOnly ? "heart.fill" : "heart")
++                .font(.callout.weight(.medium))
++                .foregroundStyle(favoritesOnly ? .pink : .secondary)
++        }
++        .buttonStyle(.plain)
++        .help(L(favoritesOnly ? "Show all games" : "Show only favorites"))
++        .accessibilityLabel(L("Favorites filter"))
++    }
++
+     private var sortMenu: some View {
+         Menu {
+             ForEach(GameSortOption.allCases) { option in
+@@ -1655,6 +1677,23 @@ struct GameDetailView: View {
+                 .buttonStyle(.plain)
+                 .help(L(curation.isFavorite(game.appID) ? "Remove from Favorites" : "Mark as Favorite"))
+             }
++
++                // Second-class actions tucked into one menu, not another visible circle -
++                // "hide this game" is rare, reversible (Settings > Hidden Games), and out of the
++                // way here instead of competing with the favorite heart.
++                Menu {
++                    Button(L("Hide This Game from Library"), role: .destructive) {
++                        curation.hide(game.appID)
++                        onClose()
++                    }
++                } label: {
++                    Image(systemName: "ellipsis")
++                        .font(.title3)
++                        .foregroundStyle(.white.opacity(0.55))
++                }
++                .menuStyle(.borderlessButton)
++                .menuIndicator(.hidden)
++                .fixedSize()
+             if storeInfo?.metacriticScore != nil || !(storeInfo?.genres.isEmpty ?? true) {
+                 HStack(spacing: 10) {
+                     if let score = storeInfo?.metacriticScore {
+diff --git a/Sources/ExeDock/Views/SettingsPanelView.swift b/Sources/ExeDock/Views/SettingsPanelView.swift
+index 36e7b8a9e7dba10e14176661c72fa4b16745ec0e..358f701270152bd74e5e78565c814435f8ebb951 100644
+--- a/Sources/ExeDock/Views/SettingsPanelView.swift
++++ b/Sources/ExeDock/Views/SettingsPanelView.swift
+@@ -15,6 +15,7 @@ import AppKit
+ /// Built one category at a time (see the other commits in this unit) - this first cut is just the
+ /// shell plus General, enough to be a working (if minimal) panel on its own.
+ struct SettingsPanelView: View {
++    @ObservedObject private var curation = LibraryCurationStore.shared
+     var onClose: () -> Void
+ 
+     @EnvironmentObject private var model: AppModel
+@@ -330,6 +331,8 @@ struct SettingsPanelView: View {
+ 
+             EngineUpdatePanelSection(skin: skin)
+ 
++            hiddenGamesCard
++
+             if isAdvancedMode {
+                 SettingsCard(skin: skin, title: L("Engine")) {
+                     advancedEngineControls
+@@ -423,6 +426,45 @@ struct SettingsPanelView: View {
+         .buttonStyle(.plain)
+     }
+ 
++    /// The "undo" half of hiding a game: whatever was hidden shows here with an Unhide button.
++    /// Empty state gets no card at all - no dead UI on a fresh install.
++    @ViewBuilder
++    private var hiddenGamesCard: some View {
++        let hiddenIDs = curation.hidden
++        if !hiddenIDs.isEmpty {
++            SettingsCard(skin: skin, title: L("Hidden Games")) {
++                VStack(alignment: .leading, spacing: 8) {
++                    ForEach(sortedHidden(hiddenIDs), id: \.id) { entry in
++                        HStack {
++                            Text(entry.name).font(.callout)
++                            Spacer()
++                            Button(L("Unhide")) { curation.unhide(entry.id) }
++                                .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
++                        }
++                    }
++                    Text(L("Hidden games stay installed; they're just removed from the library grid. Everything about them (play time, configs, launch history) is kept."))
++                        .font(.caption)
++                        .foregroundStyle(.secondary)
++                        .fixedSize(horizontal: false, vertical: true)
++                }
++            }
++        }
++    }
++
++    private struct HiddenEntry: Identifiable {
++        let id: String
++        let name: String
++    }
++
++    private func sortedHidden(_ ids: Set<String>) -> [HiddenEntry] {
++        ids.map { id in
++            let name = model.steamGames.first(where: { $0.appID == id })?.name
++                ?? model.customGames.first(where: { $0.id == id })?.effectiveName
++                ?? id
++            return HiddenEntry(id: id, name: name)
++        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
++    }
++
+     // MARK: Diagnostics
+ 
+     private var diagnosticsTab: some View {

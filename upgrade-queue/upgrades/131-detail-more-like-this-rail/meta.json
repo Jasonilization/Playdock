@@ -1,0 +1,31 @@
+{
+  "id": "131-detail-more-like-this-rail",
+  "title": "Detail page: 'More like this' rail (same genre, best-rated first)",
+  "description": "A horizontal rail at the bottom of the detail page with Steam games sharing this game's primary genre, sorted by Metacritic. Cached store info only (new cachedSnapshot accessor) - it never triggers a network fetch just to decorate the page. Works in controller mode too: picking a suggestion jumps the carousel selection.",
+  "category": "detail",
+  "commit_message": "Detail page: 'More like this' rail from cached store info",
+  "files": [
+    "Sources/ExeDock/Engine/SteamStoreInfoCache.swift",
+    "Sources/ExeDock/Views/ControllerModeView.swift",
+    "Sources/ExeDock/Views/GameModeView.swift"
+  ],
+  "dependencies": [
+    "129-screenshots-fullsize-lightbox-browse",
+    "130-detail-capability-chips"
+  ],
+  "parent": "130-detail-capability-chips",
+  "base_commit": "36008665fb01fa21887855e0d8a594309a62540b",
+  "tests": [
+    "swift build",
+    "swift test"
+  ],
+  "risk": "low",
+  "status": "READY",
+  "created_at": "2026-09-22T11:20:00.505426+00:00",
+  "author": "prepare-chain:claude",
+  "schema_version": 2,
+  "provenance": {
+    "prepared_in_chain": true,
+    "queue_tip_size": 106
+  }
+}

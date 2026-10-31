@@ -1,0 +1,109 @@
+diff --git a/Sources/ExeDock/Views/GameModeView.swift b/Sources/ExeDock/Views/GameModeView.swift
+index 41d081eeb84c42d23e484dadf60a2af61abd1542..ff95873989763fced76e0676fcf818978ee86040 100644
+--- a/Sources/ExeDock/Views/GameModeView.swift
++++ b/Sources/ExeDock/Views/GameModeView.swift
+@@ -1456,6 +1456,11 @@ struct GameDetailView: View {
+     /// Non-nil while a photo is shown full-size over everything else.
+     @LocalState private var expandedImagePath: String?
+     @LocalState private var gameAccent: Color?
++    /// This game's Playdock-recorded launch outcomes (see LocalOutcomeTracker) - loaded with the
++    /// rest of the page and refreshed whenever a launch finishes while it's open, so the
++    /// reliability banner below describes right now, not session-stale state.
++    @LocalState private var launchHistory: [LaunchOutcomeRecord] = []
++    @LocalState private var showingCompatibilityFinder = false
+ 
+     private var runningInfo: RunningProcessInfo? { runningTracker.runningGames[game.appID] }
+     private var hasCustomSettings: Bool { model.perGameConfigs[game.appID] != nil }
+@@ -1514,6 +1519,7 @@ struct GameDetailView: View {
+                         HStack(alignment: .top, spacing: 24) {
+                             VStack(alignment: .leading, spacing: 22) {
+                                 actionRow
++                                reliabilityBanner
+                                 descriptionCard
+                             }
+                             .frame(maxWidth: .infinity, alignment: .leading)
+@@ -1550,7 +1556,10 @@ struct GameDetailView: View {
+         .task(id: game.appID) {
+             storeInfo = await SteamStoreInfoCache.shared.info(for: game.metadataAppID)
+             if let path = storeInfo?.headerImagePath { gameAccent = await GameArtColor.dominantColor(forImagePath: path) }
++            reloadLaunchHistory()
+         }
++        // A launch finishing while this page is open must update the banner in place.
++        .onChange(of: model.launchingTarget) { _ in reloadLaunchHistory() }
+         .onExitCommand { onClose() }
+         // GameDetailView always treats itself as the active controller-input layer while it's
+         // mounted - it's rendered above everything else wherever it appears (a direct card tap, or
+@@ -1682,6 +1691,73 @@ struct GameDetailView: View {
+     /// True whenever there's actually something to put in `photoGrid`.
+     private var hasPhotos: Bool { !allPhotoPaths.isEmpty }
+ 
++    // MARK: - Reliability
++
++    /// (failures, trailingFailureStreak) from the recorded launch history, or nil when nothing's
++    /// been recorded at all - in which case there is no banner to show.
++    private var reliabilitySummary: (total: Int, failures: Int, streak: Int)? {
++        guard !launchHistory.isEmpty else { return nil }
++        let failures = launchHistory.filter(\.launchErrored)
++        var streak = 0
++        for record in launchHistory.reversed() {
++            if record.launchErrored { streak += 1 } else { break }
++        }
++        return (launchHistory.count, failures.count, streak)
++    }
++
++    private func reloadLaunchHistory() {
++        launchHistory = LocalOutcomeTracker.records(for: game.appID)
++    }
++
++    /// Closes the app's one unique loop: Playdock sees launches fail (the same recorded evidence
++    /// that feeds CompatibilityFinder's local-history source), so right at the failure it offers
++    /// the fix - not a log path. Only counts launches through Playdock; anything else never
++    /// appears here, by design.
++    @ViewBuilder
++    private var reliabilityBanner: some View {
++        if let summary = reliabilitySummary {
++            if summary.streak >= 2 {
++                VStack(alignment: .leading, spacing: 10) {
++                    Label(L("This game has failed its last ") + "\(summary.streak)"
++                          + L(" launches from Playdock."), systemImage: "exclamationmark.triangle.fill")
++                        .foregroundStyle(.yellow)
++                        .font(.callout.weight(.semibold))
++                    Text(L("That's usually the engine/graphics configuration, not the game. Let Playdock look up what actually works for this title."))
++                        .font(.callout)
++                        .foregroundStyle(.white.opacity(0.8))
++                    Button {
++                        withAnimation(.easeInOut(duration: 0.2)) { showingCompatibilityFinder.toggle() }
++                    } label: {
++                        Label(L(showingCompatibilityFinder ? "Hide Compatibility Finder" : "Find a Working Configuration"),
++                              systemImage: "magnifyingglass")
++                    }
++                    .buttonStyle(.borderedProminent)
++                    .tint(.orange)
++
++                    if showingCompatibilityFinder {
++                        FindBestConfigurationSection(itemID: game.appID, itemName: game.name)
++                            .padding(.top, 6)
++                    }
++                }
++                .padding(16)
++                .frame(maxWidth: .infinity, alignment: .leading)
++                .background(.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
++                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.yellow.opacity(0.3)))
++            } else {
++                // Quiet positive/mixed signal - no banner chrome for what's working.
++                Label(
++                    summary.failures == 0
++                        ? L("Launched ") + "\(summary.total)" + L(" time(s) from Playdock, no errors.")
++                        : L("Reliability: ") + "\(summary.total - summary.failures)/\(summary.total)"
++                            + L(" launches OK; a recent attempt failed."),
++                    systemImage: summary.failures == 0 ? "checkmark.circle" : "exclamationmark.circle"
++                )
++                .font(.caption)
++                .foregroundStyle(.white.opacity(0.65))
++            }
++        }
++    }
++
+     /// A fixed-width column of photos to the right of the text, replacing an earlier full-width row
+     /// layout. Two thumbnails per row rather than one, sized up generously, with the content column
+     /// widened to match so the text side doesn't get squeezed. Each thumbnail gets both its width

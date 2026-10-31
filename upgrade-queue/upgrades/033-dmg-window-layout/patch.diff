@@ -1,0 +1,43 @@
+diff --git a/Scripts/make_dmg.sh b/Scripts/make_dmg.sh
+index 37f1016ad4fb239df41e54127388f72cf46afc0d..5bd092461f4c104e630db5f724657091eeccc126 100755
+--- a/Scripts/make_dmg.sh
++++ b/Scripts/make_dmg.sh
+@@ -26,3 +26,38 @@ hdiutil verify "$DMG_PATH"
+ 
+ rm -rf "$STAGING_DIR"
+ echo "==> Built $DMG_PATH"
++
++# Real, previously-missing installer polish: the DMG above has no window layout at all - a raw
++# Finder default with no sizing or icon positions, meaning whatever a user's Finder window
++# settings happen to be, not a deliberate "app on the left, Applications on the right, drag
++# between them" arrangement every other real Mac installer has. Re-opens the same DMG read-write,
++# lays it out via a real Finder AppleScript (the standard technique - hdiutil itself has no icon-
++# position API), then re-compresses back to the same read-only UDZO path.
++echo "==> Laying out DMG window"
++RW_DMG="build/Playdock-rw.dmg"
++rm -f "$RW_DMG"
++hdiutil convert "$DMG_PATH" -format UDRW -o "$RW_DMG"
++MOUNT_DIR=$(hdiutil attach "$RW_DMG" -readwrite -noverify -noautoopen | grep -E '/Volumes/' | awk -F'\t' '{print $NF}')
++osascript <<APPLESCRIPT
++tell application "Finder"
++    tell disk "Playdock"
++        open
++        set current view of container window to icon view
++        set toolbar visible of container window to false
++        set statusbar visible of container window to false
++        set the bounds of container window to {200, 120, 660, 420}
++        set viewOptions to the icon view options of container window
++        set arrangement of viewOptions to not arranged
++        set icon size of viewOptions to 96
++        set position of item "Playdock.app" of container window to {110, 150}
++        set position of item "Applications" of container window to {350, 150}
++        close
++    end tell
++end tell
++APPLESCRIPT
++hdiutil detach "$MOUNT_DIR"
++rm -f "$DMG_PATH"
++hdiutil convert "$RW_DMG" -format UDZO -o "$DMG_PATH"
++rm -f "$RW_DMG"
++hdiutil verify "$DMG_PATH"
++echo "==> Laid out and re-compressed $DMG_PATH"
