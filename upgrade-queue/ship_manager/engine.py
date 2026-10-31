@@ -761,10 +761,14 @@ def prepare_session_start(title=""):
                 return ShipError("queue-tip",
                                  f"Could not build the queue tip (failed at {uid}): {msg}").as_dict()
             applied.append(uid)
+        # The tip patches sit uncommitted in the worktree, so capture has to diff against this
+        # tree, not HEAD - otherwise every unshipped ancestor's content leaks into the new patch.
+        git("add", "-A", cwd=wt, check=True)
+        base_tree = git("write-tree", cwd=wt, check=True)[1].strip()
         sessions = load_sessions()
         sessions[sid] = {"id": sid, "path": str(wt), "title": title,
                          "created_at": datetime.now(timezone.utc).isoformat(),
-                         "queue_tip": applied}
+                         "queue_tip": applied, "base_tree": base_tree}
         save_sessions(sessions)
         return {"ok": True, "session": sessions[sid]}
     except Exception:
@@ -794,8 +798,15 @@ def prepare_session_capture(sid, slug, title, description="", category="", commi
     if not wt.exists():
         return ShipError("session", f"session worktree gone: {wt}").as_dict()
 
+    base = sess.get("base_tree")
+    if not base:
+        if sess.get("queue_tip"):
+            return ShipError("session",
+                             "Session predates base-tree tracking and was started on unshipped "
+                             "upgrades; its diff would include them. Discard it and start a new one.").as_dict()
+        base = "HEAD"
     code, staged_out, _ = git("add", "-A", cwd=wt)
-    diff = git("diff", "--cached", "--full-index", cwd=wt)[1]
+    diff = git("diff", "--cached", "--full-index", base, cwd=wt)[1]
     if not diff.strip():
         git("reset", "-q", cwd=wt)
         return ShipError("empty", "Session worktree contains no changes vs the queue tip.").as_dict()

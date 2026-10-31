@@ -135,6 +135,50 @@ expect(found.get(twin, {}).get("commit") == sha, "backfill matched the twin to i
 expect(engine.effective_status(twin)[0] == "SHIPPED", "backfilled twin reads SHIPPED")
 expect(engine.backfill_landed() == {}, "second backfill is a no-op")
 
+# --- capture on a non-empty queue tip carries only the session's own change ---------
+tip = "997-selftest-unshipped-tip"
+tipd = engine.UPGRADES_DIR / tip
+tipd.mkdir(parents=True)
+(tipd / "patch.diff").write_text(
+    "diff --git a/TIP.txt b/TIP.txt\n"
+    "new file mode 100644\n"
+    "index 0000000000000000000000000000000000000000..b218ebde2fc5b78f14aa04eeb42a74b17e2e367d\n"
+    "--- /dev/null\n"
+    "+++ b/TIP.txt\n"
+    "@@ -0,0 +1 @@\n"
+    "+tip\n")
+(tipd / "meta.json").write_text(json.dumps({
+    "id": tip, "title": "unshipped tip", "commit_message": "e2e unshipped tip",
+    "files": ["TIP.txt"], "dependencies": [], "tests": ["true"],
+    "status": "READY", "schema_version": 2, "base_commit": engine.head_sha()}))
+man = engine.load_manifest()
+man["upgrades"] = man.get("upgrades", []) + [tip]
+engine.write_json(engine.MANIFEST_PATH, man)
+
+s = engine.prepare_session_start("independent")
+expect(s.get("ok") and s["session"]["queue_tip"][-1:] == [tip], f"session starts on the unshipped tip ({s})")
+swt = pathlib.Path(s["session"]["path"])
+expect((swt / "TIP.txt").exists(), "tip content is present in the session worktree")
+(swt / "OTHER.txt").write_text("other\n")
+c = engine.prepare_session_capture(s["session"]["id"], "996-selftest-independent", "independent",
+                                   tests=["true"])
+expect(c.get("ok"), f"independent capture ok ({c.get('message', '')[:80]})")
+ipatch = (engine.UPGRADES_DIR / "996-selftest-independent" / "patch.diff").read_text()
+expect("TIP.txt" not in ipatch and "OTHER.txt" in ipatch, "captured patch excludes the tip's content")
+expect(c["dependencies"] == [], "no false dependency on the unrelated tip")
+
+s = engine.prepare_session_start("stacked")
+swt = pathlib.Path(s["session"]["path"])
+(swt / "TIP.txt").write_text("tip\nstacked\n")
+c = engine.prepare_session_capture(s["session"]["id"], "995-selftest-stacked", "stacked",
+                                   commit_message="e2e stacked", tests=["true"])
+spatch = (engine.UPGRADES_DIR / "995-selftest-stacked" / "patch.diff").read_text()
+expect(c.get("ok") and c["dependencies"] == [tip], "stacked capture depends on the tip it edits")
+expect("OTHER.txt" not in spatch and "+stacked" in spatch and "new file" not in spatch,
+       "stacked patch is just its own one-line change")
+r = engine.dry_run("995-selftest-stacked")
+expect(r.get("ok") and r.get("applied_ancestors") == [tip], f"stacked dry-run applies on tip ({r.get('message', '')[:100]})")
+
 print("\nALL CLONE E2E CHECKS PASSED")
 PYEOF
 echo "=== e2e done; clone left at /tmp/shipmgr-e2e for inspection ==="
