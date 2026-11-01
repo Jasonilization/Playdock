@@ -24,6 +24,11 @@ struct SettingsPanelView: View {
     /// the app uses for `PlaydockSkin.storageKey`.
     @AppStorage(AppLanguage.storageKey) private var languageRaw = AppLanguage.system.rawValue
     @LocalState private var category: Category = .general
+    @ObservedObject private var controllerObserver = ControllerObserver.shared
+    /// Done and the category list are the left column. Right steps into that category's controls;
+    /// B steps back out, then closes.
+    @LocalState private var settingsFocus: SettingsFocus = .category(.general)
+    @LocalState private var engineActivate: UUID?
 
     private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
 
@@ -67,11 +72,19 @@ struct SettingsPanelView: View {
                     sidebar
                         .frame(width: 236)
                     skinnedDivider.frame(width: 1).frame(maxHeight: .infinity)
-                    ScrollView {
-                        content
-                            .padding(28)
-                            .frame(maxWidth: 660, alignment: .leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            content
+                                .padding(28)
+                                .frame(maxWidth: 660, alignment: .leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .onChange(of: settingsFocus) { focus in
+                            guard case .pane(let control) = focus else { return }
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                proxy.scrollTo(control, anchor: .center)
+                            }
+                        }
                     }
                 }
             }
@@ -80,6 +93,25 @@ struct SettingsPanelView: View {
         .tint(skin.accent)
         .transition(.opacity)
         .onExitCommand(perform: onClose)
+        .onChange(of: controllerObserver.directionPress?.token) { _ in
+            guard let direction = controllerObserver.directionPress?.direction else { return }
+            switch settingsFocus {
+            case .done, .category:
+                moveSidebar(direction)
+            case .pane:
+                movePane(direction)
+            }
+        }
+        .onChange(of: controllerObserver.primaryPress) { _ in
+            activateSettingsFocus()
+        }
+        .onChange(of: controllerObserver.secondaryPress) { _ in
+            if case .pane = settingsFocus {
+                settingsFocus = .category(category)
+            } else {
+                onClose()
+            }
+        }
     }
 
     private var skinnedDivider: some View {
@@ -100,6 +132,7 @@ struct SettingsPanelView: View {
             Button(L("Done")) { onClose() }
                 .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
                 .keyboardShortcut(.defaultAction)
+                .focusRing(controllerObserver.isConnected && settingsFocus == .done)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
@@ -137,10 +170,229 @@ struct SettingsPanelView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .focusRing(controllerObserver.isConnected && settingsFocus == .category(item))
         .foregroundStyle(isSelected ? skin.accent : Color.primary)
         .background(isSelected ? skin.accent.opacity(0.14) : Color.clear, in: shape)
         .overlay(isSelected ? shape.strokeBorder(skin.accent.opacity(0.35), lineWidth: skin.borderWidth) : nil)
         .animation(.easeOut(duration: 0.15), value: isSelected)
+    }
+
+    private enum SettingsFocus: Hashable {
+        case done
+        case category(Category)
+        case pane(PaneControl)
+    }
+
+    private enum PaneControl: Hashable {
+        case advancedMode, uiScale, sampleGames
+        case skin(String)
+        case setupWizard
+        case layout, cardArt, showSteamIcon, showSettingsButton, hideBadges
+        case hardRefresh, engineUpdate
+        case unhide(String)
+        case wineEngine, d3dMetal, moltenVK, dxvk, dxmt, fastSync
+        case language(String)
+        case openLogs, openCrashes
+    }
+
+    private var sidebarFocuses: [SettingsFocus] {
+        [.done] + Category.allCases.map { SettingsFocus.category($0) }
+    }
+
+    private var paneControls: [PaneControl] {
+        switch category {
+        case .general:
+            return [.advancedMode, .uiScale, .sampleGames]
+        case .appearance:
+            return PlaydockSkin.allCases.map { .skin($0.rawValue) } + [.setupWizard]
+        case .personalization:
+            return [.layout, .cardArt, .showSteamIcon, .showSettingsButton, .hideBadges]
+        case .games:
+            var items: [PaneControl] = [.hardRefresh, .engineUpdate]
+            items += sortedHidden(curation.hidden).map { .unhide($0.id) }
+            if isAdvancedMode {
+                items += [.wineEngine, .d3dMetal, .moltenVK, .dxvk, .dxmt, .fastSync]
+            }
+            return items
+        case .language:
+            return AppLanguage.allCases.map { .language($0.rawValue) }
+        case .diagnostics:
+            return [.openLogs, .openCrashes]
+        case .about:
+            return []
+        }
+    }
+
+    private func isPaneFocused(_ control: PaneControl) -> Bool {
+        controllerObserver.isConnected && settingsFocus == .pane(control)
+    }
+
+    private func moveSidebar(_ direction: ControllerDirection) {
+        guard let index = sidebarFocuses.firstIndex(of: settingsFocus) else {
+            settingsFocus = .category(category)
+            return
+        }
+        switch direction {
+        case .up where index > 0:
+            settingsFocus = sidebarFocuses[index - 1]
+        case .down where index + 1 < sidebarFocuses.count:
+            settingsFocus = sidebarFocuses[index + 1]
+        case .right:
+            if case .category = settingsFocus, let first = paneControls.first {
+                settingsFocus = .pane(first)
+            }
+        default:
+            break
+        }
+        if case .category(let item) = settingsFocus { category = item }
+    }
+
+    private func movePane(_ direction: ControllerDirection) {
+        guard case .pane(let current) = settingsFocus else { return }
+        if current == .uiScale, direction == .left || direction == .right {
+            nudgeSettingsScale(direction == .right ? 1 : -1)
+            return
+        }
+        if direction == .left || direction == .right, adjustPicker(current, delta: direction == .right ? 1 : -1) {
+            return
+        }
+        if case .skin(let raw) = current {
+            moveSkin(raw, direction)
+            return
+        }
+        let items = paneControls
+        guard let index = items.firstIndex(of: current) else {
+            settingsFocus = .category(category)
+            return
+        }
+        switch direction {
+        case .up where index > 0:
+            settingsFocus = .pane(items[index - 1])
+        case .down where index + 1 < items.count:
+            settingsFocus = .pane(items[index + 1])
+        case .left:
+            settingsFocus = .category(category)
+        default:
+            break
+        }
+    }
+
+    private func moveSkin(_ raw: String, _ direction: ControllerDirection) {
+        let skins = PlaydockSkin.allCases
+        guard let index = skins.firstIndex(where: { $0.rawValue == raw }) else {
+            settingsFocus = .category(.appearance)
+            return
+        }
+        let columns = 3
+        switch direction {
+        case .left:
+            if index % columns == 0 {
+                settingsFocus = .category(.appearance)
+            } else {
+                settingsFocus = .pane(.skin(skins[index - 1].rawValue))
+            }
+        case .right where index + 1 < skins.count:
+            settingsFocus = .pane(.skin(skins[index + 1].rawValue))
+        case .up where index >= columns:
+            settingsFocus = .pane(.skin(skins[index - columns].rawValue))
+        case .down:
+            if index + columns < skins.count {
+                settingsFocus = .pane(.skin(skins[index + columns].rawValue))
+            } else {
+                settingsFocus = .pane(.setupWizard)
+            }
+        default:
+            break
+        }
+    }
+
+    private func nudgeSettingsScale(_ step: Int) {
+        let stops = [0.75, 0.9375, 1.125, 1.3125, 1.5]
+        let nearest = stops.min(by: { abs($0 - uiScale) < abs($1 - uiScale) }) ?? uiScale
+        guard let index = stops.firstIndex(of: nearest) else { return }
+        uiScale = stops[min(max(0, index + step), stops.count - 1)]
+    }
+
+    /// Left/right on a menu picker cycles its choices instead of leaving the row.
+    private func adjustPicker(_ control: PaneControl, delta: Int) -> Bool {
+        switch control {
+        case .layout:
+            cycle(LibraryLayoutStyle.allCases.map(\.rawValue), current: libraryLayoutRaw) { libraryLayoutRaw = $0 }
+        case .cardArt:
+            cycle(PlaydockArtSource.allCases.map(\.rawValue), current: artSourceRaw) { artSourceRaw = $0 }
+        case .wineEngine:
+            let names = SikarugirEngine.availableEngineNames()
+            let current = model.gameModeConfig.engineName ?? names.first ?? ""
+            cycle(names, current: current) { model.gameModeConfig.engineName = $0.isEmpty ? nil : $0 }
+        default:
+            return false
+        }
+        return true
+
+        func cycle(_ values: [String], current: String, apply: (String) -> Void) {
+            guard !values.isEmpty else { return }
+            let index = values.firstIndex(of: current) ?? 0
+            let next = (index + delta + values.count) % values.count
+            apply(values[next])
+        }
+    }
+
+    private func activateSettingsFocus() {
+        switch settingsFocus {
+        case .done:
+            onClose()
+        case .category:
+            if let first = paneControls.first { settingsFocus = .pane(first) }
+        case .pane(let control):
+            switch control {
+            case .advancedMode:
+                isAdvancedMode.toggle()
+            case .uiScale:
+                nudgeSettingsScale(1)
+            case .sampleGames:
+                model.togglePreviewSampleGames()
+            case .skin(let raw):
+                withAnimation(.easeInOut(duration: 0.25)) { skinRaw = raw }
+            case .setupWizard:
+                showingWizard = true
+            case .layout:
+                _ = adjustPicker(.layout, delta: 1)
+            case .cardArt:
+                _ = adjustPicker(.cardArt, delta: 1)
+            case .showSteamIcon:
+                showSteamIcon.toggle()
+            case .showSettingsButton:
+                showSettingsButton.toggle()
+            case .hideBadges:
+                hideLibraryBadges.toggle()
+            case .hardRefresh:
+                guard !model.isHardRefreshingGameInfo else { return }
+                model.hardRefreshGameInfo()
+            case .engineUpdate:
+                engineActivate = UUID()
+            case .unhide(let id):
+                curation.unhide(id)
+                settingsFocus = .category(.games)
+            case .wineEngine:
+                _ = adjustPicker(.wineEngine, delta: 1)
+            case .d3dMetal:
+                model.gameModeConfig.d3dMetal.toggle()
+            case .moltenVK:
+                model.gameModeConfig.moltenVKCX.toggle()
+            case .dxvk:
+                model.gameModeConfig.dxvk.toggle()
+            case .dxmt:
+                model.gameModeConfig.dxmt.toggle()
+            case .fastSync:
+                model.gameModeConfig.fastSync.toggle()
+            case .language(let raw):
+                languageRaw = raw
+            case .openLogs:
+                model.revealInFinder(ExeRunner.logsDir)
+            case .openCrashes:
+                model.revealInFinder(("~/Library/Logs/DiagnosticReports" as NSString).expandingTildeInPath)
+            }
+        }
     }
 
     // MARK: - Detail pane
@@ -172,8 +424,10 @@ struct SettingsPanelView: View {
                     skin: skin,
                     title: L("Advanced Mode"),
                     subtitle: L("Adds a settings button to each game so you can fine-tune its engine and graphics settings individually. Most people never need this."),
-                    isOn: $isAdvancedMode
+                    isOn: $isAdvancedMode,
+                    isFocused: isPaneFocused(.advancedMode)
                 )
+                .id(PaneControl.advancedMode)
             }
 
             SettingsCard(skin: skin, title: L("UI Size")) {
@@ -181,6 +435,8 @@ struct SettingsPanelView: View {
                     HStack {
                         Image(systemName: "textformat.size.smaller").foregroundStyle(.secondary)
                         Slider(value: $uiScale, in: 0.75...1.5)
+                            .focusRing(isPaneFocused(.uiScale))
+                            .id(PaneControl.uiScale)
                         Image(systemName: "textformat.size.larger").foregroundStyle(.secondary)
                         Text("\(Int(uiScale * 100))%")
                             .font(.callout.monospacedDigit())
@@ -198,8 +454,10 @@ struct SettingsPanelView: View {
                     isOn: Binding(
                         get: { model.isPreviewingSampleGames },
                         set: { _ in model.togglePreviewSampleGames() }
-                    )
+                    ),
+                    isFocused: isPaneFocused(.sampleGames)
                 )
+                .id(PaneControl.sampleGames)
             }
         }
     }
@@ -216,9 +474,10 @@ struct SettingsPanelView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                         ForEach(PlaydockSkin.allCases) { candidate in
-                            MiniSkinTile(skin: candidate, isSelected: candidate == skin) {
+                            MiniSkinTile(skin: candidate, isSelected: candidate == skin, isFocused: isPaneFocused(.skin(candidate.rawValue))) {
                                 withAnimation(.easeInOut(duration: 0.25)) { skinRaw = candidate.rawValue }
                             }
+                            .id(PaneControl.skin(candidate.rawValue))
                         }
                     }
                     Text(L("Every control here is drawn in the look you pick, so this screen is a live preview of it."))
@@ -233,6 +492,8 @@ struct SettingsPanelView: View {
             SettingsCard(skin: skin, title: L("Run Setup Wizard Again")) {
                 Button(L("Run Setup Wizard Again")) { showingWizard = true }
                     .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
+                    .focusRing(isPaneFocused(.setupWizard))
+                    .id(PaneControl.setupWizard)
             }
         }
         .sheet(isPresented: $showingWizard) { SetupWizardView() }
@@ -253,16 +514,18 @@ struct SettingsPanelView: View {
 
             SettingsCard(skin: skin, title: L("Library")) {
                 VStack(alignment: .leading, spacing: 14) {
-                    labeledPicker(L("Layout"), selection: $libraryLayoutRaw) {
+                    labeledPicker(L("Layout"), selection: $libraryLayoutRaw, isFocused: isPaneFocused(.layout)) {
                         ForEach(LibraryLayoutStyle.allCases) { style in
                             Text(style.displayName).tag(style.rawValue)
                         }
                     }
-                    labeledPicker(L("Card Art"), selection: $artSourceRaw) {
+                    .id(PaneControl.layout)
+                    labeledPicker(L("Card Art"), selection: $artSourceRaw, isFocused: isPaneFocused(.cardArt)) {
                         ForEach(PlaydockArtSource.allCases) { source in
                             Text(source.displayName).tag(source.rawValue)
                         }
                     }
+                    .id(PaneControl.cardArt)
                 }
             }
 
@@ -272,15 +535,19 @@ struct SettingsPanelView: View {
                         skin: skin,
                         title: L("Show Floating Steam Icon"),
                         subtitle: L("The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way)."),
-                        isOn: $showSteamIcon
+                        isOn: $showSteamIcon,
+                        isFocused: isPaneFocused(.showSteamIcon)
                     )
+                    .id(PaneControl.showSteamIcon)
                     Divider().overlay(skin.accent.opacity(0.1))
                     SettingsToggle(
                         skin: skin,
                         title: L("Show Floating Settings Button"),
                         subtitle: nil,
-                        isOn: $showSettingsButton
+                        isOn: $showSettingsButton,
+                        isFocused: isPaneFocused(.showSettingsButton)
                     )
+                    .id(PaneControl.showSettingsButton)
                 }
             }
 
@@ -289,8 +556,10 @@ struct SettingsPanelView: View {
                     skin: skin,
                     title: L("Hide Library Badges"),
                     subtitle: L("The Custom/Mac/Windows label every game's art shows to say where it came from. Turn on to hide all three everywhere - every layout, every appearance."),
-                    isOn: $hideLibraryBadges
+                    isOn: $hideLibraryBadges,
+                    isFocused: isPaneFocused(.hideBadges)
                 )
+                .id(PaneControl.hideBadges)
             }
         }
     }
@@ -322,6 +591,8 @@ struct SettingsPanelView: View {
                         }
                         .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
                         .disabled(model.isHardRefreshingGameInfo)
+                        .focusRing(isPaneFocused(.hardRefresh))
+                        .id(PaneControl.hardRefresh)
                         Text(lastRefreshText)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -329,7 +600,8 @@ struct SettingsPanelView: View {
                 }
             }
 
-            EngineUpdatePanelSection(skin: skin)
+            EngineUpdatePanelSection(skin: skin, isFocused: isPaneFocused(.engineUpdate), activateToken: engineActivate)
+                .id(PaneControl.engineUpdate)
 
             hiddenGamesCard
 
@@ -347,22 +619,28 @@ struct SettingsPanelView: View {
             labeledPicker(L("Wine engine"), selection: Binding(
                 get: { model.gameModeConfig.engineName ?? "" },
                 set: { model.gameModeConfig.engineName = $0.isEmpty ? nil : $0 }
-            )) {
+            ), isFocused: isPaneFocused(.wineEngine)) {
                 ForEach(SikarugirEngine.availableEngineNames(), id: \.self) { name in
                     Text(name).tag(name)
                 }
             }
+            .id(PaneControl.wineEngine)
             Text(L("These are the same engines already downloaded by Sikarugir Creator."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Divider().overlay(skin.accent.opacity(0.1))
             Text(L("Graphics")).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-            SettingsToggle(skin: skin, title: "D3DMETAL", subtitle: nil, isOn: $model.gameModeConfig.d3dMetal)
-            SettingsToggle(skin: skin, title: "MoltenVK CX", subtitle: nil, isOn: $model.gameModeConfig.moltenVKCX)
-            SettingsToggle(skin: skin, title: "DXVK", subtitle: nil, isOn: $model.gameModeConfig.dxvk)
-            SettingsToggle(skin: skin, title: "DXMT", subtitle: nil, isOn: $model.gameModeConfig.dxmt)
+            SettingsToggle(skin: skin, title: "D3DMETAL", subtitle: nil, isOn: $model.gameModeConfig.d3dMetal, isFocused: isPaneFocused(.d3dMetal))
+                .id(PaneControl.d3dMetal)
+            SettingsToggle(skin: skin, title: "MoltenVK CX", subtitle: nil, isOn: $model.gameModeConfig.moltenVKCX, isFocused: isPaneFocused(.moltenVK))
+                .id(PaneControl.moltenVK)
+            SettingsToggle(skin: skin, title: "DXVK", subtitle: nil, isOn: $model.gameModeConfig.dxvk, isFocused: isPaneFocused(.dxvk))
+                .id(PaneControl.dxvk)
+            SettingsToggle(skin: skin, title: "DXMT", subtitle: nil, isOn: $model.gameModeConfig.dxmt, isFocused: isPaneFocused(.dxmt))
+                .id(PaneControl.dxmt)
             Divider().overlay(skin.accent.opacity(0.1))
-            SettingsToggle(skin: skin, title: L("Fast Sync (ESYNC + MSYNC)"), subtitle: nil, isOn: $model.gameModeConfig.fastSync)
+            SettingsToggle(skin: skin, title: L("Fast Sync (ESYNC + MSYNC)"), subtitle: nil, isOn: $model.gameModeConfig.fastSync, isFocused: isPaneFocused(.fastSync))
+                .id(PaneControl.fastSync)
         }
     }
 
@@ -387,6 +665,7 @@ struct SettingsPanelView: View {
                         .foregroundStyle(.secondary)
                     ForEach(AppLanguage.allCases) { option in
                         languageRow(option)
+                            .id(PaneControl.language(option.rawValue))
                         if option != AppLanguage.allCases.last {
                             Divider().overlay(skin.accent.opacity(0.08))
                         }
@@ -424,6 +703,7 @@ struct SettingsPanelView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .focusRing(isPaneFocused(.language(option.rawValue)))
     }
 
     /// The "undo" half of hiding a game: whatever was hidden shows here with an Unhide button.
@@ -440,6 +720,8 @@ struct SettingsPanelView: View {
                             Spacer()
                             Button(L("Unhide")) { curation.unhide(entry.id) }
                                 .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
+                                .focusRing(isPaneFocused(.unhide(entry.id)))
+                                .id(PaneControl.unhide(entry.id))
                         }
                     }
                     Text(L("Hidden games stay installed; they're just removed from the library grid. Everything about them (play time, configs, launch history) is kept."))
@@ -479,12 +761,16 @@ struct SettingsPanelView: View {
                         Label(L("Open Logs Folder"), systemImage: "doc.text.magnifyingglass")
                     }
                     .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
+                    .focusRing(isPaneFocused(.openLogs))
+                    .id(PaneControl.openLogs)
                     Button {
                         model.revealInFinder(("~/Library/Logs/DiagnosticReports" as NSString).expandingTildeInPath)
                     } label: {
                         Label(L("Open Crash Reports"), systemImage: "exclamationmark.triangle")
                     }
                     .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
+                    .focusRing(isPaneFocused(.openCrashes))
+                    .id(PaneControl.openCrashes)
                     Text(L("Every launch writes its own log here, plus a record of background checks. If something's not working, look here first."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -588,6 +874,7 @@ struct SettingsPanelView: View {
     private func labeledPicker<SelectionValue: Hashable, Options: View>(
         _ label: String,
         selection: Binding<SelectionValue>,
+        isFocused: Bool = false,
         @ViewBuilder options: () -> Options
     ) -> some View {
         HStack {
@@ -599,6 +886,7 @@ struct SettingsPanelView: View {
                 .tint(skin.accent)
                 .frame(maxWidth: 240)
         }
+        .focusRing(isFocused)
     }
 }
 
@@ -632,6 +920,7 @@ private struct SettingsCard<Content: View>: View {
 private struct MiniSkinTile: View {
     let skin: PlaydockSkin
     let isSelected: Bool
+    var isFocused: Bool = false
     let onSelect: () -> Void
 
     var body: some View {
@@ -656,6 +945,7 @@ private struct MiniSkinTile: View {
             }
         }
         .buttonStyle(.plain)
+        .focusRing(isFocused)
     }
 }
 
@@ -664,6 +954,8 @@ private struct MiniSkinTile: View {
 /// the chrome changed from a `Form` `Section` to a `SettingsCard`.
 private struct EngineUpdatePanelSection: View {
     let skin: PlaydockSkin
+    var isFocused: Bool = false
+    var activateToken: UUID?
     @LocalState private var isChecking = false
     @LocalState private var isDownloading = false
     @LocalState private var updateAvailable: RemoteEngineAsset?
@@ -686,6 +978,7 @@ private struct EngineUpdatePanelSection: View {
                     }
                     .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
                     .disabled(isDownloading)
+                    .focusRing(isFocused)
                 } else {
                     Button {
                         checkForUpdates()
@@ -698,6 +991,7 @@ private struct EngineUpdatePanelSection: View {
                     }
                     .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
                     .disabled(isChecking)
+                    .focusRing(isFocused)
                 }
                 if let statusText {
                     Text(statusText).font(.caption).foregroundStyle(.secondary)
@@ -706,6 +1000,14 @@ private struct EngineUpdatePanelSection: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .onChange(of: activateToken) { token in
+            guard token != nil else { return }
+            if let updateAvailable, !isDownloading {
+                downloadUpdate(updateAvailable)
+            } else if !isChecking {
+                checkForUpdates()
             }
         }
     }
@@ -758,14 +1060,17 @@ private struct SettingsToggle: View {
     let title: String
     let subtitle: String?
     @Binding var isOn: Bool
+    var isFocused: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Toggle(isOn: $isOn) {
                 Text(title).font(.callout)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .toggleStyle(.switch)
             .tint(skin.accent)
+            .focusRing(isFocused)
             if let subtitle {
                 Text(subtitle)
                     .font(.caption)

@@ -74,11 +74,22 @@ enum Localization {
         AppLanguage(rawValue: UserDefaults.standard.string(forKey: AppLanguage.storageKey) ?? "") ?? .system
     }
 
-    /// The language actually used to render, resolving `.system` against the Mac's own preferred
-    /// languages - the first one Playdock has a table for, else English.
-    static var active: AppLanguage {
-        let picked = selected
-        guard picked == .system else { return picked }
+    /// Locale for `DateFormatter` / `RelativeDateTimeFormatter` - keeps the Mac's region when the
+    /// UI language already matches what the user (or system) picked, otherwise uses a neutral
+    /// identifier for the active in-app language.
+    static var formattingLocale: Locale {
+        if selected == .system || macPreferredLanguageMatchesActive() {
+            return Locale.current
+        }
+        return Locale(identifier: active.rawValue)
+    }
+
+    /// True when the Mac's own preferred languages resolve to the same table as `active`.
+    private static func macPreferredLanguageMatchesActive() -> Bool {
+        resolveSystemLanguage() == active
+    }
+
+    private static func resolveSystemLanguage() -> AppLanguage {
         for identifier in Locale.preferredLanguages {
             let lower = identifier.lowercased()
             if lower.hasPrefix("zh-hans") || lower == "zh" || lower.hasPrefix("zh-cn") || lower.hasPrefix("zh-sg") {
@@ -92,6 +103,14 @@ enum Localization {
             }
         }
         return .english
+    }
+
+    /// The language actually used to render, resolving `.system` against the Mac's own preferred
+    /// languages - the first one Playdock has a table for, else English.
+    static var active: AppLanguage {
+        let picked = selected
+        guard picked == .system else { return picked }
+        return resolveSystemLanguage()
     }
 
     static func string(_ key: String) -> String {

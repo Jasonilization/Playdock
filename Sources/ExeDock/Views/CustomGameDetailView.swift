@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 
 private enum CustomDetailAction: Equatable {
-    case launch, settings, reveal, edit
+    case launch, settings, reveal, edit, about
 }
 
 /// The custom-game equivalent of `GameDetailView`, giving a custom game the same full detail
@@ -24,6 +24,8 @@ struct CustomGameDetailView: View {
     @LocalState private var showingSettings = false
     @LocalState private var showingEdit = false
     @LocalState private var focusedActionIndex = 0
+    @LocalState private var keyboardNavigating = false
+    @LocalState private var descriptionExpanded = false
     /// Non-nil while a photo is shown full-size over everything else.
     @LocalState private var expandedImagePath: String?
     @LocalState private var gameAccent: Color?
@@ -38,11 +40,17 @@ struct CustomGameDetailView: View {
         if isAdvancedMode && !isMissing { actions.append(.settings) }
         if !isMissing { actions.append(.reveal) }
         actions.append(.edit)
+        if aboutCanExpand { actions.append(.about) }
         return actions
     }
 
+    private var aboutCanExpand: Bool {
+        guard let text = game.effectiveAboutTheGame else { return false }
+        return text.count > 280 || text.components(separatedBy: "\n").count > 4
+    }
+
     private func isFocused(_ action: CustomDetailAction) -> Bool {
-        controllerObserver.isConnected && availableActions[safe: focusedActionIndex] == action
+        (controllerObserver.isConnected || keyboardNavigating) && availableActions[safe: focusedActionIndex] == action
     }
 
     var body: some View {
@@ -92,6 +100,18 @@ struct CustomGameDetailView: View {
             if let path = game.effectiveArtworkPath { gameAccent = await GameArtColor.dominantColor(forImagePath: path) }
         }
         .onExitCommand { onClose() }
+        .focusable()
+        .onMoveCommand { direction in
+            guard !controllerObserver.isConnected, expandedImagePath == nil else { return }
+            keyboardNavigating = true
+            switch direction {
+            case .left: moveActionFocus(.left)
+            case .right: moveActionFocus(.right)
+            case .up: moveActionFocus(.up)
+            case .down: moveActionFocus(.down)
+            @unknown default: break
+            }
+        }
         .onChange(of: controllerObserver.directionPress?.token) { _ in
             guard expandedImagePath == nil, let direction = controllerObserver.directionPress?.direction else { return }
             moveActionFocus(direction)
@@ -128,6 +148,7 @@ struct CustomGameDetailView: View {
         case .settings: showingSettings = true
         case .reveal: model.revealInFinder(game.exePath)
         case .edit: showingEdit = true
+        case .about: descriptionExpanded.toggle()
         case nil: break
         }
     }
@@ -193,23 +214,16 @@ struct CustomGameDetailView: View {
         }
     }
 
-    /// The full description, styled as its own card - matches `GameDetailView`'s own treatment.
     @ViewBuilder
     private var descriptionCard: some View {
         if let description = game.effectiveAboutTheGame {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("About This Game")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text(description)
-                    .font(.body)
-                    .foregroundStyle(.white.opacity(0.85))
-                    .lineSpacing(4)
+            ExpandableAboutCard(
+                text: description,
+                expanded: descriptionExpanded,
+                isFocused: isFocused(.about)
+            ) {
+                descriptionExpanded.toggle()
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.08)))
         }
     }
 

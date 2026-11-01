@@ -267,7 +267,7 @@ struct LibraryShelvesLayout: View {
             cycleFeatured(by: direction)
         }
         .onChange(of: controllerObserver.primaryPress) { _ in
-            guard controllerObserver.isConnected, let featured else { return }
+            guard case .card = controllerObserver.libraryFocus, let featured else { return }
             onOpenDetail(featured)
         }
     }
@@ -367,7 +367,7 @@ struct LibrarySidebarLayout: View {
                     .padding(.vertical, 8)
                 }
                 .onChange(of: controllerObserver.directionPress?.token) { _ in
-                    guard let direction = controllerObserver.directionPress?.direction else { return }
+                    guard case .card = controllerObserver.libraryFocus, let direction = controllerObserver.directionPress?.direction else { return }
                     switch direction {
                     case .left, .up: moveSelection(by: -1)
                     case .right, .down: moveSelection(by: 1)
@@ -375,7 +375,7 @@ struct LibrarySidebarLayout: View {
                     if let selected { withAnimation { scrollProxy.scrollTo(selected.id, anchor: .center) } }
                 }
                 .onChange(of: controllerObserver.primaryPress) { _ in
-                    guard controllerObserver.isConnected, let selected else { return }
+                    guard case .card = controllerObserver.libraryFocus, let selected else { return }
                     onOpenDetail(selected)
                 }
                 }
@@ -456,22 +456,48 @@ struct LibrarySteamStyleLayout: View {
         onOpenDetail(entry)
     }
 
+    private func filterRow(_ name: String) -> some View {
+        let isSelected = name == filter
+        let shape = PlaydockCardShape(skin: skin, cornerRadius: min(skin.cardRadius, 10))
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) { filter = name }
+        } label: {
+            Text(name)
+                .font(.callout.weight(isSelected ? .semibold : .regular))
+                .fontDesign(skin.fontDesign)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(isSelected ? skin.accent : Color.primary)
+        .background(isSelected ? skin.accent.opacity(0.14) : Color.clear, in: shape)
+        .overlay(isSelected ? shape.strokeBorder(skin.accent.opacity(0.35), lineWidth: skin.borderWidth) : nil)
+        .padding(.horizontal, 8)
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("LIBRARY").font(.caption2.weight(.bold)).foregroundStyle(.secondary).padding(.horizontal, 14).padding(.top, 16).padding(.bottom, 8)
-                ForEach(filters, id: \.self) { f in
-                    Text(f).font(.callout.weight(f == filter ? .semibold : .regular))
-                        .foregroundStyle(f == filter ? Color.accentColor : .primary)
-                        .padding(.horizontal, 14).padding(.vertical, 6).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(f == filter ? Color.accentColor.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 7))
-                        .contentShape(Rectangle())
-                        .onTapGesture { withAnimation(.easeInOut(duration: 0.15)) { filter = f } }
+                Text("LIBRARY")
+                    .font(.caption2.weight(.bold))
+                    .fontDesign(skin.fontDesign)
+                    .foregroundStyle(skin.accent.opacity(0.75))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
+                ForEach(filters, id: \.self) { name in
+                    filterRow(name)
                 }
                 Spacer()
             }
-            .frame(width: 170)
-            .background(Color(nsColor: .underPageBackgroundColor))
+            .frame(width: 186)
+            .background(skin.topBarBackground)
+
+            Rectangle()
+                .fill(skin.topBarBorderColor ?? skin.accent.opacity(0.16))
+                .frame(width: max(skin.topBarBorderWidth, 1))
 
             // A real, finite frame - a WKWebView with no explicit size proposal from its own
             // SwiftUI ancestor doesn't reliably size itself, the same fix Grid's own
@@ -534,7 +560,7 @@ struct LibraryCarouselLayout: View {
                     .padding(.horizontal, 32).padding(.top, 20)
                 }
                 .onChange(of: controllerObserver.directionPress?.token) { _ in
-                    guard let direction = controllerObserver.directionPress?.direction else { return }
+                    guard case .card = controllerObserver.libraryFocus, let direction = controllerObserver.directionPress?.direction else { return }
                     switch direction {
                     case .left, .up: moveFocus(by: -1)
                     case .right, .down: moveFocus(by: 1)
@@ -550,7 +576,7 @@ struct LibraryCarouselLayout: View {
                     withAnimation { scrollProxy.scrollTo(focused, anchor: .center) }
                 }
                 .onChange(of: controllerObserver.primaryPress) { _ in
-                    guard controllerObserver.isConnected, let focusedEntry else { return }
+                    guard case .card = controllerObserver.libraryFocus, let focusedEntry else { return }
                     onOpenDetail(focusedEntry)
                 }
             }
@@ -705,7 +731,7 @@ struct LibrarySpotlightLayout: View {
             cycleFeatured(by: direction)
         }
         .onChange(of: controllerObserver.primaryPress) { _ in
-            guard controllerObserver.isConnected, let featured else { return }
+            guard case .card = controllerObserver.libraryFocus, let featured else { return }
             onOpenDetail(featured)
         }
     }

@@ -1,5 +1,4 @@
 import SwiftUI
-import AppKit
 import UniformTypeIdentifiers
 
 /// The "+ Add Game" entry point for the Custom Game Library: pick a single `.exe` directly, point
@@ -26,13 +25,19 @@ struct AddGameSheet: View {
     /// Which row is highlighted for controller navigation - 0/1 for the two method buttons on the
     /// chooser screen, or an index into `pendingCandidates` once a folder yields more than one.
     @LocalState private var focusedIndex = 0
+    /// One importer for both buttons. Two `.fileImporter`s on the same sheet fight on macOS 13,
+    /// which is this app's minimum: one button opens the wrong panel, or neither opens.
+    @LocalState private var showingImporter = false
+    /// URLs whose security scope was actually started. Released only after the copy finishes,
+    /// or when the sheet goes away without an import in flight.
+    @LocalState private var scopedURLs: [URL] = []
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text("Add Game").font(.title3).bold()
                 Spacer()
-                Button("Cancel") { dismiss() }
+                Button("Cancel") { if !isDiscovering { dismiss() } }
                     .buttonStyle(.bordered)
             }
             .padding(16)
@@ -54,6 +59,18 @@ struct AddGameSheet: View {
             }
         }
         .frame(width: 480, height: 460)
+        .fileImporter(
+            isPresented: $showingImporter,
+            allowedContentTypes: [UTType(filenameExtension: "exe") ?? .data, .folder],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImporterResult(result)
+        }
+        .onDisappear {
+            // The import task stops access itself when the copy finishes. Revoking here
+            // while that task is still reading the picked folder kills a large add.
+            if !isDiscovering { stopSecurityScopedAccessIfNeeded() }
+        }
         .onChange(of: controllerObserver.directionPress?.token) { _ in
             guard let direction = controllerObserver.directionPress?.direction else { return }
             moveFocus(direction)
@@ -62,7 +79,7 @@ struct AddGameSheet: View {
             activateFocused()
         }
         .onChange(of: controllerObserver.secondaryPress) { _ in
-            dismiss()
+            if !isDiscovering { dismiss() }
         }
     }
 
@@ -189,27 +206,67 @@ struct AddGameSheet: View {
     // MARK: - Actions
 
     private func chooseEXE() {
-        let panel = NSOpenPanel()
-        if let exeType = UTType(filenameExtension: "exe") { panel.allowedContentTypes = [exeType] }
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        beginDiscovery(exePath: url.path, folderName: nil, pickedFolderPath: nil)
+        showingImporter = true
     }
 
     private func chooseFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        handleFolder(at: url.path, folderName: url.lastPathComponent)
+        showingImporter = true
+    }
+
+    private func handleImporterResult(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            guard beginSecurityScope(for: url) else { return }
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+                errorMessage = "Couldn't find a file at that location."
+                stopSecurityScopedAccessIfNeeded()
+                return
+            }
+            if isDirectory.boolValue {
+                handleFolder(at: url.path, folderName: url.lastPathComponent)
+            } else if url.pathExtension.lowercased() == "exe" {
+                beginDiscovery(exePath: url.path, folderName: nil, pickedFolderPath: nil)
+            } else {
+                errorMessage = "Choose a .exe file or a game folder."
+                stopSecurityScopedAccessIfNeeded()
+            }
+        case .failure(let error):
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Starts scope on the picked URL and, for a single exe, on its parent folder too. An exe-only
+    /// grant does not cover the sibling DLLs `importIntoManagedBottle` moves with the game.
+    private func beginSecurityScope(for url: URL) -> Bool {
+        stopSecurityScopedAccessIfNeeded()
+        var urls = [url]
+        if !url.hasDirectoryPath {
+            let parent = url.deletingLastPathComponent()
+            if parent.path != url.path { urls.append(parent) }
+        }
+        scopedURLs = urls.filter { $0.startAccessingSecurityScopedResource() }
+        guard FileManager.default.isReadableFile(atPath: url.path) else {
+            errorMessage = "Playdock couldn't read that. Pick the game's folder instead."
+            stopSecurityScopedAccessIfNeeded()
+            return false
+        }
+        return true
+    }
+
+    private func stopSecurityScopedAccessIfNeeded() {
+        for url in scopedURLs {
+            url.stopAccessingSecurityScopedResource()
+        }
+        scopedURLs = []
     }
 
     private func handleFolder(at path: String, folderName: String) {
         let candidates = CustomGameFolderScanner.scan(folder: path)
         guard !candidates.isEmpty else {
             errorMessage = "No executable found in that folder."
+            stopSecurityScopedAccessIfNeeded()
             return
         }
         errorMessage = nil
@@ -248,6 +305,7 @@ struct AddGameSheet: View {
                     try CustomGameFileImporter.importIntoManagedBottle(exePath: exePath, pickedFolderPath: pickedFolderPath)
                 }.value
                 await MainActor.run {
+                    stopSecurityScopedAccessIfNeeded()
                     model.addCustomGame(CustomGame(exePath: finalExePath, discovered: discovered))
                     dismiss()
                 }
@@ -255,6 +313,7 @@ struct AddGameSheet: View {
                 await MainActor.run {
                     isDiscovering = false
                     errorMessage = error.localizedDescription
+                    stopSecurityScopedAccessIfNeeded()
                 }
             }
         }

@@ -298,6 +298,19 @@ window.PlaydockRenderGridFragment = function (skinKey, gamesJSON, themeJSON) {
 // in order), so index N here really is entry N's own card, no separate id-matching needed. Called
 // with `null`/undefined to clear focus entirely (controller disconnected, or focus moved to a
 // native control outside the grid).
+window.PlaydockSetSearchFocus = function (on) {
+  const input = document.getElementById('search-input');
+  if (!input) return;
+  if (on) {
+    input.classList.add('controller-focus');
+    input.focus();
+    input.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  } else {
+    input.classList.remove('controller-focus');
+    if (document.activeElement === input) input.blur();
+  }
+};
+
 window.PlaydockSetFocus = function (id) {
   const cards = document.querySelectorAll('#stage .card');
   cards.forEach((el) => {

@@ -85,6 +85,7 @@ struct ContentView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .focusRing(controllerObserver.isConnected && controllerObserver.libraryFocus == .uiScale)
         .padding(14)
         .help("UI Size (\(Int(uiScale * 100))%)")
     }
@@ -168,6 +169,7 @@ struct ContentView: View {
                 .frame(width: 46, height: 36)
         }
         .buttonStyle(.plain)
+        .focusRing(controllerObserver.isConnected && controllerObserver.libraryFocus == .section(section == .gameMode ? 0 : 1))
         .background(isSelected ? skin.accent.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: skin.cardRadius > 12 ? 8 : skin.cardRadius))
         .foregroundStyle(isSelected ? skin.accent : Color.secondary)
         // "add smooth af things too" - a real spring pop on selection instead of the flat instant
@@ -191,9 +193,8 @@ struct ContentView: View {
         }
     }
 
-    /// Wired to the controller's LT (-1) / RT (+1) triggers via `ControllerObserver`, so paging
-    /// between Steam/Library/C: Drive works from anywhere in the app, not just inside the dedicated
-    /// Controller Mode carousel.
+    /// Wired to the controller's shoulder buttons via `ControllerObserver`, so paging between
+    /// Steam and C: Drive works from anywhere in the app.
     private func stepSection(by direction: Int) {
         let all = AppModel.SidebarSection.allCases
         guard let currentIndex = all.firstIndex(of: model.selectedSection) else { return }

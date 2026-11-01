@@ -65,18 +65,53 @@ enum SikarugirConfigureLauncher {
         tell application "System Events"
             tell process "\(processName)"
                 set frontmost to true
-                repeat 25 times
-                    if (count windows) > 0 then exit repeat
+                set targetWindow to missing value
+                repeat 50 times
+                    repeat with w in windows
+                        try
+                            if exists button "Test Run" of w then
+                                set targetWindow to w
+                                exit repeat
+                            end if
+                        end try
+                        try
+                            if exists button "Test Run" of entire contents of w then
+                                set targetWindow to w
+                                exit repeat
+                            end if
+                        end try
+                    end repeat
+                    if targetWindow is not missing value then exit repeat
                     delay 0.2
                 end repeat
-                if (count windows) = 0 then error "Configure's window never appeared."
-                tell window 1
-                    tell tab group 1
-                        set value of text field 1 to "\(escapedPath)"
-                    end tell
-                end tell
+                if targetWindow is missing value then error "Configure never showed a Test Run button (waited ~10 seconds)."
+                set pathSet to false
+                try
+                    set value of text field 1 of tab group 1 of targetWindow to "\(escapedPath)"
+                    set pathSet to true
+                end try
+                if pathSet is false then
+                    try
+                        set value of text field 1 of targetWindow to "\(escapedPath)"
+                        set pathSet to true
+                    end try
+                end if
+                if pathSet is false then
+                    try
+                        set allFields to every text field of entire contents of targetWindow
+                        if (count of allFields) > 0 then
+                            set value of item 1 of allFields to "\(escapedPath)"
+                            set pathSet to true
+                        end if
+                    end try
+                end if
+                if pathSet is false then error "Couldn't find a text field to set the Windows app path."
                 delay 0.3
-                click button "Test Run" of window 1
+                try
+                    click button "Test Run" of targetWindow
+                on error
+                    click button "Test Run" of entire contents of targetWindow
+                end try
             end tell
         end tell
         """

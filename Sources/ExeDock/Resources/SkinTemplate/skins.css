@@ -6,7 +6,7 @@
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:transparent;}
-#stage{min-height:100vh;}
+#stage{min-height:100vh;padding-bottom:96px;}
 #stage img,#stage svg{max-width:100%;}
 /* Every skin's .search is now a real <input> (was static text) - normalize the parts a browser's
    own default input chrome would otherwise fight each skin's own border/background/font styling

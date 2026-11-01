@@ -11,13 +11,8 @@ private struct GridWidthKey: PreferenceKey {
     }
 }
 
-/// Every controller-focusable spot on the main dashboard - the toolbar (Refresh/Settings), a card
-/// in the grid, or the floating Steam icon - covering "every clickable thing," not just the grid.
-private enum DashboardFocusTarget: Equatable {
-    case toolbar(Int) // 0 = Refresh, 1 = Settings
-    case card(Int)
-    case steamIcon
-}
+/// Every controller-focusable spot on the main dashboard lives in `LibraryControl` — the controls
+/// that are already on screen, not a separate mode.
 
 /// A rectangle rounded only on its leading (left) side, flat on the trailing side - the collapsed
 /// Steam icon's own real "docked to the edge" shape (`steamIconEdgeTab`). `RoundedRectangle` alone
@@ -57,6 +52,7 @@ struct GameModeView: View {
     @ObservedObject private var curation = LibraryCurationStore.shared
     @Environment(\.colorScheme) private var systemColorScheme
     @AppStorage("com.exedock.advancedMode") private var isAdvancedMode = false
+    @AppStorage("com.exedock.uiScale") private var uiScale = 1.0
     @AppStorage(LibraryLayoutStyle.storageKey) private var libraryLayoutRaw = LibraryLayoutStyle.grid.rawValue
     private var libraryLayout: LibraryLayoutStyle { LibraryLayoutStyle(rawValue: libraryLayoutRaw) ?? .grid }
     @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
@@ -85,13 +81,11 @@ struct GameModeView: View {
     @LocalState private var favoritesOnly = false
     @LocalState private var launchOverlayGame: SteamGame?
     @LocalState private var launchOverlayCustomGame: CustomGame?
-    @LocalState private var showingControllerMode = false
     @LocalState private var detailGame: SteamGame?
     @LocalState private var detailCustomGame: CustomGame?
     /// Everywhere a controller's D-pad can currently be focused on the dashboard - the toolbar
     /// (Refresh/Settings), a card in the grid, or the floating Steam icon. `nil` until the first
     /// D-pad press (mouse-only browsing shows no ring at all).
-    @LocalState private var focusedTarget: DashboardFocusTarget?
     /// The grid's own measured width - used only for controller D-pad row math (`columnCount`), not
     /// the grid's actual rendering (that's plain `.adaptive`, handled natively by SwiftUI). See
     /// `gridColumns`'s own doc comment for why this split matters.
@@ -307,10 +301,6 @@ struct GameModeView: View {
 
             VStack(spacing: 0) {
                 header
-                if controllerObserver.isConnected && !controllerObserver.bannerDismissed {
-                    controllerBanner
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
                 // No separate Divider() here anymore - header's own new skin-accent bottom border
                 // (see header's doc comment) already does this row's job, and a plain gray divider
                 // right underneath it doubled the seam.
@@ -353,6 +343,7 @@ struct GameModeView: View {
                             // correctly (moveFocus/activateFocusedTarget below), it just had nowhere
                             // to draw a visible ring. See window.PlaydockSetFocus in skins.js.
                             focusedID: focusedCardID,
+                            searchFocused: controllerObserver.libraryFocus == .search,
                             onOpen: openLibraryEntry
                         )
                         .frame(width: geometry.size.width, height: geometry.size.height)
@@ -393,7 +384,7 @@ struct GameModeView: View {
             // exactly the condition the legend bar itself renders under (isDashboardTheActive-
             // ControllerLayer *and* actually connected) - this padding with no controller attached
             // would just be a permanent, pointless gap at the bottom of the grid.
-            .padding(.bottom, isDashboardTheActiveControllerLayer && controllerObserver.isConnected ? Self.legendBarHeight : 0)
+            .padding(.bottom, gridBottomInset)
             .animation(.easeInOut(duration: 0.2), value: controllerObserver.isConnected)
 
             // The two bottom-right floating controls - the Steam icon and (stacked just above it)
@@ -446,14 +437,6 @@ struct GameModeView: View {
                 .zIndex(1)
             }
 
-            if showingControllerMode {
-                ControllerModeView {
-                    showingControllerMode = false
-                }
-                .transition(.opacity)
-                .zIndex(2)
-            }
-
             settingsOverlay
         }
         .animation(.easeInOut(duration: 0.2), value: model.launchingTarget)
@@ -462,7 +445,6 @@ struct GameModeView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: detailGame?.appID)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: detailCustomGame?.id)
         .animation(.easeInOut(duration: 0.4), value: themedGame?.appID)
-        .animation(.easeInOut(duration: 0.25), value: showingControllerMode)
         .skinned()
         // Used to pin every skin to one fixed appearance here (see git history for why - a real
         // Color.primary-vs-Dark-Mode bug this was the first fix for). Superseded now: "make sure
@@ -492,6 +474,12 @@ struct GameModeView: View {
         .onChange(of: controllerObserver.primaryPress) { _ in
             guard isDashboardTheActiveControllerLayer else { return }
             activateFocusedTarget()
+        }
+        .onChange(of: controllerObserver.secondaryPress) { _ in
+            guard isDashboardTheActiveControllerLayer, libraryLayout != .grid else { return }
+            if case .card = controllerObserver.libraryFocus {
+                controllerObserver.libraryFocus = .settings
+            }
         }
         .onChange(of: runningTracker.runningGames) { running in
             // The overlay's honest dismiss signal: the game process actually showed up. Playdock
@@ -525,30 +513,6 @@ struct GameModeView: View {
         }
     }
 
-    private var controllerBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "gamecontroller.fill")
-            Text("Controller connected")
-            Spacer()
-            Button("Enter Controller Mode") {
-                showingControllerMode = true
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    controllerObserver.bannerDismissed = true
-                }
-            } label: {
-                Image(systemName: "xmark")
-            }
-            .buttonStyle(.borderless)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 10)
-        .background(Color.accentColor.opacity(0.12))
-    }
-
     /// Deliberately tiny and unobtrusive, so the games grid gets as much of the window as
     /// possible. Just enough to identify whose library this is and
     /// offer Refresh/Settings; everything else (art, ratings, controller navigation) lives in the
@@ -557,7 +521,7 @@ struct GameModeView: View {
         HStack(spacing: 10) {
             profileAvatar
             SkinTitleText(text: model.steamProfile?.personaName ?? L("Steam"), size: 17, lineLimit: 1)
-            Text(model.steamGames.isEmpty ? L("No games installed") : Localization.plural(model.steamGames.count, singular: "%lld game", plural: "%lld games"))
+            Text(installedGameCountLabel)
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
@@ -571,20 +535,22 @@ struct GameModeView: View {
             // ordering, not just Grid's.
             HStack(spacing: 6) {
                 favoritesToggle
+                    .focusRing(isControlFocused(.favorites))
                 sortMenu
-                headerIconButton(systemImage: "plus", help: L("Add Game"), isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(0)) {
+                    .focusRing(isControlFocused(.sort))
+                headerIconButton(systemImage: "plus", help: L("Add Game"), isFocused: isControlFocused(.add)) {
                     showingAddGameSheet = true
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
-                headerIconButton(systemImage: "arrow.clockwise", help: L("Refresh"), isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(1)) {
+                headerIconButton(systemImage: "arrow.clockwise", help: L("Refresh"), isFocused: isControlFocused(.refresh)) {
                     model.refreshSteamGames()
                     model.refreshSteamProfile()
                 }
                 .keyboardShortcut("r", modifiers: .command)
                 .disabled(model.isLoadingSteamGames)
 
-                headerIconButton(systemImage: "gearshape", help: L("Settings"), isFocused: controllerObserver.isConnected && focusedTarget == .toolbar(2)) {
+                headerIconButton(systemImage: "gearshape", help: L("Settings"), isFocused: isControlFocused(.settings)) {
                     openSettings()
                 }
             }
@@ -715,6 +681,10 @@ struct GameModeView: View {
         // so there's only ever one real size in play, not two disagreeing ones.
         let width: CGFloat = collapsed ? 34 : 200
         let height: CGFloat = collapsed ? 116 : 200
+        let wellRadius = min(skin.cardRadius, collapsed ? 16 : 44)
+        let well: AnyShape = collapsed
+            ? AnyShape(LeftRoundedRect(radius: max(wellRadius, 6)))
+            : AnyShape(PlaydockCardShape(skin: skin, cornerRadius: wellRadius))
 
         return ZStack(alignment: .topLeading) {
             ZStack {
@@ -725,7 +695,7 @@ struct GameModeView: View {
                 }
             }
             .frame(width: width, height: height)
-            .contentShape(RoundedRectangle(cornerRadius: 44))
+            .contentShape(well)
             // No .pressPush()/other gesture-based press effect here on purpose - a real bug, found
             // live: a simultaneous zero-distance DragGesture (which is what that press effect used to
             // detect "pressed") competing with .onTapGesture(count: 2) on the same view could silently
@@ -737,7 +707,6 @@ struct GameModeView: View {
             }
             .opacity(collapsed ? 0 : 1)
             .allowsHitTesting(!collapsed && model.launchingTarget == nil)
-            .focusRing(controllerObserver.isConnected && focusedTarget == .steamIcon)
             .help(isLaunching ? "Launching Steam…" : "Double-click to open Steam")
 
             // "dont see the minimalize the steam icon button" - the Settings toggle alone wasn't
@@ -749,9 +718,9 @@ struct GameModeView: View {
                 } label: {
                     Image(systemName: "chevron.right")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(skin.accent)
                         .frame(width: 22, height: 22)
-                        .background(.black.opacity(0.45), in: Circle())
+                        .background(skin.accent.opacity(0.16), in: Circle())
                 }
                 .buttonStyle(.plain)
                 .padding(6)
@@ -772,7 +741,7 @@ struct GameModeView: View {
                     steamIcon(size: 26, cornerRadius: 7)
                         .frame(width: 26, height: 26)
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(skin.accent)
                 .padding(.vertical, 14)
                 .frame(width: width, height: height)
             }
@@ -782,12 +751,11 @@ struct GameModeView: View {
             .help("Show the Steam icon")
         }
         .frame(width: width, height: height, alignment: .topTrailing)
-        .background(
-            .regularMaterial,
-            in: collapsed ? AnyShape(LeftRoundedRect(radius: 16)) : AnyShape(RoundedRectangle(cornerRadius: 44))
-        )
-        .clipShape(collapsed ? AnyShape(LeftRoundedRect(radius: 16)) : AnyShape(RoundedRectangle(cornerRadius: 44)))
-        .shadow(color: .black.opacity(collapsed ? 0.3 : 0.35), radius: collapsed ? 12 : 20, x: collapsed ? -2 : 0, y: collapsed ? 0 : 8)
+        .background(skin.topBarBackground, in: well)
+        .overlay(well.stroke(skin.accent.opacity(0.4), lineWidth: max(skin.borderWidth, 1)))
+        .clipShape(well)
+        .shadow(color: skin.hasShadow ? .black.opacity(collapsed ? 0.3 : 0.35) : .clear, radius: collapsed ? 12 : 20, x: collapsed ? -2 : 0, y: collapsed ? 0 : 8)
+        .focusRing(isControlFocused(.steamIcon))
         // Flush against the real trailing edge while collapsed - "should be on the edge" - a
         // fixed 24pt inset only while expanded, matching the padding this always had.
         .padding(.trailing, collapsed ? 0 : 24)
@@ -824,7 +792,7 @@ struct GameModeView: View {
     /// view, a launch overlay, Controller Mode) is up over the dashboard.
     private var noDashboardOverlayActive: Bool {
         detailGame == nil && detailCustomGame == nil && launchOverlayGame == nil
-            && launchOverlayCustomGame == nil && !showingControllerMode
+            && launchOverlayCustomGame == nil
     }
 
     /// The Steam icon and the Settings launcher, both docked bottom-right, kept in their own
@@ -925,6 +893,7 @@ struct GameModeView: View {
         .overlay(shape.stroke(skin.accent.opacity(0.35), lineWidth: skin.borderWidth))
         .clipShape(shape)
         .shadow(color: .black.opacity(0.28), radius: collapsed ? 10 : 16, x: collapsed ? -2 : 0, y: collapsed ? 0 : 6)
+        .focusRing(isControlFocused(.settingsLauncher))
         .padding(.trailing, collapsed ? 0 : 22)
         .padding(.bottom, bottomInset)
         .animation(.easeInOut(duration: 0.3), value: showSettingsLauncher)
@@ -996,6 +965,25 @@ struct GameModeView: View {
     /// line of `.caption`/`.callout` text) - kept as one shared constant so the bottom padding that
     /// makes room for it and the bar's own size can't quietly drift apart.
     private static let legendBarHeight: CGFloat = 40
+    private static let gridBottomPaddingMinimum: CGFloat = 72
+
+    /// Room for the native UI-size slider (always) and the controller legend bar when it's showing.
+    private var gridBottomInset: CGFloat {
+        let controllerPad = isDashboardTheActiveControllerLayer && controllerObserver.isConnected ? Self.legendBarHeight : 0
+        return max(Self.gridBottomPaddingMinimum, controllerPad)
+    }
+
+    /// Non-hidden Steam plus custom games - what the header count should reflect, not Steam alone.
+    private var installedVisibleGameCount: Int {
+        model.steamGames.filter { !curation.isHidden($0.appID) }.count
+            + model.customGames.filter { !curation.isHidden($0.id) }.count
+    }
+
+    private var installedGameCountLabel: String {
+        let count = installedVisibleGameCount
+        if count == 0 { return L("No games installed") }
+        return Localization.plural(count, singular: "%lld game", plural: "%lld games")
+    }
 
     /// The grid's own column layout, back to plain `.adaptive(minimum:maximum:)` - SwiftUI works
     /// out how many columns actually fit *natively*, using the grid's own real proposed width
@@ -1036,11 +1024,14 @@ struct GameModeView: View {
 
     private var artworkHeight: CGFloat { idealCardSizeTier.artworkHeight }
 
-    /// Only active while nothing's covering the dashboard (no Game Detail view, no Controller Mode
-    /// carousel) - both of those own the same D-pad/A stream the instant they're shown, per
-    /// `ControllerObserver`'s "single owner, self-filtering subscribers" design.
+    /// Only active while nothing's covering the dashboard. A game's detail page and Settings own
+    /// the same D-pad/A stream the instant they're shown.
     private var isDashboardTheActiveControllerLayer: Bool {
-        detailGame == nil && detailCustomGame == nil && !showingControllerMode && !showingSettings
+        detailGame == nil && detailCustomGame == nil && !showingSettings
+    }
+
+    private func isControlFocused(_ control: LibraryControl) -> Bool {
+        controllerObserver.isConnected && controllerObserver.libraryFocus == control
     }
 
     /// `focusedTarget`'s own `.card` index, resolved to that entry's real id, for `SkinWebGridView`'s
@@ -1048,8 +1039,31 @@ struct GameModeView: View {
     /// connected, so the WebView only ever shows a ring while there's a real card focused for it to
     /// show.
     private var focusedCardID: String? {
-        guard controllerObserver.isConnected, case .card(let index) = focusedTarget else { return nil }
+        guard controllerObserver.isConnected, case .card(let index) = controllerObserver.libraryFocus else { return nil }
         return libraryEntries[safe: index]?.id
+    }
+
+    private var headerRow: [LibraryControl] { [.favorites, .sort, .add, .refresh, .settings] }
+
+    private var bottomRow: [LibraryControl] {
+        var row: [LibraryControl] = [.uiScale]
+        if showSettingsLauncher { row.append(.settingsLauncher) }
+        if showSteamIcon { row.append(.steamIcon) }
+        return row
+    }
+
+    /// The control directly under the header: the page's search field on the grid, otherwise the
+    /// games themselves, otherwise the corner controls.
+    private var belowHeader: LibraryControl {
+        if libraryLayout == .grid { return .search }
+        if !libraryEntries.isEmpty { return .card(0) }
+        return bottomRow.last ?? .uiScale
+    }
+
+    private var aboveBottom: LibraryControl {
+        if !libraryEntries.isEmpty { return .card(max(0, libraryEntries.count - 1)) }
+        if libraryLayout == .grid { return .search }
+        return .settings
     }
 
     /// The real on-screen control legend for whichever layout is actually showing - "markers for
@@ -1070,64 +1084,113 @@ struct GameModeView: View {
     /// edges instead of wrapping into the row above/below), and the floating Steam icon beyond the
     /// grid's last row.
     private func moveFocus(_ direction: ControllerDirection) {
-        guard let current = focusedTarget else {
-            focusedTarget = libraryEntries.isEmpty ? .toolbar(0) : .card(0)
+        guard let current = controllerObserver.libraryFocus else {
+            controllerObserver.libraryFocus = libraryEntries.isEmpty ? .favorites : .card(0)
+            return
+        }
+        if current == .uiScale, direction == .left || direction == .right {
+            nudgeUIScale(direction == .right ? 1 : -1)
             return
         }
         switch current {
-        case .toolbar(let toolbarIndex):
+        case .section(let index):
             switch direction {
-            case .left: focusedTarget = .toolbar(max(0, toolbarIndex - 1))
-            case .right: focusedTarget = .toolbar(min(2, toolbarIndex + 1))
-            case .down: focusedTarget = libraryEntries.isEmpty ? current : .card(0)
+            case .left: controllerObserver.libraryFocus = .section(max(0, index - 1))
+            case .right: controllerObserver.libraryFocus = .section(min(1, index + 1))
+            case .down: controllerObserver.libraryFocus = .favorites
             case .up: break
             }
-        case .card(let index):
-            let columns = columnCount
+        case .favorites, .sort, .add, .refresh, .settings:
+            moveHorizontal(headerRow, current: current, direction: direction, up: .section(0), down: belowHeader)
+        case .search:
             switch direction {
-            case .left:
-                guard index % columns != 0 else { return }
-                focusedTarget = .card(index - 1)
-            case .right:
-                guard index % columns != columns - 1, index + 1 < libraryEntries.count else { return }
-                focusedTarget = .card(index + 1)
-            case .up:
-                focusedTarget = index < columns ? .toolbar(0) : .card(index - columns)
-            case .down:
-                // A real, confirmed bug: "steam launch should be very bottom, as it makes
-                // navigation weird as it keeps popping to there" - every card in an incomplete
-                // last row (not just the actual last one) used to warp straight to the Steam icon
-                // on a single Down press, since `next` lands past the end of the array for any of
-                // them, not just the true bottom-right card. Now only the genuine last card - the
-                // one actually adjacent to the floating icon - can reach it; every other last-row
-                // card with empty space below it just stays put, matching what a real grid with
-                // nothing underneath should do.
-                let next = index + columns
-                if next < libraryEntries.count {
-                    focusedTarget = .card(next)
-                } else if index == libraryEntries.count - 1 && showSteamIcon {
-                    focusedTarget = .steamIcon
-                }
+            case .up: controllerObserver.libraryFocus = .settings
+            case .down: controllerObserver.libraryFocus = libraryEntries.isEmpty ? (bottomRow.last ?? .uiScale) : .card(0)
+            case .left, .right: break
             }
-        case .steamIcon:
-            if direction == .up {
-                focusedTarget = libraryEntries.isEmpty ? .toolbar(0) : .card(libraryEntries.count - 1)
+        case .card(let index):
+            // Other layouts own their own stick movement while a card is selected. Up is how
+            // the grid gets back to search; B (handled above) leaves those other layouts.
+            guard libraryLayout == .grid else { return }
+            moveGridFocus(index, direction)
+        case .settingsLauncher, .steamIcon, .uiScale:
+            moveHorizontal(bottomRow, current: current, direction: direction, up: aboveBottom, down: nil)
+        }
+    }
+
+    private func moveHorizontal(_ row: [LibraryControl], current: LibraryControl, direction: ControllerDirection, up: LibraryControl?, down: LibraryControl?) {
+        guard let index = row.firstIndex(of: current) else { return }
+        switch direction {
+        case .left where index > 0:
+            controllerObserver.libraryFocus = row[index - 1]
+        case .right where index + 1 < row.count:
+            controllerObserver.libraryFocus = row[index + 1]
+        case .up:
+            if let up { controllerObserver.libraryFocus = up }
+        case .down:
+            if let down { controllerObserver.libraryFocus = down }
+        default:
+            break
+        }
+    }
+
+    private func moveGridFocus(_ index: Int, _ direction: ControllerDirection) {
+        let columns = columnCount
+        switch direction {
+        case .left:
+            guard index % columns != 0 else { return }
+            controllerObserver.libraryFocus = .card(index - 1)
+        case .right:
+            guard index % columns != columns - 1, index + 1 < libraryEntries.count else { return }
+            controllerObserver.libraryFocus = .card(index + 1)
+        case .up:
+            controllerObserver.libraryFocus = index < columns ? .search : .card(index - columns)
+        case .down:
+            // Only the genuine last card can step down onto the corner controls. Every other
+            // card in a short last row stays put.
+            let next = index + columns
+            if next < libraryEntries.count {
+                controllerObserver.libraryFocus = .card(next)
+            } else if index == libraryEntries.count - 1 {
+                controllerObserver.libraryFocus = bottomRow.last ?? .uiScale
             }
         }
     }
 
+    private func nudgeUIScale(_ step: Int) {
+        let stops = [0.75, 0.9375, 1.125, 1.3125, 1.5]
+        let current = stops.min(by: { abs($0 - uiScale) < abs($1 - uiScale) }) ?? uiScale
+        guard let index = stops.firstIndex(of: current) else { return }
+        let next = min(max(0, index + step), stops.count - 1)
+        uiScale = stops[next]
+    }
+
+    private func cycleSort() {
+        let all = GameSortOption.allCases
+        guard let index = all.firstIndex(of: sortOption) else { return }
+        sortOption = all[(index + 1) % all.count]
+    }
+
     private func activateFocusedTarget() {
-        switch focusedTarget {
-        case .toolbar(0):
+        switch controllerObserver.libraryFocus {
+        case .section(let index):
+            let sections = AppModel.SidebarSection.allCases
+            guard sections.indices.contains(index) else { return }
+            model.selectedSection = sections[index]
+        case .favorites:
+            withAnimation(.easeInOut(duration: 0.15)) { favoritesOnly.toggle() }
+        case .sort:
+            cycleSort()
+        case .add:
             showingAddGameSheet = true
-        case .toolbar(1):
+        case .refresh:
             guard !model.isLoadingSteamGames else { return }
             model.refreshSteamGames()
             model.refreshSteamProfile()
-        case .toolbar:
+        case .settings, .settingsLauncher:
             openSettings()
         case .card(let index):
-            guard libraryEntries.indices.contains(index) else { return }
+            guard libraryLayout == .grid, libraryEntries.indices.contains(index) else { return }
             switch libraryEntries[index] {
             case .steam(let game): detailGame = game
             case .custom(let game): detailCustomGame = game
@@ -1135,7 +1198,7 @@ struct GameModeView: View {
         case .steamIcon:
             guard showSteamIcon, model.launchingTarget == nil else { return }
             model.openSteamClient()
-        case nil:
+        case .search, .uiScale, nil:
             break
         }
     }
@@ -1159,7 +1222,7 @@ struct GameModeView: View {
         } else {
             LazyVGrid(columns: gridColumns, spacing: Self.gridSpacing) {
                 ForEach(Array(libraryEntries.enumerated()), id: \.element.id) { index, entry in
-                    let isFocused = controllerObserver.isConnected && focusedTarget == .card(index)
+                    let isFocused = isControlFocused(.card(index))
                     switch entry {
                     case .steam(let game):
                         GameCardView(
@@ -1463,7 +1526,7 @@ private struct GameCardView: View {
 /// The actions `actionRow` can show, in display order - used both to render the row and to drive
 /// controller focus over it (see `GameDetailView`'s `.onChange(of: controllerObserver.*)` handlers).
 private enum DetailAction: Equatable {
-    case launch, settings, reveal, storePage
+    case favorite, hide, launch, settings, reveal, storePage, about
 }
 
 struct GameDetailView: View {
@@ -1487,6 +1550,10 @@ struct GameDetailView: View {
     /// controller is actually connected (see `availableActions`'s call sites), so mouse-only use
     /// never sees a stray focus ring.
     @LocalState private var focusedActionIndex = 0
+    /// Keyboard arrows (no pad connected) use the same action list. Stays off until a key moves
+    /// focus, so a mouse-only visit doesn't grow a ring on Launch.
+    @LocalState private var keyboardNavigating = false
+    @LocalState private var descriptionExpanded = false
     /// Non-nil while a photo is shown full-size: the index into `allPhotoPaths`, so the lightbox
     /// can browse with arrows / D-pad instead of only closing.
     @LocalState private var expandedPhotoIndex: Int?
@@ -1507,17 +1574,27 @@ struct GameDetailView: View {
     /// list so controller focus always lines up with what's actually on screen (e.g. never
     /// highlights a Settings button that isn't rendered outside Advanced Mode).
     private var availableActions: [DetailAction] {
-        var actions: [DetailAction] = []
+        var actions: [DetailAction] = [.favorite, .hide]
         if runningInfo == nil { actions.append(.launch) }
         // A native macOS Steam game has no ExeDock-managed wine bottle/engine to configure.
         if isAdvancedMode && game.source == .wineBottle { actions.append(.settings) }
         actions.append(.reveal)
         actions.append(.storePage)
+        if aboutCanExpand { actions.append(.about) }
         return actions
     }
 
+    private var aboutText: String? {
+        storeInfo?.aboutTheGame ?? storeInfo?.shortDescription
+    }
+
+    private var aboutCanExpand: Bool {
+        guard let aboutText else { return false }
+        return aboutText.count > 280 || aboutText.components(separatedBy: "\n").count > 4
+    }
+
     private func isFocused(_ action: DetailAction) -> Bool {
-        controllerObserver.isConnected && availableActions[safe: focusedActionIndex] == action
+        (controllerObserver.isConnected || keyboardNavigating) && availableActions[safe: focusedActionIndex] == action
     }
 
     private func moveActionFocus(_ direction: ControllerDirection) {
@@ -1530,6 +1607,11 @@ struct GameDetailView: View {
 
     private func activateFocusedAction() {
         switch availableActions[safe: focusedActionIndex] {
+        case .favorite:
+            curation.toggleFavorite(game.appID)
+        case .hide:
+            curation.hide(game.appID)
+            onClose()
         case .launch:
             onLaunch()
             model.launchSteamGame(game)
@@ -1539,6 +1621,8 @@ struct GameDetailView: View {
             model.revealInFinder(installFolderPath)
         case .storePage:
             model.openStorePage(for: game)
+        case .about:
+            descriptionExpanded.toggle()
         case nil:
             break
         }
@@ -1546,7 +1630,10 @@ struct GameDetailView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
+            Color(red: 0.07, green: 0.07, blue: 0.09)
+                .ignoresSafeArea()
             backdrop
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 0) {
                 closeButton
                 ScrollView {
@@ -1604,6 +1691,18 @@ struct GameDetailView: View {
         // A launch finishing while this page is open must update the banner in place.
         .onChange(of: model.launchingTarget) { _ in reloadLaunchHistory() }
         .onExitCommand { onClose() }
+        .focusable()
+        .onMoveCommand { direction in
+            guard !controllerObserver.isConnected, expandedPhotoIndex == nil else { return }
+            keyboardNavigating = true
+            switch direction {
+            case .left: moveActionFocus(.left)
+            case .right: moveActionFocus(.right)
+            case .up: moveActionFocus(.up)
+            case .down: moveActionFocus(.down)
+            @unknown default: break
+            }
+        }
         // GameDetailView always treats itself as the active controller-input layer while it's
         // mounted - it's rendered above everything else wherever it appears (a direct card tap, or
         // ControllerModeView's own drill-down), so there's nothing above it to defer to.
@@ -1659,7 +1758,7 @@ struct GameDetailView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .blur(radius: 50)
-                .overlay(Color.black.opacity(0.6))
+                .overlay(Color.black.opacity(0.78))
                 .ignoresSafeArea()
         } else {
             LinearGradient(colors: [Color.accentColor.opacity(0.5), .black], startPoint: .top, endPoint: .bottom)
@@ -1680,9 +1779,8 @@ struct GameDetailView: View {
                         .foregroundStyle(curation.isFavorite(game.appID) ? .pink : .white.opacity(0.45))
                 }
                 .buttonStyle(.plain)
+                .focusRing(isFocused(.favorite))
                 .help(L(curation.isFavorite(game.appID) ? "Remove from Favorites" : "Mark as Favorite"))
-            }
-
                 // Second-class actions tucked into one menu, not another visible circle -
                 // "hide this game" is rare, reversible (Settings > Hidden Games), and out of the
                 // way here instead of competing with the favorite heart.
@@ -1699,6 +1797,8 @@ struct GameDetailView: View {
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
                 .fixedSize()
+                .focusRing(isFocused(.hide))
+            }
             if storeInfo?.metacriticScore != nil || !(storeInfo?.genres.isEmpty ?? true) {
                 HStack(spacing: 10) {
                     if let score = storeInfo?.metacriticScore {
@@ -1746,7 +1846,9 @@ struct GameDetailView: View {
         let hours = total / 3600
         let hoursText = hours < 1 ? "\(max(1, Int((total / 60).rounded(.up)))) min" : (hours < 10 ? String(format: "%.1f h", hours) : "\(Int(hours.rounded())) h")
         let sessions = playActivity.sessionCount(for: game.appID)
-        let relative = RelativeDateTimeFormatter().localizedString(for: last, relativeTo: Date())
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Localization.formattingLocale
+        let relative = formatter.localizedString(for: last, relativeTo: Date())
         return "\(hoursText) over \(sessions) session\(sessions == 1 ? "" : "s") · last played \(relative)"
     }
 
@@ -1755,20 +1857,14 @@ struct GameDetailView: View {
     /// no fuller write-up.
     @ViewBuilder
     private var descriptionCard: some View {
-        if let description = storeInfo?.aboutTheGame ?? storeInfo?.shortDescription {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("About This Game")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text(description)
-                    .font(.body)
-                    .foregroundStyle(.white.opacity(0.85))
-                    .lineSpacing(4)
+        if let description = aboutText {
+            ExpandableAboutCard(
+                text: description,
+                expanded: descriptionExpanded,
+                isFocused: isFocused(.about)
+            ) {
+                descriptionExpanded.toggle()
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.08)))
         }
     }
 

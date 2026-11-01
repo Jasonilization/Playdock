@@ -43,7 +43,7 @@ enum CustomGameFileImporter {
             let destinationName = uniqueDestinationName(for: (sourceFolder as NSString).lastPathComponent, in: customGamesRoot)
             let destinationFolder = (customGamesRoot as NSString).appendingPathComponent(destinationName)
             do {
-                try fm.moveItem(atPath: sourceFolder, toPath: destinationFolder)
+                try moveOrCopyItem(from: sourceFolder, to: destinationFolder)
             } catch {
                 throw ImportError.moveFailed(error.localizedDescription)
             }
@@ -59,10 +59,31 @@ enum CustomGameFileImporter {
         do {
             try fm.createDirectory(atPath: destinationFolder, withIntermediateDirectories: true)
             let destinationExePath = (destinationFolder as NSString).appendingPathComponent(exeName)
-            try fm.moveItem(atPath: exePath, toPath: destinationExePath)
+            try moveOrCopyItem(from: exePath, to: destinationExePath)
             return destinationExePath
         } catch {
             throw ImportError.moveFailed(error.localizedDescription)
+        }
+    }
+
+    /// Same-volume picks rename in place; cross-volume picks can't `moveItem`, so copy instead and
+    /// leave the original where the user put it.
+    /// `moveItem` already copies across volumes. Only fall back to a copy when the move failed
+    /// without consuming the source or creating the destination — otherwise a permission or
+    /// "already exists" error gets replaced by a second, less useful one.
+    private static func moveOrCopyItem(from source: String, to destination: String) throws {
+        let fm = FileManager.default
+        do {
+            try fm.moveItem(atPath: source, toPath: destination)
+        } catch let moveError {
+            guard fm.fileExists(atPath: source), !fm.fileExists(atPath: destination) else {
+                throw ImportError.moveFailed(moveError.localizedDescription)
+            }
+            do {
+                try fm.copyItem(atPath: source, toPath: destination)
+            } catch {
+                throw ImportError.moveFailed(moveError.localizedDescription)
+            }
         }
     }
 

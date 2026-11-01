@@ -10,7 +10,7 @@ struct SteamStoreInfo: Codable, Equatable {
     /// guessing "is this incomplete?" from which fields happen to be empty (a genuinely sparse but
     /// fully-fetched entry - an obscure app with no Metacritic score, say - would otherwise look
     /// permanently stale under that heuristic).
-    static let currentSchemaVersion = 3
+    static let currentSchemaVersion = 4
 
     let shortDescription: String?
     /// The full "About This Game" text, HTML tags stripped down to plain text (with paragraph
@@ -99,16 +99,22 @@ struct SteamStoreInfo: Codable, Equatable {
     /// actually uses get decoded. Not a general HTML parser (nothing here needs one) - just enough
     /// to make Steam's real descriptions readable in a plain `Text` view.
     static func plainText(fromHTML html: String) -> String {
-        var text = html.replacingOccurrences(of: "<br\\s*/?>", with: "\n", options: .regularExpression)
-        text = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        var text = html.replacingOccurrences(of: "(?i)<br\\s*/?>", with: "\n", options: .regularExpression)
+        let blockTags = "p|div|h[1-6]|li|tr|blockquote|section|article|header|ul|ol"
+        text = text.replacingOccurrences(of: "(?i)</?(?:\(blockTags))[^>]*>", with: "\n", options: .regularExpression)
+        text = text.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
         let entities: [(String, String)] = [
             ("&amp;", "&"), ("&quot;", "\""), ("&#39;", "'"), ("&apos;", "'"), ("&lt;", "<"), ("&gt;", ">"),
+            ("&nbsp;", " "), ("&#160;", " "),
         ]
         for (entity, replacement) in entities {
             text = text.replacingOccurrences(of: entity, with: replacement)
         }
-        // Collapse 3+ blank lines down to a single paragraph break - Steam's own copy sometimes
-        // has runs of empty <br> tags for visual spacing that a SwiftUI Text doesn't need.
+        let lines = text.components(separatedBy: "\n").map { line in
+            line.replacingOccurrences(of: " +", with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespaces)
+        }
+        text = lines.joined(separator: "\n")
         text = text.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }

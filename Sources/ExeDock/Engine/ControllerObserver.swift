@@ -6,6 +6,23 @@ enum ControllerDirection {
     case up, down, left, right
 }
 
+/// Whatever a controller can highlight on the library screen that already exists — the section
+/// tabs, the header controls, search, a game card, and the corner controls. There is no separate
+/// controller screen; this is just which of those is selected.
+enum LibraryControl: Equatable {
+    case section(Int)
+    case favorites
+    case sort
+    case add
+    case refresh
+    case settings
+    case search
+    case card(Int)
+    case settingsLauncher
+    case steamIcon
+    case uiScale
+}
+
 /// Tracks whether a game controller is currently connected, using Apple's own `GameController`
 /// framework - a real, first-party API, not something rebuilt from scratch. Also the single owner
 /// of every button/D-pad handler on the controller - LB/RB step between top-level sections (see
@@ -14,8 +31,8 @@ enum ControllerDirection {
 /// generic signals any view can subscribe to and react to *only while it's the active input layer*
 /// (its own `isActiveLayer`-style check on its own state), rather than each view fighting over the
 /// same raw `GCExtendedGamepad` handler properties directly. That "single owner, many self-filtering
-/// subscribers" split is what lets the grid, the Game Detail view, and the dedicated Controller Mode
-/// carousel all support real D-pad/A/B navigation without colliding - whichever one is actually on
+/// subscribers" split is what lets the grid and the Game Detail view support real D-pad/A/B
+/// navigation without colliding - whichever one is actually on
 /// top just ignores signals when it isn't. Everything here is purely event-driven
 /// (`GCControllerDidConnect`/`DidDisconnect` notifications, `pressedChangedHandler`), so this costs
 /// nothing while idle.
@@ -50,6 +67,8 @@ final class ControllerObserver: ObservableObject {
     @Published private(set) var primaryPress: UUID?
     /// Bumped on every B-button press - "back/close/cancel."
     @Published private(set) var secondaryPress: UUID?
+    /// Which existing library control the D-pad has selected. `nil` until the first move.
+    @Published var libraryFocus: LibraryControl?
 
     /// The real, currently-attached controller's own SF Symbol names for each button this app
     /// actually uses (Apple hands these back per-element, matched to whatever is really plugged in -

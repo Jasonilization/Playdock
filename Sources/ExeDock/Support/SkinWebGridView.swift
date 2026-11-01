@@ -50,6 +50,9 @@ struct SkinWebGridView: NSViewRepresentable {
     /// alone isn't safe once a fragment grid renders a filtered subset). The page has no idea a
     /// controller exists at all; this just tells it which card to draw the ring around.
     var focusedID: String?
+    /// The page's own search field is one of the real controls. `true` draws the same focus ring
+    /// the cards use and moves the text cursor into that field.
+    var searchFocused: Bool = false
     /// "a setting to hide labels" - hides every Mac/Custom/Windows badge in the real page via one
     /// shared `[data-hide-badges]` CSS rule (see skins.css), not a per-skin toggle. Defaulted so
     /// this plumbing stays independently buildable before anything actually sets it non-default.
@@ -83,12 +86,14 @@ struct SkinWebGridView: NSViewRepresentable {
         context.coordinator.onOpen = onOpen
         context.coordinator.render(skin: skin, entries: entries, userName: userName, isDark: isDark, hideBadges: hideBadges)
         context.coordinator.setFocus(focusedID)
+        context.coordinator.setSearchFocus(searchFocused)
     }
 
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         var onOpen: (String) -> Void
         weak var webView: WKWebView?
         private var isPageReady = false
+        private var searchFocusApplied: Bool?
         private var pending: (skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool, hideBadges: Bool)?
 
         init(onOpen: @escaping (String) -> Void) {
@@ -128,6 +133,12 @@ struct SkinWebGridView: NSViewRepresentable {
             guard isPageReady, let webView else { return }
             let arg = id.map(jsLiteral) ?? "null"
             webView.evaluateJavaScript("window.PlaydockSetFocus && window.PlaydockSetFocus(\(arg));", completionHandler: nil)
+        }
+
+        func setSearchFocus(_ focused: Bool) {
+            guard isPageReady, let webView, searchFocusApplied != focused else { return }
+            searchFocusApplied = focused
+            webView.evaluateJavaScript("window.PlaydockSetSearchFocus && window.PlaydockSetSearchFocus(\(focused));", completionHandler: nil)
         }
 
         private struct WebMeta: Encodable { let user: String; let theme: String; let hideBadges: Bool }
