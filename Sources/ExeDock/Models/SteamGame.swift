@@ -37,6 +37,9 @@ struct SteamGame: Identifiable, Hashable {
     /// Unix timestamp of the last update, from the manifest's `LastUpdated`.
     let lastUpdated: Date?
     var source: SteamGameSource = .wineBottle
+    /// The manifest exists and the install folder is there, but Steam has not set the
+    /// fully-installed bit yet. Shown in the library, not launched.
+    var isDownloading: Bool = false
 
     var id: String { appID }
 
@@ -52,5 +55,17 @@ struct SteamGame: Identifiable, Hashable {
             return String(appID.dropFirst(prefix.count))
         }
         return appID
+    }
+
+    /// Debug layout-preview cards from `AppModel.togglePreviewSampleGames`. They reuse real
+    /// store appIDs for art, but they are not installed in the Steam bottle.
+    var isPreviewSample: Bool { appID.hasPrefix("SAMPLE-") }
+
+    /// Arguments appended to `Steam.exe` for a Windows-Steam library title (`-applaunch` plus
+    /// the real numeric appID). Nil for native Mac games and layout-preview cards — those must
+    /// never be sent through the bottle's Steam.exe.
+    var wineSteamLaunchArguments: [String]? {
+        guard source == .wineBottle, !isPreviewSample else { return nil }
+        return ["-applaunch", metadataAppID]
     }
 }

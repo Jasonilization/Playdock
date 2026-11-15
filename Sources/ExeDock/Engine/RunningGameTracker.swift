@@ -98,18 +98,20 @@ final class RunningGameTracker: ObservableObject {
         }.value
         guard !Task.isCancelled else { return }
 
+        var next = runningGames
         var ended: Set<String> = []
         for (id, _) in targets {
             if let pid = matches[id] {
                 let startedAt = knownStartTimes[id] ?? Date()
                 knownStartTimes[id] = startedAt
-                runningGames[id] = RunningProcessInfo(pid: pid, startedAt: startedAt)
-            } else {
-                if runningGames[id] != nil { ended.insert(id) }
-                runningGames.removeValue(forKey: id)
+                let info = RunningProcessInfo(pid: pid, startedAt: startedAt)
+                if next[id] != info { next[id] = info }
+            } else if next.removeValue(forKey: id) != nil {
+                ended.insert(id)
                 knownStartTimes.removeValue(forKey: id)
             }
         }
+        if next != runningGames { runningGames = next }
         if !ended.isEmpty { flushOpenSessions(only: ended) }
     }
 

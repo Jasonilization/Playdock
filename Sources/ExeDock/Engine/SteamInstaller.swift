@@ -43,27 +43,63 @@ enum SteamInstaller {
         try? FileManager.default.removeItem(atPath: setupPath)
         try FileManager.default.moveItem(at: tempURL, to: URL(fileURLWithPath: setupPath))
 
-        progress("Installing Steam…")
+        progress("Preparing the Steam bottle…")
         let bottle = steamBottle
-        try await Task.detached(priority: .userInitiated) {
-            let wineBinary = try SikarugirEngine.wineBinaryPath()
-            try BottleManager.shared.ensureInitialized(bottle, wineBinary: wineBinary)
+        let wineBinary = try SikarugirEngine.wineBinaryPath()
+        try BottleManager.shared.ensureInitialized(bottle, wineBinary: wineBinary, scheduleRuntime: false)
 
+        progress("Installing runtime components…")
+        do {
+            try await WinetricksRunner.runDefaultVerbs(in: bottle) { message in
+                progress(message)
+            }
+        } catch {
+            DiagnosticsLog.log("Steam bottle runtime components: \(error.localizedDescription)")
+            progress("Runtime components didn't finish. Continuing with Steam…")
+        }
+
+        progress("Installing Steam…")
+        try await Task.detached(priority: .userInitiated) {
+            // The installer has to live inside the bottle. A temp-folder path is outside
+            // drive_c, which is why a fresh install never actually unpacked Steam.
+            let fm = FileManager.default
+            let setupInBottle = (bottle.driveCPath as NSString).appendingPathComponent("SteamSetup.exe")
+            if fm.fileExists(atPath: setupInBottle) {
+                try? fm.removeItem(atPath: setupInBottle)
+            }
+            try fm.copyItem(atPath: setupPath, toPath: setupInBottle)
+
+            try? fm.createDirectory(atPath: ExeRunner.logsDir, withIntermediateDirectories: true)
+            let logPath = (ExeRunner.logsDir as NSString).appendingPathComponent("steam-install-\(Int(Date().timeIntervalSince1970)).log")
+            fm.createFile(atPath: logPath, contents: nil)
+            let logHandle = FileHandle(forWritingAtPath: logPath)
+
+            // Silent setup must run synchronously under wine. `wine start /unix … /S` can return
+            // while still doing nothing useful (start.exe never hands /S through), so invoke the
+            // bootstrapper directly with cwd set to drive_c — same pattern as a real Explorer launch.
             let process = Process()
             process.executableURL = URL(fileURLWithPath: wineBinary)
-            process.arguments = [setupPath, "/S"]
-            var env = ProcessInfo.processInfo.environment
-            env["WINEPREFIX"] = bottle.prefixPath
-            for (key, value) in try SikarugirEngine.runtimeEnvironment() { env[key] = value }
+            process.arguments = [setupInBottle, "/S"]
+            process.currentDirectoryURL = URL(fileURLWithPath: bottle.driveCPath)
+            let libraryPath = (try? SikarugirEngine.runtimeEnvironment()["DYLD_FALLBACK_LIBRARY_PATH"]) ?? ""
+            var env = ExeRunner.loaderEnvironment(
+                wineBinary: wineBinary, prefixPath: bottle.prefixPath, libraryPath: libraryPath
+            )
+            env["WINEDEBUG"] = "-all"
             process.environment = env
+            process.standardOutput = logHandle
+            process.standardError = logHandle
             try process.run()
             process.waitUntilExit()
+            if process.terminationStatus != 0 {
+                DiagnosticsLog.log("Steam installer exited with status \(process.terminationStatus). Log: \(logPath)")
+            }
         }.value
 
         // Steam's bootstrapper /S flag returns quickly while it keeps unpacking itself in the
         // background, so poll for Steam.exe rather than trusting the process exit code alone.
         progress("Finishing setup…")
-        let deadline = Date().addingTimeInterval(180)
+        let deadline = Date().addingTimeInterval(900)
         while !isSteamInstalled {
             if Date() > deadline { throw SteamInstallError.timedOut }
             try await Task.sleep(nanoseconds: 2_000_000_000)

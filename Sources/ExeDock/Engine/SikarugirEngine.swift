@@ -22,7 +22,16 @@ enum EngineError: Error, LocalizedError {
 /// read-only (list a directory, read a tarball) - nothing under Sikarugir's folders is ever written.
 enum SikarugirEngine {
     static let sikarugirEnginesDir = ("~/Library/Application Support/Sikarugir/Engines" as NSString).expandingTildeInPath
-    static let exeDockSupportDir = ("~/Library/Application Support/ExeDock" as NSString).expandingTildeInPath
+    /// `PLAYDOCK_SUPPORT_DIR` / `EXEDOCK_SUPPORT_DIR` isolate support data (bottles, cached engine)
+    /// for internal verification only — normal launches never set these.
+    static var exeDockSupportDir: String {
+        if let override = ProcessInfo.processInfo.environment["PLAYDOCK_SUPPORT_DIR"]
+            ?? ProcessInfo.processInfo.environment["EXEDOCK_SUPPORT_DIR"],
+           !override.isEmpty {
+            return (override as NSString).expandingTildeInPath
+        }
+        return ("~/Library/Application Support/ExeDock" as NSString).expandingTildeInPath
+    }
     /// Where a build of ExeDock before per-engine caching always extracted to - still checked first
     /// so an existing install doesn't silently re-extract (and re-download nothing, but re-pay the
     /// tar cost) something it already has ready to go.

@@ -5,72 +5,106 @@ import AppKit
 enum ExeRunner {
     static let logsDir = ("~/Library/Logs/ExeDock" as NSString).expandingTildeInPath
 
-    /// `preferWrapperEngine`, when true and the target bottle isn't already a wrapper bottle (that
-    /// case always tries that wrapper's own launcher first, below), runs the exe with a real Sikarugir
-    /// wrapper app's own bundled wine binary (see `SikarugirEngine.anyWrapperEngine`) instead of
-    /// ExeDock's own separately-downloaded engine - still against `bottle`'s own prefix, just with a
-    /// different engine reading it. Custom games use this, since a real Sikarugir engine build is
-    /// guaranteed to work against a Sikarugir-created bottle. Falls back to
-    /// ExeDock's own engine if no Sikarugir wrapper app is actually installed to borrow one from.
+    enum RunError: Error, LocalizedError, Equatable {
+        case missingExecutable(String)
+        case spawnFailed(Int32)
+
+        var errorDescription: String? {
+            switch self {
+            case .missingExecutable(let path):
+                return "Couldn't find \((path as NSString).lastPathComponent) to launch."
+            case .spawnFailed(let code):
+                return "The Wine loader didn't start (error \(code))."
+            }
+        }
+    }
+
+    /// What a running Sikarugir wrapper actually execs, read from its live process:
+    /// `…/lib/wine/x86_64-unix/wine start /unix <exe> [args…]`.
+    /// Extra args stay after the exe path so Steam's `-applaunch <id>` is not dropped.
+    /// The installer is the exception: it is started as `wine SteamSetup.exe /S` in
+    /// `SteamInstaller`, because `start` does not forward `/S`.
+    static func wineStartArguments(exePath: String, extra: [String] = []) -> [String] {
+        ["start", "/unix", exePath] + extra
+    }
+
+    /// `bin/wine` is the small stub. The process that actually starts the game is
+    /// `lib/wine/x86_64-unix/wine`. Use that when it is next to the stub.
+    static func unixLoaderPath(wineBinary: String) -> String {
+        let binDir = (wineBinary as NSString).deletingLastPathComponent
+        let root = (binDir as NSString).deletingLastPathComponent
+        let unix = (root as NSString).appendingPathComponent("lib/wine/x86_64-unix/wine")
+        if FileManager.default.isExecutableFile(atPath: unix) { return unix }
+        return wineBinary
+    }
+
+    /// Environment CrossOver's `cxstart` sets before it execs the loader. `libraryPath` is the
+    /// DYLD fallback list (Frameworks plus the engine's lib). Graphics keys from the game config
+    /// are merged in by the caller.
+    static func loaderEnvironment(wineBinary: String, prefixPath: String, libraryPath: String, extra: [String: String] = [:]) -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        env.removeValue(forKey: "PYTHONPATH")
+        env["WINEPREFIX"] = prefixPath
+        env["WINELOADER"] = wineBinary
+        let beside = (wineBinary as NSString).deletingLastPathComponent
+        var wineserver = (beside as NSString).appendingPathComponent("wineserver")
+        if !FileManager.default.isExecutableFile(atPath: wineserver) {
+            // The real loader lives in lib/wine/x86_64-unix. wineserver stays in bin/.
+            wineserver = ((beside as NSString).appendingPathComponent("../../../bin/wineserver") as NSString).standardizingPath
+        }
+        if FileManager.default.isExecutableFile(atPath: wineserver) {
+            env["WINESERVER"] = wineserver
+        }
+        // Do not set WINEDLLPATH. Wine finds its own DLLs next to this loader. Overriding
+        // that path is what made wineboot exit before the game existed.
+        if !libraryPath.isEmpty {
+            env["DYLD_FALLBACK_LIBRARY_PATH"] = libraryPath
+        }
+        if let d3d = d3dSharedLibrary(libraryPath: libraryPath) {
+            env["CX_APPLEGPTK_LIBD3DSHARED_PATH"] = d3d
+        }
+        env["ROSETTA_ADVERTISE_AVX"] = "1"
+        env["DOTNET_EnableWriteXorExecute"] = "0"
+        for (key, value) in extra { env[key] = value }
+        return env
+    }
+
+    /// `libd3dshared.dylib` next to D3DMetal. CrossOver sets this whenever the file is present.
+    private static func d3dSharedLibrary(libraryPath: String) -> String? {
+        let fm = FileManager.default
+        let relatives = [
+            "renderer/d3dmetal/external/libd3dshared.dylib",
+            "apple_gptk/external/libd3dshared.dylib",
+        ]
+        let roots = libraryPath.split(separator: ":").map(String.init) + [SikarugirEngine.exeDockFrameworksDir]
+        for root in roots {
+            for relative in relatives {
+                let path = (root as NSString).appendingPathComponent(relative)
+                if fm.fileExists(atPath: path) { return path }
+            }
+        }
+        return nil
+    }
+
+    /// `preferWrapperEngine`, when true and the target bottle isn't already a wrapper bottle,
+    /// runs the exe with a real Sikarugir wrapper app's own bundled wine binary (see
+    /// `SikarugirEngine.anyWrapperEngine`) instead of ExeDock's own engine. Used for older
+    /// custom games that still live in a shared or wrapper prefix. A game with its own bottle
+    /// uses ExeDock's engine, because that engine created the prefix.
     @discardableResult
     static func run(exePath: String, in bottle: Bottle, arguments: [String] = [], config: GameModeConfig = GameModeConfig(), engineName: String? = nil, preferWrapperEngine: Bool = false) async throws -> Process? {
+        guard FileManager.default.fileExists(atPath: exePath) else {
+            throw RunError.missingExecutable(exePath)
+        }
         try? FileManager.default.createDirectory(atPath: logsDir, withIntermediateDirectories: true)
         let timestamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
         let baseName = (exePath as NSString).lastPathComponent
 
-        // A game living inside a *specific* Sikarugir wrapper's own bottle is launched by driving
-        // that wrapper's own Configure app: set its "Windows app" path to this exact exe, then
-        // trigger its own Test Run action - "just open configs and launch custom games after
-        // setting the right paths, the test run works perfectly well," per live, repeated feedback,
-        // confirmed live and repeatedly myself: the raw CLI (`Contents/MacOS/Sikarugir run <file>`,
-        // tried first historically) fails with a WineAppInitializationError that never reproduces
-        // outside it, and a direct `wine start /unix <file>` invocation gets some titles running but
-        // not others (a real D3D12/vkd3d limitation against this Mac's Vulkan stack) - but
-        // Configure's own Test Run, against the exact same engine/bottle/title, has launched every
-        // game tried this way. See `SikarugirConfigureLauncher`'s own doc comment for how it's
-        // actually driven (Accessibility APIs against real, found UI elements, not a blind
-        // keystroke). Only falls back to the CLI-then-direct-wine chain below if that's unavailable.
+        // A game that already lives inside a Sikarugir wrapper's prefix runs with that
+        // wrapper's wine, against that prefix. Configure is not opened: waiting for its Test
+        // Run button cost about ten seconds and then failed. `wine start /unix` is the command
+        // Test Run itself runs.
         if case .sikarugirWrapper(let appPath) = bottle.kind {
-            do {
-                try await SikarugirConfigureLauncher.launch(exePath: exePath, wrapperAppPath: appPath, driveCPath: bottle.driveCPath)
-                return nil // Configure owns the actual launch from here - no Process handle to return.
-            } catch {
-                DiagnosticsLog.log("Configure-driven launch failed for \(baseName): \(error.localizedDescription) - falling back to the wrapper CLI.")
-            }
-
-            let launcherBinary = appPath + "/Contents/MacOS/Sikarugir"
-            if FileManager.default.isExecutableFile(atPath: launcherBinary) {
-                let logPath = (logsDir as NSString).appendingPathComponent("\(baseName)-\(timestamp).log")
-                FileManager.default.createFile(atPath: logPath, contents: nil)
-                let logHandle = FileHandle(forWritingAtPath: logPath)
-
-                let process = Process()
-                process.executableURL = URL(fileURLWithPath: launcherBinary)
-                process.arguments = ["run", exePath] + arguments
-                process.currentDirectoryURL = URL(fileURLWithPath: (exePath as NSString).deletingLastPathComponent)
-                process.standardOutput = logHandle
-                process.standardError = logHandle
-                try process.run()
-
-                // The wrapper's own CLI is the normal, preferred path here - but it's been observed
-                // failing fast (exits within ~1s, a short log ending in
-                // "SikarugirSdk.WineAppInitializationError") for reasons that don't reproduce from
-                // outside it even against a known-good, already-initialized prefix. Critically, that
-                // failure exits *cleanly* (status 0, not a crash) - "Closing Sikarugir" is its own
-                // graceful shutdown message - so `terminationStatus` can't distinguish it from a
-                // real success. `isRunning` after a short grace period is the only reliable signal:
-                // a real game launch keeps the process alive; this failure is always gone well before
-                // 2 seconds. If it's already gone for any reason, don't strand the player on a launch
-                // that silently did nothing - fall through and run the exe directly instead, against
-                // this exact same wrapper's own prefix, borrowing its own wine binary (the identical
-                // mechanism `preferWrapperEngine` already uses below for a borrowed wrapper engine).
-                try? await Task.sleep(for: .seconds(2))
-                if process.isRunning {
-                    return process
-                }
-                DiagnosticsLog.log("Sikarugir wrapper CLI exited fast for \(baseName) (status \(process.terminationStatus)) - falling back to a direct launch against \(appPath).")
-            }
-
             let wrapperWine = appPath + "/Contents/SharedSupport/wine/bin/wine"
             guard FileManager.default.isExecutableFile(atPath: wrapperWine) else {
                 // Neither the launcher CLI nor a direct wine binary is where expected - opening the
@@ -92,25 +126,6 @@ enum ExeRunner {
             try BottleManager.shared.ensureInitialized(bottle, wineBinary: wineBinary)
         }
 
-        // Playdock's own bottle (every custom game, and Steam) never had this same reliable path -
-        // only a bottle discovered inside a *separately built* Sikarugir wrapper did.
-        // `ConfigureShellBuilder` gives it the identical shape Configure itself looks for (confirmed
-        // against Configure's own binary strings and a real downloaded copy of Sikarugir's public
-        // wrapper template - see its own doc comment), built automatically from a file Playdock
-        // already downloads during first-launch setup - no manual step for anyone, and no risk to a
-        // launch that already worked: any failure here just falls through to the exact same
-        // CLI/direct-wine chain used before this existed. Deliberately placed *after*
-        // `ensureInitialized` just above - Configure driving a bottle that doesn't have a real,
-        // wineboot-initialized prefix yet isn't a scenario worth risking.
-        if !bottle.isReadOnly, let shellPath = ConfigureShellBuilder.shellAppPath(forLaunching: bottle, wineBinaryPath: wineBinary) {
-            do {
-                try await SikarugirConfigureLauncher.launch(exePath: exePath, wrapperAppPath: shellPath, driveCPath: bottle.driveCPath)
-                return nil
-            } catch {
-                DiagnosticsLog.log("Configure-driven launch failed for \(baseName) in \(bottle.name): \(error.localizedDescription) - falling back.")
-            }
-        }
-
         let libraryPath: String
         if let wrapperEngine {
             // Must be paired with the *same* app's own lib/Frameworks - mixing a wrapper's wine
@@ -129,37 +144,65 @@ enum ExeRunner {
     /// Runs an exe by invoking wine directly (no Sikarugir wrapper CLI involved) - shared by
     /// Playdock's own bottles, borrowed-wrapper-engine custom game launches, and now the
     /// fast-fail fallback for a wrapper bottle whose own CLI didn't come up.
-    private static func runDirect(exePath: String, bottle: Bottle, arguments: [String], config: GameModeConfig, wineBinary: String, libraryPath: String, baseName: String, timestamp: String) throws -> Process {
+    private static func runDirect(exePath: String, bottle: Bottle, arguments: [String], config: GameModeConfig, wineBinary: String, libraryPath: String, baseName: String, timestamp: String) throws -> Process? {
         let logPath = (logsDir as NSString).appendingPathComponent("\(baseName)-\(timestamp)-direct.log")
         FileManager.default.createFile(atPath: logPath, contents: nil)
-        let logHandle = FileHandle(forWritingAtPath: logPath)
+        let cwd = (exePath as NSString).deletingLastPathComponent
+        let loader = unixLoaderPath(wineBinary: wineBinary)
+        let env = loaderEnvironment(
+            wineBinary: loader,
+            prefixPath: bottle.prefixPath,
+            libraryPath: libraryPath,
+            extra: config.environment
+        )
+        // Same argv as the wrapper's own launch. A new session so Playdock is not wrapped
+        // around the game; wineserver keeps it after this spawn returns.
+        try spawnLoader(
+            wineBinary: loader,
+            arguments: wineStartArguments(exePath: exePath, extra: arguments),
+            environment: env,
+            workingDirectory: cwd,
+            logPath: logPath
+        )
+        return nil
+    }
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: wineBinary)
-        // `start /unix <path>` rather than passing the exe path straight to wine - captured live
-        // from what Sikarugir's own Configure "Test Run" actually invokes (watched via `ps aux`
-        // the instant it was clicked), not a guess. `start.exe` is wine's own real, documented
-        // helper for launching a program from a host (unix-style) path, and does its own path
-        // translation/launch setup that a bare `wine <path>` invocation skips.
-        process.arguments = ["start", "/unix", exePath] + arguments
-        // Matches what actually double-clicking an exe in Explorer does: run with the exe's own
-        // folder as the working directory. A real, confirmed cause of custom games (Unreal Engine
-        // titles especially, which often resolve their own Content/Saved folders relative to the
-        // process's working directory, not just the exe's location) launching and immediately
-        // quitting through ExeDock - without this, the wine process inherited ExeDock's own working
-        // directory instead, which the game's own asset-loading code was never expecting.
-        process.currentDirectoryURL = URL(fileURLWithPath: (exePath as NSString).deletingLastPathComponent)
-        var env = ProcessInfo.processInfo.environment
-        env["WINEPREFIX"] = bottle.prefixPath
-        if !libraryPath.isEmpty {
-            env["DYLD_FALLBACK_LIBRARY_PATH"] = libraryPath
+    /// `posix_spawn` with `POSIX_SPAWN_SETSID`, the same shape as CrossOver's `exec` of the loader:
+    /// the new process is not in Playdock's process group, so closing a screen here does not
+    /// signal the game.
+    private static func spawnLoader(wineBinary: String, arguments: [String], environment: [String: String], workingDirectory: String, logPath: String) throws {
+        let logFd = open(logPath, O_WRONLY | O_CREAT | O_TRUNC, 0o644)
+        defer { if logFd >= 0 { close(logFd) } }
+
+        var actions: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&actions)
+        defer { posix_spawn_file_actions_destroy(&actions) }
+        if logFd >= 0 {
+            posix_spawn_file_actions_adddup2(&actions, logFd, STDOUT_FILENO)
+            posix_spawn_file_actions_adddup2(&actions, logFd, STDERR_FILENO)
+            posix_spawn_file_actions_addclose(&actions, logFd)
         }
-        for (key, value) in config.environment { env[key] = value }
-        process.environment = env
-        process.standardOutput = logHandle
-        process.standardError = logHandle
-        try process.run()
-        return process
+        posix_spawn_file_actions_addchdir_np(&actions, workingDirectory)
+
+        var attr: posix_spawnattr_t?
+        posix_spawnattr_init(&attr)
+        defer { posix_spawnattr_destroy(&attr) }
+        posix_spawnattr_setflags(&attr, Int16(POSIX_SPAWN_SETSID))
+
+        let argvStrings = [wineBinary] + arguments
+        let argvC = argvStrings.map { strdup($0) }
+        defer { argvC.forEach { free($0) } }
+        var cArgv: [UnsafeMutablePointer<CChar>?] = argvC.map { UnsafeMutablePointer($0) }
+        cArgv.append(nil)
+
+        let envC = environment.map { strdup("\($0.key)=\($0.value)") }
+        defer { envC.forEach { free($0) } }
+        var cEnv: [UnsafeMutablePointer<CChar>?] = envC.map { UnsafeMutablePointer($0) }
+        cEnv.append(nil)
+
+        var pid: pid_t = 0
+        let rc = posix_spawn(&pid, wineBinary, &actions, &attr, &cArgv, &cEnv)
+        guard rc == 0 else { throw RunError.spawnFailed(rc) }
     }
 }
 

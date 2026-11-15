@@ -34,12 +34,12 @@ struct SteamLibraryTests {
         #expect(parsed?.lastUpdated == Date(timeIntervalSince1970: 1_700_000_000))
     }
 
-    @Test func partiallyInstalledGameIsExcluded() {
+    @Test func partiallyInstalledGameStaysVisibleButNotPlayable() {
         // bit 0x2 ("update required") without bit 0x4 ("fully installed") - a download in
-        // progress whose folder already exists must not show up as launchable.
-        #expect(SteamLibrary.parseManifest(manifest(stateFlags: "2")) == nil)
-        #expect(SteamLibrary.parseManifest(manifest(stateFlags: "6")) != nil) // 0x2 | 0x4
-        #expect(SteamLibrary.parseManifest(manifest(stateFlags: "4")) != nil)
+        // progress whose folder already exists stays in the library and must not launch.
+        #expect(SteamLibrary.parseManifest(manifest(stateFlags: "2"))?.playable == false)
+        #expect(SteamLibrary.parseManifest(manifest(stateFlags: "6"))?.playable == true) // 0x2 | 0x4
+        #expect(SteamLibrary.parseManifest(manifest(stateFlags: "4"))?.playable == true)
     }
 
     @Test func missingOrUnparseableStateFlagsStaysIncluded() {

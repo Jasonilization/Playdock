@@ -76,6 +76,7 @@ final class AppModel: ObservableObject {
         refreshSteamProfile()
         customGames = CustomGameStore.loadAll()
         observeAppActivation()
+        startLibraryPoll()
         // Off the main thread on purpose: retention lists and stats a directory that can hold
         // hundreds of files after months of use - startup shouldn't wait on that.
         Task.detached(priority: .utility) { LaunchLogRetention.prune() }
@@ -86,6 +87,24 @@ final class AppModel: ObservableObject {
     /// installing a Steam game (real or Mac-native), removing a wrapper app, or anything else that
     /// changes on disk while Playdock sits in the background never shows up without a full relaunch.
     /// Registered once; safe to call repeatedly since every refresh method it calls already is.
+    /// Manifests change while Steam stays in front and Playdock is behind it. Coming back to
+    /// the app is too late for a game that finished downloading in that time.
+    private var libraryPollTask: Task<Void, Never>?
+
+    private func startLibraryPoll() {
+        guard libraryPollTask == nil else { return }
+        libraryPollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(45))
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard let self, !self.isLoadingSteamGames else { return }
+                    self.refreshSteamGames()
+                }
+            }
+        }
+    }
+
     private func observeAppActivation() {
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
@@ -106,15 +125,23 @@ final class AppModel: ObservableObject {
     /// through the real, separate macOS Steam client - which isn't gated on that at all, since it's
     /// a completely different Steam install ExeDock doesn't manage or need to unlock anything for.
     func refreshSteamGames() {
-        let scanWineBottle = isGameModeUnlocked
-        isLoadingSteamGames = true
+        // Only the first scan, while the library is still empty, needs the spinner.
+        // Later scans (coming back to the app, the 45s poll) used to flip this flag
+        // and replace the game list even when nothing changed, which rebuilt the
+        // whole library each time.
+        if steamGames.isEmpty { isLoadingSteamGames = true }
         Task.detached(priority: .utility) { [weak self] in
-            let wineGames = scanWineBottle ? SteamLibrary.installedGames() : []
+            let wineGames = SteamLibrary.installedGames()
             let nativeGames = SteamLibrary.installedNativeMacGames()
             let games = wineGames + nativeGames
+            let missing = wineGames.filter { CompatibilityCache.load(appID: $0.appID) == nil }
             await MainActor.run { [weak self] in
-                self?.steamGames = games
-                self?.isLoadingSteamGames = false
+                guard let self else { return }
+                if self.steamGames != games { self.steamGames = games }
+                if self.isLoadingSteamGames { self.isLoadingSteamGames = false }
+            }
+            for game in missing {
+                _ = await CompatibilityFinder.shared.recommendation(for: game)
             }
         }
     }
@@ -208,11 +235,27 @@ final class AppModel: ObservableObject {
     /// their executable directly - see `SteamGame.iconExePath` for why. Uses that game's own
     /// settings override if it has one.
     func launchSteamGame(_ game: SteamGame) {
+        if game.isPreviewSample {
+            errorMessage = "That's a layout preview, not an installed game."
+            return
+        }
+        if game.isDownloading {
+            errorMessage = "\(game.name) is still downloading in Steam."
+            return
+        }
         if game.source == .nativeMac {
             launchNativeMacSteamGame(game)
             return
         }
-        launchSteamGame(game, using: config(for: game))
+        let hasOwnSettings = perGameConfigs[game.appID] != nil
+        let base = hasOwnSettings ? config(for: game) : GameModeConfig.maximumCompatibility
+        if let cached = CompatibilityCache.load(appID: game.appID), cached.confidence == .high {
+            var config = cached.applied(onto: base)
+            if config.d3dMetal && config.dxvk { config.dxvk = false }
+            launchSteamGame(game, using: config)
+        } else {
+            launchSteamGame(game, using: base)
+        }
     }
 
     /// Same launch, but with a specific config rather than the game's saved override - used by the
@@ -221,9 +264,13 @@ final class AppModel: ObservableObject {
     /// at a `nativeMac` one, which has no ExeDock-managed config to experiment with in the first
     /// place.
     func launchSteamGame(_ game: SteamGame, using config: GameModeConfig) {
+        guard let arguments = game.wineSteamLaunchArguments else {
+            errorMessage = "That's a layout preview, not an installed game."
+            return
+        }
         guard ensureSteamStillInstalled() else { return }
         launchSteam(
-            target: .game(game.appID), arguments: ["-applaunch", game.appID], displayName: game.name,
+            target: .game(game.appID), arguments: arguments, displayName: game.name,
             config: config, recordOutcomeFor: game.appID
         )
     }
@@ -256,8 +303,7 @@ final class AppModel: ObservableObject {
         guard SteamInstaller.isSteamInstalled else {
             isGameModeUnlocked = false
             steamStatus = .notInstalled
-            errorMessage = "Steam isn't where ExeDock expected it anymore - reinstalling…"
-            installAndRunSteam()
+            errorMessage = "Steam isn't installed in Playdock yet. Use Install Steam on the library."
             return false
         }
         return true
@@ -287,10 +333,6 @@ final class AppModel: ObservableObject {
                 await MainActor.run { [weak self] in self?.errorMessage = error.localizedDescription }
                 if let appID { LocalOutcomeTracker.record(appID: appID, config: config, launchErrored: true) }
             }
-            // Steam's own window can take a while to appear even after the process starts (first
-            // launch, or a self-update - real startups seen taking 10+ seconds) - keep the "in
-            // progress" indicator up for a bit so it doesn't flash by before anyone notices it.
-            try? await Task.sleep(for: .seconds(6))
             await MainActor.run { [weak self] in self?.launchingTarget = nil }
         }
     }
@@ -318,7 +360,6 @@ final class AppModel: ObservableObject {
                 self.steamStatus = .installed
                 self.isGameModeUnlocked = true
                 self.selectedSection = .gameMode
-                self.openSteamClient()
                 self.refreshBottlesAndApps()
                 self.refreshSteamGames()
                 self.refreshSteamProfile()
@@ -400,19 +441,21 @@ final class AppModel: ObservableObject {
             errorMessage = "\(game.effectiveName)'s executable can't be found anymore - use Locate Game to point Playdock at it again."
             return
         }
-        let bottle = resolvedBottle(forExePath: game.exePath)
-        let config = config(for: game)
+        let bottle = bottle(for: game)
+        let hasOwnSettings = perGameConfigs[game.id] != nil
+        var config = hasOwnSettings ? config(for: game) : GameModeConfig.maximumCompatibility
+        if !hasOwnSettings, let cached = CompatibilityCache.load(appID: game.id), cached.confidence == .high {
+            config = cached.applied(onto: config)
+            if config.d3dMetal && config.dxvk { config.dxvk = false }
+        }
         launchingTarget = .custom(game.id)
         statusMessage = "Launching \(game.effectiveName)…"
+        let usesOwnBottle = game.bottleID != nil
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                // A returned `nil` means the launch was delegated to the wrapper's own Configure
-                // app (see `ExeRunner.run`'s own doc comment) rather than ExeDock running the exe
-                // itself - a real launch either way, just one this code doesn't hold a Process
-                // handle for.
                 try await ExeRunner.run(
                     exePath: game.exePath, in: bottle, arguments: game.launchArguments, config: config,
-                    preferWrapperEngine: true
+                    preferWrapperEngine: !usesOwnBottle
                 )
                 await MainActor.run { [weak self] in self?.statusMessage = "Launched \(game.effectiveName)" }
             } catch {
@@ -434,5 +477,14 @@ final class AppModel: ObservableObject {
     /// so the launch overlay can show which bottle a custom game is actually about to run from.
     func resolvedBottle(forExePath exePath: String) -> Bottle {
         CDriveScanner.allKnownBottles().first { exePath.hasPrefix($0.driveCPath) } ?? BottleManager.shared.defaultBottle
+    }
+
+    /// A game with its own bottle always launches there. Older entries still resolve by
+    /// whichever prefix already contains the exe.
+    func bottle(for game: CustomGame) -> Bottle {
+        if let bottleID = game.bottleID {
+            return BottleManager.shared.gameBottle(id: bottleID, name: game.effectiveName)
+        }
+        return resolvedBottle(forExePath: game.exePath)
     }
 }

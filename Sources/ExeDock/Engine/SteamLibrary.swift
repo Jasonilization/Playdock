@@ -14,7 +14,21 @@ enum SteamLibrary {
     }
 
     static func installedGames() -> [SteamGame] {
-        installedGames(inSteamAppsPath: wineBottleSteamAppsPath, source: .wineBottle, idPrefix: nil)
+        wineBottleSteamAppsPaths()
+            .flatMap { installedGames(inSteamAppsPath: $0, source: .wineBottle, idPrefix: nil) }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    /// The Windows Steam bottle can have more than one library folder, same as the Mac client.
+    /// `libraryfolders.vdf` sits next to the default `steamapps`.
+    private static func wineBottleSteamAppsPaths() -> [String] {
+        let defaultPath = wineBottleSteamAppsPath
+        let vdfPath = (defaultPath as NSString).appendingPathComponent("libraryfolders.vdf")
+        guard let text = try? String(contentsOfFile: vdfPath, encoding: .utf8) else {
+            return FileManager.default.fileExists(atPath: defaultPath) ? [defaultPath] : []
+        }
+        let paths = libraryPaths(fromLibraryFoldersVDF: text)
+        return paths.isEmpty ? [defaultPath] : paths
     }
 
     private static let nativeMacSteamRoot = ("~/Library/Application Support/Steam" as NSString).expandingTildeInPath
@@ -65,6 +79,9 @@ enum SteamLibrary {
         let sizeOnDisk: Int64?
         let buildID: String?
         let lastUpdated: Date?
+        /// False while Steam's StateFlags is missing the fully-installed bit. The game still
+        /// belongs on the library so a download in progress is visible.
+        let playable: Bool
     }
 
     /// The pure half of manifest parsing - field extraction plus both "is this actually a
@@ -77,13 +94,10 @@ enum SteamLibrary {
               let installDir = value(for: "installdir", in: text),
               !ignoredNames.contains(name.lowercased()) else { return nil }
 
-        // Steam sets bit 0x4 in StateFlags once an app is fully installed and playable -
-        // without this check, a game whose download is still in progress (its folder
-        // already exists, just incomplete) would show up as launchable. Treat a missing/
-        // unparseable StateFlags leniently (include it) rather than hiding a real game.
-        if let stateFlags = value(for: "StateFlags", in: text).flatMap({ Int($0) }), stateFlags & 0x4 == 0 {
-            return nil
-        }
+        // Steam sets bit 0x4 in StateFlags once an app is fully installed. A download that
+        // already has a folder stays in the library, marked not playable, instead of vanishing.
+        // A missing or unreadable StateFlags stays playable so a real game is not hidden.
+        let playable = value(for: "StateFlags", in: text).flatMap { Int($0) }.map { $0 & 0x4 != 0 } ?? true
 
         return ParsedManifest(
             appID: appID,
@@ -92,7 +106,8 @@ enum SteamLibrary {
             sizeOnDisk: value(for: "SizeOnDisk", in: text).flatMap { Int64($0) },
             buildID: value(for: "buildid", in: text),
             lastUpdated: value(for: "LastUpdated", in: text).flatMap { TimeInterval($0) }
-                .flatMap { $0 > 0 ? Date(timeIntervalSince1970: $0) : nil }
+                .flatMap { $0 > 0 ? Date(timeIntervalSince1970: $0) : nil },
+            playable: playable
         )
     }
 
@@ -118,7 +133,8 @@ enum SteamLibrary {
                     sizeOnDisk: (parsed.sizeOnDisk ?? 0) > 0 ? parsed.sizeOnDisk : nil,
                     buildID: (parsed.buildID != "0") ? parsed.buildID : nil,
                     lastUpdated: parsed.lastUpdated,
-                    source: source
+                    source: source,
+                    isDownloading: !parsed.playable
                 )
             }
         return games.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }

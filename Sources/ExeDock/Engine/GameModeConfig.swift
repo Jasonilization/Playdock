@@ -4,6 +4,18 @@ import Foundation
 /// (confirmed by inspecting Pragmata.app / Steam.app's Info.plist), surfaced for the Steam/game
 /// bottle. These aren't new invented settings - they mirror what Sikarugir already exposes.
 struct GameModeConfig: Equatable, Codable, Hashable {
+    /// The stack that starts the most titles on this Mac: Apple's D3DMetal, MoltenVK, and
+    /// fast sync. DXVK stays off because it fights D3DMetal when both are set.
+    static var maximumCompatibility: GameModeConfig {
+        var config = GameModeConfig()
+        config.d3dMetal = true
+        config.dxvk = false
+        config.dxmt = false
+        config.moltenVKCX = true
+        config.fastSync = true
+        return config
+    }
+
     var d3dMetal = true
     var dxvk = false
     var dxmt = false
