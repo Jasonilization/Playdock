@@ -85,6 +85,8 @@ struct GameModeView: View {
     @LocalState private var detailCustomGame: CustomGame?
     /// Catalog ids whose client is actually in a bottle. Empty means the edge shows the ? guide.
     @LocalState private var installedLauncherIDs: [String] = []
+    /// Which installed launcher the top-right name and picture belong to.
+    @LocalState private var accountLauncherID = "steam"
     @LocalState private var showingLauncherGuide = false
     /// Everywhere a controller's D-pad can currently be focused on the dashboard - the toolbar
     /// (Refresh/Settings), a card in the grid, or the floating Steam icon. `nil` until the first
@@ -560,52 +562,10 @@ struct GameModeView: View {
     /// offer Refresh/Settings; everything else (art, ratings, controller navigation) lives in the
     /// grid and the Game Detail view instead of competing for space up here.
     private var header: some View {
-        HStack(spacing: 10) {
-            profileAvatar
-            SkinTitleText(text: model.steamProfile?.personaName ?? L("Steam"), size: 17, lineLimit: 1)
-            Text(installedGameCountLabel)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            if libraryLayout != .grid {
-                librarySearchField
-                    .frame(maxWidth: 280)
-            }
-            Spacer()
-            // Grouped under one shared, skin-tinted backing instead of floating as separate bordered
-            // controls, matching the rest of the top bar's own look. Sort lives
-            // here rather than inside the grid's own content now - the Grid layout's search/sort
-            // strip was replaced by each skin's own real, functional topbar search field (see
-            // `SkinWebGridView`), but sort has no equivalent in any of the ten mockups (a real app
-            // capability the mockups never needed), so it stays as native chrome alongside
-            // Add/Refresh/Settings instead of being dropped - it still governs every layout's
-            // ordering, not just Grid's.
-            HStack(spacing: 14) {
-                favoritesToggle
-                    .focusRing(isControlFocused(.favorites))
-                sortMenu
-                    .focusRing(isControlFocused(.sort))
-                headerIconButton(systemImage: "plus", help: L("Add Game"), isFocused: isControlFocused(.add)) {
-                    showingAddGameSheet = true
-                }
-                .keyboardShortcut("n", modifiers: .command)
-
-                headerIconButton(systemImage: "arrow.clockwise", help: L("Refresh"), isFocused: isControlFocused(.refresh)) {
-                    model.hardRefreshGameInfo()
-                }
-                .keyboardShortcut("r", modifiers: .command)
-                .disabled(model.isLoadingSteamGames || model.isHardRefreshingGameInfo)
-
-                headerIconButton(systemImage: "gearshape", help: L("Settings"), isFocused: isControlFocused(.settings)) {
-                    openSettings()
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(skin.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous)
-                    .strokeBorder(skin.accent.opacity(0.18), lineWidth: skin.borderWidth)
-            )
+        HStack(spacing: 12) {
+            headerTools
+            Spacer(minLength: 12)
+            accountChip
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
@@ -626,19 +586,112 @@ struct GameModeView: View {
         .animation(.easeInOut(duration: 0.25), value: skinRaw)
     }
 
-    /// "make the sorting part on the top way better visually" - the plain native `Picker` this
-    /// replaced rendered as bare system menu chrome with no relationship to the active skin at
-    /// all. A themed pill - icon, current value, chevron - in the skin's own accent, matching the
-    /// same capsule/border language `PlaydockButtonStyle`'s compact buttons already use elsewhere.
-    /// Heart toggles the whole-lists favorites-only filter - matches the sort capsule's chrome
-    /// exactly so the pair reads as one control family.
+    /// Search and the library actions share one field. The icons use the same fill and border
+    /// as the text, instead of a second bar beside it.
+    private var headerTools: some View {
+        HStack(spacing: 2) {
+            librarySearchField
+                .frame(maxWidth: 260)
+            favoritesToggle
+                .focusRing(isControlFocused(.favorites))
+            sortMenu
+                .focusRing(isControlFocused(.sort))
+            headerIconButton(systemImage: "plus", help: L("Add Game"), isFocused: isControlFocused(.add)) {
+                showingAddGameSheet = true
+            }
+            .keyboardShortcut("n", modifiers: .command)
+            headerIconButton(systemImage: "arrow.clockwise", help: L("Refresh"), isFocused: isControlFocused(.refresh)) {
+                model.hardRefreshGameInfo()
+            }
+            .keyboardShortcut("r", modifiers: .command)
+            .disabled(model.isLoadingSteamGames || model.isHardRefreshingGameInfo)
+            headerIconButton(systemImage: "gearshape", help: L("Settings"), isFocused: isControlFocused(.settings)) {
+                openSettings()
+            }
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 4)
+        .padding(.vertical, 3)
+        .background(skin.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous)
+                .strokeBorder(skin.accent.opacity(0.18), lineWidth: skin.borderWidth)
+        )
+    }
+
+    /// The top-right account. Steam uses the signed-in picture and persona. Every other
+    /// installed launcher uses that client's own icon and name. A menu switches among them.
+    private var accountChip: some View {
+        let launchers = installedLaunchers
+        let current = launchers.first { $0.id == accountLauncherID } ?? launchers.first
+        return Group {
+            if launchers.count > 1, let current {
+                Menu {
+                    ForEach(launchers) { item in
+                        Button {
+                            accountLauncherID = item.id
+                        } label: {
+                            if item.id == current.id {
+                                Label(accountTitle(item), systemImage: "checkmark")
+                            } else {
+                                Text(accountTitle(item))
+                            }
+                        }
+                    }
+                } label: {
+                    accountLabel(current)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            } else {
+                accountLabel(current)
+            }
+        }
+    }
+
+    private func accountTitle(_ item: CatalogInstaller) -> String {
+        if item.isSteam, let name = model.steamProfile?.personaName, !name.isEmpty { return name }
+        return item.name
+    }
+
+    private func accountLabel(_ item: CatalogInstaller?) -> some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .trailing, spacing: 0) {
+                SkinTitleText(text: item.map(accountTitle) ?? L("Playdock"), size: 15, lineLimit: 1)
+                Text(installedGameCountLabel)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            accountImage(item)
+        }
+    }
+
+    @ViewBuilder
+    private func accountImage(_ item: CatalogInstaller?) -> some View {
+        if item?.isSteam == true, let avatarPath = model.steamProfile?.avatarPath, let image = LocalImageCache.image(atPath: avatarPath) {
+            Image(nsImage: image)
+                .resizable()
+                .frame(width: 32, height: 32)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        } else if let item {
+            CatalogIcon(name: item.name, host: item.pageURL.host, bundleID: item.macBundleID, side: 32)
+        } else {
+            Image(systemName: "person.crop.circle.fill")
+                .resizable()
+                .foregroundStyle(.secondary)
+                .frame(width: 32, height: 32)
+        }
+    }
+
+    /// Heart toggles the favorites-only filter. It sits in the search row, so it stays an icon.
     private var favoritesToggle: some View {
         Button {
             withAnimation(PlaydockMotion.chrome) { favoritesOnly.toggle() }
         } label: {
             Image(systemName: favoritesOnly ? "heart.fill" : "heart")
-                .font(.callout.weight(.medium))
-                .foregroundStyle(favoritesOnly ? .pink : .secondary)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(favoritesOnly ? .pink : skin.accent)
+                .frame(width: 32, height: 28)
         }
         .buttonStyle(.plain)
         .help(L(favoritesOnly ? "Show all games" : "Show only favorites"))
@@ -659,22 +712,12 @@ struct GameModeView: View {
                 }
             }
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.caption.weight(.semibold))
-                Text(L(sortOption.rawValue))
-                    .font(.callout.weight(.medium))
-                Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
-            }
-            .fontDesign(skin.fontDesign)
-            .foregroundStyle(skin.accent)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(skin.accent.opacity(0.12), in: Capsule())
-            .overlay(Capsule().strokeBorder(skin.accent.opacity(0.3), lineWidth: skin.borderWidth))
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(skin.accent)
+                .frame(width: 32, height: 28)
         }
+        .help(L(sortOption.rawValue))
         .menuStyle(.borderlessButton)
         .fixedSize()
         .animation(PlaydockMotion.chrome, value: sortOption)
@@ -686,8 +729,11 @@ struct GameModeView: View {
     private func headerIconButton(systemImage: String, help: String, isFocused: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(skin.accent)
+                .frame(width: 32, height: 28)
         }
-        .buttonStyle(SkinIconButtonStyle(skin: skin))
+        .buttonStyle(.plain)
         .focusRing(isFocused)
         .help(help)
     }
@@ -701,6 +747,9 @@ struct GameModeView: View {
     private func refreshInstalledLaunchers() {
         installedLauncherIDs = CatalogInstaller.all.compactMap { item in
             item.installedExePath() == nil ? nil : item.id
+        }
+        if !installedLauncherIDs.contains(accountLauncherID) {
+            accountLauncherID = installedLauncherIDs.first ?? "steam"
         }
     }
 
@@ -760,6 +809,7 @@ struct GameModeView: View {
         let shape = LeftRoundedRect(radius: 14)
         return Button {
             guard model.launchingTarget == nil else { return }
+            accountLauncherID = item.id
             model.openCatalogItem(item)
         } label: {
             HStack(spacing: 8) {
@@ -934,23 +984,7 @@ struct GameModeView: View {
         .animation(PlaydockMotion.chrome, value: showSettingsLauncher)
     }
 
-    private var profileAvatar: some View {
-        Group {
-            if let avatarPath = model.steamProfile?.avatarPath, let image = LocalImageCache.image(atPath: avatarPath) {
-                Image(nsImage: image).resizable()
-            } else {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(width: 34, height: 34)
-        .clipShape(RoundedRectangle(cornerRadius: 9))
-        .hoverSpin()
-    }
-
-    /// Shelves, sidebar, carousel, and the rest have no search field inside the page. Grid keeps
-    /// the one drawn by each skin. This field drives the same `search` filter those layouts already use.
+    /// One search field for every layout, including the grid. The page itself no longer draws a second one.
     private var librarySearchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
@@ -963,13 +997,6 @@ struct GameModeView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(skin.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous)
-                .strokeBorder(skin.accent.opacity(0.18), lineWidth: skin.borderWidth)
-        )
         .focusRing(controllerObserver.libraryFocus == .search)
     }
 

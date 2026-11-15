@@ -180,10 +180,6 @@ function luxuryKicker(games) {
 function design_luxury(games, meta) {
   return `
     <div class="lux">
-      <div class="topbar">
-        <div class="spacer"></div>
-        <input id="search-input" class="search" type="text" placeholder="Search your games" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)">
-      </div>
       <main>
         <h1>Your Library</h1>
         <p class="kicker">${luxuryKicker(games)}</p>
@@ -196,7 +192,6 @@ function design_luxury(games, meta) {
 function design_brutal(games, meta) {
   return `
     <div class="brut">
-      <div class="topbar"><div class="who">PLAYDOCK</div><input id="search-input" class="search" type="text" placeholder="SEARCH YOUR GAMES_" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
       <main><h1>Library</h1>${games.length ? "" : '<p class="kicker">Nothing here yet. Install Steam or add a game.</p>'}<div class="grid">${CARDS.brutalist(games)}</div></main>
     </div>`;
 }
@@ -214,7 +209,6 @@ function design_cyber(games, meta) {
     : `${games.length} games${customCount ? ` · ${customCount} custom` : ''}`;
   return `
     <div class="cyber">
-      <div class="topbar"><span class="who">PLAY//DOCK</span><div class="spacer"></div><input id="search-input" class="search" type="text" placeholder="&gt; search_" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
       <main><h1>LIBRARY.SYS</h1><p class="kicker">${esc(kicker)}</p><div class="grid">${CARDS.cyber(games)}</div></main>
     </div>`;
 }
@@ -223,7 +217,6 @@ function design_cyber(games, meta) {
 function design_neu(games, meta) {
   return `
     <div class="neu">
-      <div class="topbar"><div class="spacer"></div><input id="search-input" class="search" type="text" placeholder="Search your games" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
       <main><h1>Your Library</h1>${games.length ? "" : '<p class="kicker">Nothing here yet. Install Steam or add a game.</p>'}<div class="grid">${CARDS.soft(games)}</div></main>
     </div>`;
 }
@@ -232,7 +225,6 @@ function design_neu(games, meta) {
 function design_pixel(games, meta) {
   return `
     <div class="pix">
-      <div class="topbar"><span class="who">PLAYDOCK</span><div class="spacer"></div><input id="search-input" class="search" type="text" placeholder="FIND GAME_" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
       <main><h1>SELECT GAME</h1>${games.length ? "" : '<p class="kicker">Nothing here yet. Install Steam or add a game.</p>'}<div class="grid">${CARDS.pixel(games)}</div></main>
       <div class="prompt">PRESS A TO SELECT</div>
     </div>`;
@@ -251,7 +243,6 @@ function design_list(games, meta) {
     </div>`).join('');
   return `
     <div class="lst">
-      <div class="topbar"><span class="who">Playdock</span><div class="spacer"></div><input id="search-input" class="search" type="text" placeholder="Search" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
       <main>
         <h1>Library</h1>
         <p class="sub">${games.length ? "Sorted by name" : "Nothing here yet. Install Steam or add a game."}</p>
