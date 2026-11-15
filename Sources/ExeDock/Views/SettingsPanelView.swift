@@ -529,12 +529,12 @@ struct SettingsPanelView: View {
                 }
             }
 
-            SettingsCard(skin: skin, title: L("Show Floating Steam Icon")) {
+            SettingsCard(skin: skin, title: L("Launcher icons")) {
                 VStack(spacing: 12) {
                     SettingsToggle(
                         skin: skin,
-                        title: L("Show Floating Steam Icon"),
-                        subtitle: L("The double-click-to-open-Steam icon in the corner of the grid. Turn off to collapse it to a small tab on the edge (still there, just out of the way)."),
+                        title: L("Show launcher names"),
+                        subtitle: L("Installed launchers sit on the right edge. Turn this on to show each name next to its icon. Turn it off to keep just the icon."),
                         isOn: $showSteamIcon,
                         isFocused: isPaneFocused(.showSteamIcon)
                     )

@@ -42,6 +42,7 @@ final class AppModel: ObservableObject {
     /// flag so only the control someone actually clicked shows a spinner, not every game card at once.
     enum LaunchTarget: Equatable {
         case steam
+        case launcher(String)
         case game(String)
         case custom(String)
     }
@@ -430,8 +431,22 @@ final class AppModel: ObservableObject {
             openSteamClient()
             return
         }
+        guard launchingTarget == nil else { return }
         guard let exe = item.installedExePath() else { return }
-        run(exePath: exe, bottle: item.bottle(named: item.name), displayName: item.name)
+        let bottle = item.bottle(named: item.name)
+        let name = item.name
+        let config = gameModeConfig
+        launchingTarget = .launcher(item.id)
+        statusMessage = "Launching \(name)…"
+        Task.detached(priority: .userInitiated) { [weak self] in
+            do {
+                try await ExeRunner.run(exePath: exe, in: bottle, config: config)
+                await MainActor.run { [weak self] in self?.statusMessage = "Launched \(name)" }
+            } catch {
+                await MainActor.run { [weak self] in self?.errorMessage = error.localizedDescription }
+            }
+            await MainActor.run { [weak self] in self?.launchingTarget = nil }
+        }
     }
 
     private func stageAndOpen(setupAt path: String, bottleID: String, bottleName: String, catalogID: String?) {

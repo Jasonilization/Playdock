@@ -23,6 +23,16 @@ struct CatalogInstaller: Identifiable, Hashable {
 
     var bottleID: String { "catalog-\(id)" }
 
+    /// The Mac app for this client, when one exists, so the edge tab can use that icon.
+    var macBundleID: String? {
+        switch id {
+        case "steam": return "com.valvesoftware.steam"
+        case "epic": return "com.epicgames.EpicGamesLauncher"
+        case "discord": return "com.hnc.Discord"
+        default: return nil
+        }
+    }
+
     func bottle(named displayName: String) -> Bottle {
         if isSteam { return BottleManager.shared.steamBottle }
         let trimmed = displayName.trimmingCharacters(in: .whitespacesAndNewlines)

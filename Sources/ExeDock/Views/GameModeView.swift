@@ -83,6 +83,9 @@ struct GameModeView: View {
     @LocalState private var launchOverlayCustomGame: CustomGame?
     @LocalState private var detailGame: SteamGame?
     @LocalState private var detailCustomGame: CustomGame?
+    /// Catalog ids whose client is actually in a bottle. Empty means the edge shows the ? guide.
+    @LocalState private var installedLauncherIDs: [String] = []
+    @LocalState private var showingLauncherGuide = false
     /// Everywhere a controller's D-pad can currently be focused on the dashboard - the toolbar
     /// (Refresh/Settings), a card in the grid, or the floating Steam icon. `nil` until the first
     /// D-pad press (mouse-only browsing shows no ring at all).
@@ -484,7 +487,10 @@ struct GameModeView: View {
         }
         .onAppear {
             runningTracker.syncWatchedGames(watchTargets)
+            refreshInstalledLaunchers()
         }
+        .onChange(of: model.steamStatus) { _ in refreshInstalledLaunchers() }
+        .onChange(of: model.programInstallMessage) { _ in refreshInstalledLaunchers() }
         .onChange(of: controllerObserver.directionPress?.token) { _ in
             guard isDashboardTheActiveControllerLayer, let direction = controllerObserver.directionPress?.direction else { return }
             moveFocus(direction)
@@ -674,139 +680,132 @@ struct GameModeView: View {
         .help(help)
     }
 
-    /// The way to open Steam itself - double-click, the same gesture as opening anything else on a
-    /// Mac. Floats over the bottom-right corner of the whole dashboard (moved off a big centered
-    /// tile that used to take up nearly half the screen, then off the header entirely), always
-    /// reachable without competing for
-    /// space with anything else in the layout. Uses Steam's own real icon when the native Mac
-    /// Steam.app is present on this machine (legitimately already installed by the user, same as
-    /// how AppIconProvider reads any other already-installed app's icon) - falling back to an
-    /// in-house glyph otherwise, since NSWorkspace can't extract an icon from a .exe buried in a
-    /// private, never-Finder-indexed Wine bottle. Shows exactly one spinner, right on the icon,
-    /// while launching.
-    private static let nativeSteamAppPath = "/Applications/Steam.app"
+    /// Installed store clients, in catalog order. A client with no installed program stays off
+    /// this edge. Steam is included only when its bottle actually has Steam.
+    private var installedLaunchers: [CatalogInstaller] {
+        installedLauncherIDs.compactMap { id in CatalogInstaller.all.first { $0.id == id } }
+    }
 
-    /// One continuous view for both the full icon and its collapsed edge tab - "it disappears for
-    /// a second... should be smooth, like when you minimize your window on macOS," a real,
-    /// confirmed gap from the previous version, which swapped between two entirely separate views
-    /// (one unmounting before the other finished mounting). Both states' content stay mounted the
-    /// whole time and simply cross-fade while the shared container smoothly resizes/reshapes under
-    /// them, so there's never a frame where neither is visible.
-    private var steamFloatingIcon: some View {
-        let isLaunching = model.launchingTarget == .steam
+    private func refreshInstalledLaunchers() {
+        installedLauncherIDs = CatalogInstaller.all.compactMap { item in
+            item.installedExePath() == nil ? nil : item.id
+        }
+    }
+
+    /// The minimized edge tabs, stacked. Names show only while the settings toggle is on.
+    private var launcherDockHeight: CGFloat {
+        if installedLaunchers.isEmpty { return 78 }
+        let row: CGFloat = showSteamIcon ? 44 : 58
+        let count = CGFloat(installedLaunchers.count)
+        // The chevron tab sits above the icons and is how the whole column minimizes.
+        return 28 + 8 + count * row + max(0, count - 1) * 8
+    }
+
+    /// Same minimized edge tab Steam already used, once per installed launcher. Nothing here
+    /// when a client was never installed. With none at all, one ? tab explains how to add one.
+    private var launcherDock: some View {
+        VStack(spacing: 8) {
+            if installedLaunchers.isEmpty {
+                missingLauncherTab
+            } else {
+                launcherMinimizeTab
+                ForEach(installedLaunchers) { item in
+                    launcherTab(item)
+                }
+            }
+        }
+        .padding(.bottom, 40)
+        .animation(PlaydockMotion.chrome, value: showSteamIcon)
+        .animation(PlaydockMotion.chrome, value: installedLauncherIDs)
+    }
+
+    /// The same edge chevron the Steam tab used. It minimizes or shows the names for every
+    /// installed launcher at once.
+    private var launcherMinimizeTab: some View {
+        let shape = LeftRoundedRect(radius: 10)
+        let width: CGFloat = showSteamIcon ? 168 : 34
+        return Button {
+            showSteamIcon.toggle()
+        } label: {
+            Image(systemName: showSteamIcon ? "chevron.right" : "chevron.left")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(skin.accent)
+                .frame(width: width, height: 28)
+        }
+        .buttonStyle(.plain)
+        .help(showSteamIcon ? "Minimize the launcher icons" : "Show launcher names")
+        .frame(width: width, height: 28)
+        .background(skin.topBarBackground, in: shape)
+        .overlay(shape.stroke(skin.accent.opacity(0.4), lineWidth: max(skin.borderWidth, 1)))
+        .clipShape(shape)
+    }
+
+    private func launcherTab(_ item: CatalogInstaller) -> some View {
         let collapsed = !showSteamIcon
-        // A real, confirmed layout bug in the first version of this: the full-icon content kept
-        // an unconditional 200x200 frame even while "collapsed," so the ZStack's own natural size
-        // never actually matched the smaller frame this whole view was told to report - the
-        // outer .frame() call can change what size a view *reports upward*, but it doesn't reflow
-        // topLeading-aligned children that still think they have 200x200 to lay out in, which is
-        // exactly why the collapsed tab landed somewhere unreachable/invisible instead of neatly
-        // docked to the edge. Every child below now sizes itself to this *same* pair of numbers,
-        // so there's only ever one real size in play, not two disagreeing ones.
-        let width: CGFloat = collapsed ? 34 : 72
-        let height: CGFloat = collapsed ? 116 : 72
-        let wellRadius = min(skin.cardRadius, collapsed ? 16 : 44)
-        let well: AnyShape = collapsed
-            ? AnyShape(LeftRoundedRect(radius: max(wellRadius, 6)))
-            : AnyShape(PlaydockCardShape(skin: skin, cornerRadius: wellRadius))
-
-        return ZStack(alignment: .topLeading) {
-            ZStack {
-                steamIcon(size: 48, cornerRadius: 14)
-                    .opacity(isLaunching ? 0.3 : 1)
-                if isLaunching {
-                    ProgressView().controlSize(.large).scaleEffect(1.8)
+        let launching = (item.isSteam && model.launchingTarget == .steam) || model.launchingTarget == .launcher(item.id)
+        let width: CGFloat = collapsed ? 34 : 168
+        let height: CGFloat = collapsed ? 58 : 44
+        let shape = LeftRoundedRect(radius: 14)
+        return Button {
+            guard model.launchingTarget == nil else { return }
+            model.openCatalogItem(item)
+        } label: {
+            HStack(spacing: 8) {
+                CatalogIcon(name: item.name, host: item.pageURL.host, bundleID: item.macBundleID, side: collapsed ? 22 : 26)
+                    .opacity(launching ? 0.35 : 1)
+                if !collapsed {
+                    Text(item.name)
+                        .font(.callout.weight(.semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(skin.accent)
                 }
             }
             .frame(width: width, height: height)
-            .contentShape(well)
-            // No .pressPush()/other gesture-based press effect here on purpose - a real bug, found
-            // live: a simultaneous zero-distance DragGesture (which is what that press effect used to
-            // detect "pressed") competing with .onTapGesture(count: 2) on the same view could silently
-            // swallow the double-click recognition entirely, so double-clicking did nothing at all - no
-            // spinner, no launch. The isLaunching-driven opacity/spinner above is the only feedback
-            // this needs.
-            .onTapGesture(count: 2) {
-                model.openSteamClient()
-            }
-            .opacity(collapsed ? 0 : 1)
-            .allowsHitTesting(!collapsed && model.launchingTarget == nil)
-            .help(isLaunching ? "Launching Steam…" : "Double-click to open Steam")
-
-            // "dont see the minimalize the steam icon button" - the Settings toggle alone wasn't
-            // discoverable enough; a small, always-visible control right on the icon itself is the
-            // real fix.
-            if !isLaunching {
-                Button {
-                    showSteamIcon = false
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(skin.accent)
-                        .frame(width: 22, height: 22)
-                        .background(skin.accent.opacity(0.16), in: Circle())
-                }
-                .buttonStyle(.plain)
-                .padding(6)
-                .opacity(collapsed ? 0 : 1)
-                .allowsHitTesting(!collapsed)
-                .help("Collapse the Steam icon to the edge")
-            }
-
-            // The collapsed edge tab - "should be on the edge but still expandable," not gone
-            // entirely. Always mounted (see this whole property's own doc comment above), just
-            // invisible/non-interactive while expanded.
-            Button {
-                showSteamIcon = true
-            } label: {
-                VStack(spacing: 8) {
-                    Image(systemName: "chevron.left")
-                        .font(.caption.weight(.bold))
-                    steamIcon(size: 26, cornerRadius: 7)
-                        .frame(width: 26, height: 26)
-                }
-                .foregroundStyle(skin.accent)
-                .padding(.vertical, 14)
-                .frame(width: width, height: height)
-            }
-            .buttonStyle(.plain)
-            .opacity(collapsed ? 1 : 0)
-            .allowsHitTesting(collapsed)
-            .help("Show the Steam icon")
+            .overlay { if launching { ProgressView().controlSize(.small) } }
         }
-        .frame(width: width, height: height, alignment: .topTrailing)
-        .background(skin.topBarBackground, in: well)
-        .overlay(well.stroke(skin.accent.opacity(0.4), lineWidth: max(skin.borderWidth, 1)))
-        .clipShape(well)
-        .shadow(color: skin.hasShadow ? .black.opacity(collapsed ? 0.3 : 0.35) : .clear, radius: collapsed ? 12 : 20, x: collapsed ? -2 : 0, y: collapsed ? 0 : 8)
-        .focusRing(isControlFocused(.steamIcon))
-        // Flush against the real trailing edge while collapsed - "should be on the edge" - a
-        // fixed 24pt inset only while expanded, matching the padding this always had.
-        .padding(.trailing, collapsed ? 0 : 24)
-        .padding(.bottom, collapsed ? 40 : 24)
-        .animation(PlaydockMotion.chrome, value: showSteamIcon)
+        .buttonStyle(.plain)
+        .help(launching ? "Launching \(item.name)…" : "Open \(item.name)")
+        .frame(width: width, height: height)
+        .background(skin.topBarBackground, in: shape)
+        .overlay(shape.stroke(skin.accent.opacity(0.4), lineWidth: max(skin.borderWidth, 1)))
+        .clipShape(shape)
+        .shadow(color: skin.hasShadow ? .black.opacity(0.3) : .clear, radius: 12, x: -2, y: 0)
     }
 
-    @ViewBuilder
-    private func steamIcon(size: CGFloat, cornerRadius: CGFloat) -> some View {
-        if FileManager.default.fileExists(atPath: Self.nativeSteamAppPath) {
-            Image(nsImage: AppIconProvider.icon(forPath: Self.nativeSteamAppPath))
-                .resizable()
-                .frame(width: size, height: size)
-        } else {
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(
-                    LinearGradient(
-                        colors: [Color(red: 0.53, green: 0.33, blue: 0.96), Color(red: 0.16, green: 0.18, blue: 0.52)],
-                        startPoint: .top, endPoint: .bottom
-                    )
-                )
-                .overlay(
-                    Image(systemName: "gamecontroller.fill")
-                        .font(.system(size: size * 0.4, weight: .medium))
-                        .foregroundStyle(.white)
-                )
-                .overlay(RoundedRectangle(cornerRadius: cornerRadius).strokeBorder(.white.opacity(0.15), lineWidth: 1))
+    /// No store client is installed. The ? stays on the edge; the guide says what a launcher is
+    /// and opens the Install tab.
+    private var missingLauncherTab: some View {
+        let shape = LeftRoundedRect(radius: 14)
+        return Button {
+            showingLauncherGuide = true
+        } label: {
+            Image(systemName: "questionmark")
+                .font(.callout.weight(.bold))
+                .foregroundStyle(skin.accent)
+                .frame(width: 34, height: 78)
+        }
+        .buttonStyle(.plain)
+        .help("No launcher installed")
+        .frame(width: 34, height: 78)
+        .background(skin.topBarBackground, in: shape)
+        .overlay(shape.stroke(skin.accent.opacity(0.4), lineWidth: max(skin.borderWidth, 1)))
+        .clipShape(shape)
+        .popover(isPresented: $showingLauncherGuide, arrowEdge: .leading) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("No launcher installed")
+                    .font(.headline)
+                Text("A launcher is the store client a game runs from, like Steam or the Epic Games Store. Install one and its icon shows up here.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: 260, alignment: .leading)
+                Button("Open Install") {
+                    showingLauncherGuide = false
+                    model.selectedSection = .install
+                }
+                .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
+            }
+            .padding(16)
         }
     }
 
@@ -825,7 +824,7 @@ struct GameModeView: View {
     /// site with this.
     private var cornerFloaters: some View {
         ZStack(alignment: .bottomTrailing) {
-            steamFloatingIcon
+            launcherDock
                 .allowsHitTesting(noDashboardOverlayActive)
             settingsFloatingLauncher
                 .allowsHitTesting(noDashboardOverlayActive && !showingSettings)
@@ -862,7 +861,7 @@ struct GameModeView: View {
         let height: CGFloat = collapsed ? 92 : 46
         // Clear the Steam icon whatever state it's in: expanded it's a 200pt icon 24pt off the
         // bottom, collapsed a 116pt edge tab starting 40pt up. Sit just above either.
-        let bottomInset: CGFloat = showSteamIcon ? (24 + 72 + 14) : (40 + 116 + 12)
+        let bottomInset: CGFloat = 40 + launcherDockHeight + 12
         let shape: AnyShape = collapsed ? AnyShape(LeftRoundedRect(radius: 14)) : AnyShape(Capsule())
 
         return ZStack(alignment: .topLeading) {
@@ -1023,7 +1022,7 @@ struct GameModeView: View {
 
     /// The edge tabs sit on top of the library. This keeps the last column out from under them.
     private var cornerReserve: CGFloat {
-        let steam: CGFloat = showSteamIcon ? 100 : 44
+        let steam: CGFloat = showSteamIcon && !installedLaunchers.isEmpty ? 180 : 44
         let settings: CGFloat = showSettingsLauncher ? 100 : 44
         return max(steam, settings)
     }

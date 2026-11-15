@@ -88,7 +88,7 @@ struct InstallersView: View {
             selection = .catalog(item.id)
         } label: {
             HStack(spacing: 10) {
-                CatalogIcon(name: item.name, host: item.pageURL.host, bundleID: item.isSteam ? "com.valvesoftware.steam" : localBundleID(item.id), side: 28)
+                CatalogIcon(name: item.name, host: item.pageURL.host, bundleID: item.macBundleID, side: 28)
                 Text(item.name)
                     .font(.system(size: 14, weight: .semibold))
                     .lineLimit(1)
@@ -147,7 +147,7 @@ struct InstallersView: View {
         let bottleName = bottleNames[item.id] ?? item.name
         return VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .top, spacing: 16) {
-                CatalogIcon(name: item.name, host: item.pageURL.host, bundleID: item.isSteam ? "com.valvesoftware.steam" : localBundleID(item.id), side: 64)
+                CatalogIcon(name: item.name, host: item.pageURL.host, bundleID: item.macBundleID, side: 64)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.name)
                         .font(.system(size: 28, weight: .bold))
@@ -422,17 +422,10 @@ struct InstallersView: View {
         model.installDownloadedProgram(at: programURL.path, bottleName: fileBottleName)
     }
 
-    private func localBundleID(_ id: String) -> String? {
-        switch id {
-        case "discord": return "com.hnc.Discord"
-        case "epic": return "com.epicgames.EpicGamesLauncher"
-        default: return nil
-        }
-    }
 }
 
 /// The vendor's own icon when this Mac has the app, otherwise the site icon, otherwise a letter.
-private struct CatalogIcon: View {
+struct CatalogIcon: View {
     let name: String
     let host: String?
     var bundleID: String?
@@ -460,7 +453,7 @@ private struct CatalogIcon: View {
     }
 }
 
-private actor CatalogIconCache {
+actor CatalogIconCache {
     static let shared = CatalogIconCache()
     private var memory: [String: NSImage] = [:]
 
