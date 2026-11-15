@@ -5,6 +5,7 @@ import AppKit
 final class AppModel: ObservableObject {
     enum SidebarSection: Hashable, CaseIterable {
         case gameMode
+        case install
         case cDrive
     }
 
@@ -45,6 +46,8 @@ final class AppModel: ObservableObject {
     /// Non-nil while a Steam/game launch is in flight - drives the spinner on whichever control
     /// started it, and blocks a second launch from starting until this clears (see `launchSteam`).
     @Published var launchingTarget: LaunchTarget?
+    /// Set while a downloaded Windows installer is being prepared. Nil once its window is open.
+    @Published var programInstallMessage: String?
     /// Debug-only: appends a handful of real, well-known games (with real appIDs, so their genuine
     /// Steam art/rating/description come through the normal metadata pipeline) so the grid's layout
     /// - especially the dynamic card sizing - can be checked with more than whatever's actually
@@ -303,7 +306,7 @@ final class AppModel: ObservableObject {
         guard SteamInstaller.isSteamInstalled else {
             isGameModeUnlocked = false
             steamStatus = .notInstalled
-            errorMessage = "Steam isn't installed in Playdock yet. Use Install Steam on the library."
+            errorMessage = "Steam isn't installed in Playdock yet. Open Install and run the Steam installer."
             return false
         }
         return true
@@ -348,6 +351,51 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Runs a setup program the user already downloaded, in a new Windows 10 bottle named
+    /// `bottleName`. Copies the file into that bottle, installs the usual runtime components,
+    /// then opens the installer window. It does not try to guess which game the setup produced.
+    func installDownloadedProgram(at exePath: String, bottleName: String) {
+        guard programInstallMessage == nil else { return }
+        guard !isInstallingSteam else {
+            errorMessage = "Steam is still installing. Wait for that to finish."
+            return
+        }
+        let trimmed = bottleName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let fileTitle = ((exePath as NSString).lastPathComponent as NSString).deletingPathExtension
+        let displayName = trimmed.isEmpty ? fileTitle : trimmed
+        let bottleID = "installer-" + fileTitle
+        programInstallMessage = "Preparing the bottle…"
+        Task.detached(priority: .userInitiated) { [weak self] in
+            do {
+                let bottle = BottleManager.shared.gameBottle(id: bottleID, name: displayName)
+                let wineBinary = try SikarugirEngine.wineBinaryPath()
+                try BottleManager.shared.ensureInitialized(bottle, wineBinary: wineBinary, scheduleRuntime: false)
+                await MainActor.run { self?.programInstallMessage = "Installing runtime components…" }
+                do {
+                    try await WinetricksRunner.runDefaultVerbs(in: bottle) { message in
+                        Task { @MainActor in self?.programInstallMessage = message }
+                    }
+                } catch {
+                    DiagnosticsLog.log("Installer runtime: \(error.localizedDescription)")
+                }
+                let fm = FileManager.default
+                let dest = (bottle.driveCPath as NSString).appendingPathComponent((exePath as NSString).lastPathComponent)
+                if fm.fileExists(atPath: dest) { try? fm.removeItem(atPath: dest) }
+                try fm.copyItem(atPath: exePath, toPath: dest)
+                await MainActor.run {
+                    self?.programInstallMessage = nil
+                    self?.statusMessage = "Opened \(displayName). Finish the setup in its window."
+                    self?.run(exePath: dest, bottle: bottle, displayName: displayName)
+                }
+            } catch {
+                await MainActor.run {
+                    self?.programInstallMessage = nil
+                    self?.errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
     func installAndRunSteam() {
         guard !isInstallingSteam else { return }
         steamStatus = .installing("Starting…")
@@ -359,7 +407,6 @@ final class AppModel: ObservableObject {
                 }
                 self.steamStatus = .installed
                 self.isGameModeUnlocked = true
-                self.selectedSection = .gameMode
                 self.refreshBottlesAndApps()
                 self.refreshSteamGames()
                 self.refreshSteamProfile()

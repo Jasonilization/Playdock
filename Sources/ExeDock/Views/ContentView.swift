@@ -32,7 +32,7 @@ struct ContentView: View {
                     // The Steam dashboard has its own header/search/launch flow - the generic drop
                     // zone and toolbar only make sense on the Exe Loader side, so they'd just be
                     // visual noise (and a distraction from "just click your game") on the main tab.
-                    if model.selectedSection != .gameMode {
+                    if model.selectedSection == .cDrive {
                         dropZone
                         Divider()
                     }
@@ -111,20 +111,13 @@ struct ContentView: View {
             sectionSwitcher
                 .overlay(alignment: .bottom) { ControllerConnectedGlow() }
             Spacer()
-            if model.selectedSection != .gameMode {
+            if model.selectedSection == .cDrive {
                 Button {
                     browseForExecutable()
                 } label: {
                     Label("Select EXE…", systemImage: "doc.badge.plus")
                 }
                 .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
-                Button {
-                    model.installAndRunSteam()
-                } label: {
-                    Label("Install & Run Steam", systemImage: "gamecontroller.fill")
-                }
-                .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
-                .disabled(model.isInstallingSteam)
             }
         }
         .padding(.horizontal, 16)
@@ -147,12 +140,9 @@ struct ContentView: View {
     private var sectionSwitcher: some View {
         HStack(spacing: 10) {
             sectionButton(.gameMode)
-            // A small visual gap, not a label - Steam still reads as the primary destination and
-            // C: Drive as the secondary "Exe Loader" tool, just without spending a whole sidebar
-            // section header on it. The old "Library" tab (a generic detected-apps browser) was
-            // removed entirely - "remove the other tab one, as that's the game browser," per live
-            // feedback: Game Mode's own dashboard is the real, polished game browser now, and a
-            // second, cruder one alongside it was pure redundancy.
+            sectionButton(.install)
+            // A small visual gap, not a label. The library is the game browser. Install is the
+            // catalog of setup programs. C: Drive is the bottle browser.
             Divider().frame(height: 20)
             sectionButton(.cDrive)
         }
@@ -169,7 +159,7 @@ struct ContentView: View {
                 .frame(width: 46, height: 36)
         }
         .buttonStyle(.plain)
-        .focusRing(controllerObserver.isConnected && controllerObserver.libraryFocus == .section(section == .gameMode ? 0 : 1))
+        .focusRing(controllerObserver.isConnected && controllerObserver.libraryFocus == .section(AppModel.SidebarSection.allCases.firstIndex(of: section) ?? 0))
         .background(isSelected ? skin.accent.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: skin.cardRadius > 12 ? 8 : skin.cardRadius))
         .foregroundStyle(isSelected ? skin.accent : Color.secondary)
         // "add smooth af things too" - a real spring pop on selection instead of the flat instant
@@ -181,7 +171,8 @@ struct ContentView: View {
 
     private func title(for section: AppModel.SidebarSection) -> String {
         switch section {
-        case .gameMode: return "Steam"
+        case .gameMode: return "Library"
+        case .install: return "Install"
         case .cDrive: return "C: Drive"
         }
     }
@@ -189,6 +180,7 @@ struct ContentView: View {
     private func icon(for section: AppModel.SidebarSection) -> String {
         switch section {
         case .gameMode: return "gamecontroller.fill"
+        case .install: return "arrow.down.app.fill"
         case .cDrive: return "internaldrive"
         }
     }
@@ -210,6 +202,8 @@ struct ContentView: View {
             switch model.selectedSection {
             case .gameMode:
                 GameModeView()
+            case .install:
+                InstallersView()
             case .cDrive:
                 CDriveView()
             }

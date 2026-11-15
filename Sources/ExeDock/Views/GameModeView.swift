@@ -254,7 +254,7 @@ struct GameModeView: View {
                 Text("Install official Steam to add Windows games. Games already here stay in the library.")
                     .font(.callout)
                 Spacer(minLength: 8)
-                Button("Install Steam") { model.installAndRunSteam() }
+                Button("Install Steam") { model.selectedSection = .install }
                     .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
             }
         }
@@ -1149,7 +1149,7 @@ struct GameModeView: View {
         case .section(let index):
             switch direction {
             case .left: controllerObserver.libraryFocus = .section(max(0, index - 1))
-            case .right: controllerObserver.libraryFocus = .section(min(1, index + 1))
+            case .right: controllerObserver.libraryFocus = .section(min(AppModel.SidebarSection.allCases.count - 1, index + 1))
             case .down: controllerObserver.libraryFocus = .favorites
             case .up: break
             }
