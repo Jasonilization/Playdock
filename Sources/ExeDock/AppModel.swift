@@ -1,6 +1,28 @@
 import Foundation
 import AppKit
 
+/// What the install bar is showing. `written`/`expected` are byte counts for a download.
+/// `expected` below 1 means the server did not say how big the file is, so the bar stays indeterminate.
+struct InstallerProgress: Equatable {
+    var message: String
+    var written: Int64?
+    var expected: Int64?
+
+    var fraction: Double? {
+        guard let written, let expected, expected > 0 else { return nil }
+        return min(1, Double(written) / Double(expected))
+    }
+
+    var sizeLabel: String? {
+        guard let written, written > 0 else { return nil }
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        let done = formatter.string(fromByteCount: written)
+        guard let expected, expected > 0 else { return done }
+        return "\(done) / \(formatter.string(fromByteCount: expected))"
+    }
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     enum SidebarSection: Hashable, CaseIterable {
@@ -48,8 +70,12 @@ final class AppModel: ObservableObject {
     @Published var launchingTarget: LaunchTarget?
     /// Set while a downloaded Windows installer is being prepared. Nil once its window is open.
     @Published var programInstallMessage: String?
-    /// Which catalog row `programInstallMessage` belongs to. Nil for a setup file the user picked.
+    /// Which catalog row the install bar belongs to. Nil for a setup file the user picked.
+    /// `"steam"` while the Steam installer itself is running.
     @Published var catalogInstallID: String?
+    /// The bar under an installer's name: the current step, and byte counts when the download
+    /// knows how big the file is.
+    @Published var installerProgress: InstallerProgress?
     /// Debug-only: appends a handful of real, well-known games (with real appIDs, so their genuine
     /// Steam art/rating/description come through the normal metadata pipeline) so the grid's layout
     /// - especially the dynamic card sizing - can be checked with more than whatever's actually
@@ -368,32 +394,31 @@ final class AppModel: ObservableObject {
             return
         }
         guard beginProgramInstall(catalogID: item.id) else { return }
-        programInstallMessage = "Downloading \(item.name)…"
+        reportInstall("Downloading \(item.name)…")
         let downloadURL = item.downloadURL
         let fileName = item.fileName
         let bottleID = item.bottleID
+        let display = item.name
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                let (tempURL, response) = try await URLSession.shared.download(from: downloadURL)
-                guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-                    throw SteamInstallError.downloadFailed("unexpected server response")
-                }
                 let saved = (NSTemporaryDirectory() as NSString).appendingPathComponent(fileName)
                 try? FileManager.default.removeItem(atPath: saved)
-                try FileManager.default.moveItem(at: tempURL, to: URL(fileURLWithPath: saved))
+                try await ProgressDownload.save(from: downloadURL, to: saved) { written, expected in
+                    Task { @MainActor in
+                        self?.reportInstall("Downloading \(display)…", written: written, expected: expected)
+                    }
+                }
                 let staged = try await ProgramInstaller.stage(setupPath: saved, bottleID: bottleID, bottleName: bottleName) { message in
-                    Task { @MainActor in self?.programInstallMessage = message }
+                    Task { @MainActor in self?.reportInstall(message) }
                 }
                 await MainActor.run {
-                    self?.programInstallMessage = nil
-                    self?.catalogInstallID = nil
-                    self?.statusMessage = "Opened \(item.name). Finish the setup in its window."
-                    self?.run(exePath: staged.path, bottle: staged.bottle, displayName: item.name)
+                    self?.clearInstallProgress()
+                    self?.statusMessage = "Opened \(display). Finish the setup in its window."
+                    self?.run(exePath: staged.path, bottle: staged.bottle, displayName: display)
                 }
             } catch {
                 await MainActor.run {
-                    self?.programInstallMessage = nil
-                    self?.catalogInstallID = nil
+                    self?.clearInstallProgress()
                     self?.errorMessage = error.localizedDescription
                 }
             }
@@ -414,22 +439,20 @@ final class AppModel: ObservableObject {
         let displayName = bottleName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? ((path as NSString).lastPathComponent as NSString).deletingPathExtension
             : bottleName
-        programInstallMessage = "Preparing the bottle…"
+        reportInstall("Preparing the bottle…")
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
                 let staged = try await ProgramInstaller.stage(setupPath: path, bottleID: bottleID, bottleName: bottleName) { message in
-                    Task { @MainActor in self?.programInstallMessage = message }
+                    Task { @MainActor in self?.reportInstall(message) }
                 }
                 await MainActor.run {
-                    self?.programInstallMessage = nil
-                    self?.catalogInstallID = nil
+                    self?.clearInstallProgress()
                     self?.statusMessage = "Opened \(displayName). Finish the setup in its window."
                     self?.run(exePath: staged.path, bottle: staged.bottle, displayName: displayName)
                 }
             } catch {
                 await MainActor.run {
-                    self?.programInstallMessage = nil
-                    self?.catalogInstallID = nil
+                    self?.clearInstallProgress()
                     self?.errorMessage = error.localizedDescription
                 }
             }
@@ -446,22 +469,44 @@ final class AppModel: ObservableObject {
         return true
     }
 
+    func reportInstall(_ message: String, written: Int64? = nil, expected: Int64? = nil) {
+        programInstallMessage = message
+        installerProgress = InstallerProgress(message: message, written: written, expected: expected)
+        if isInstallingSteam || catalogInstallID == "steam" {
+            steamStatus = .installing(message)
+        }
+    }
+
+    func clearInstallProgress() {
+        programInstallMessage = nil
+        installerProgress = nil
+        if catalogInstallID != nil { catalogInstallID = nil }
+    }
+
     func installAndRunSteam() {
         guard !isInstallingSteam else { return }
+        catalogInstallID = "steam"
         steamStatus = .installing("Starting…")
+        reportInstall("Starting…")
         Task { [weak self] in
             guard let self else { return }
             do {
                 _ = try await SteamInstaller.installAndLaunch { [self] message in
-                    Task { @MainActor in self.steamStatus = .installing(message) }
+                    Task { @MainActor in self.reportInstall(message) }
+                } bytes: { [self] written, expected in
+                    Task { @MainActor in
+                        self.reportInstall("Downloading Steam installer…", written: written, expected: expected)
+                    }
                 }
                 self.steamStatus = .installed
+                self.clearInstallProgress()
                 self.isGameModeUnlocked = true
                 self.refreshBottlesAndApps()
                 self.refreshSteamGames()
                 self.refreshSteamProfile()
             } catch {
                 self.steamStatus = .failed(error.localizedDescription)
+                self.clearInstallProgress()
                 self.errorMessage = error.localizedDescription
             }
         }

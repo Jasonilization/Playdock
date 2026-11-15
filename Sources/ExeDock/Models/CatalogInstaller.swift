@@ -16,6 +16,11 @@ struct CatalogInstaller: Identifiable, Hashable {
     /// Steam uses the proven silent installer. Everything else opens the setup window.
     let isSteam: Bool
 
+    /// How sure Playdock is that this setup finishes. Steam's silent install is the one that
+    /// has been checked. The others open the vendor's window, and that client may not finish.
+    var ratingStars: Int { isSteam ? 4 : 2 }
+    var ratingLabel: String { isSteam ? "Install path checked" : "Not checked yet" }
+
     var bottleID: String { "catalog-\(id)" }
 
     func bottle(named displayName: String) -> Bottle {

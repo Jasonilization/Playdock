@@ -28,20 +28,16 @@ enum SteamInstaller {
         FileManager.default.fileExists(atPath: installedSteamExePath)
     }
 
-    static func installAndLaunch(progress: @escaping (String) -> Void) async throws -> String {
+    static func installAndLaunch(progress: @escaping (String) -> Void, bytes: @escaping @Sendable (Int64, Int64) -> Void = { _, _ in }) async throws -> String {
         if isSteamInstalled {
             progress("Steam is already installed.")
             return installedSteamExePath
         }
 
         progress("Downloading Steam installer…")
-        let (tempURL, response) = try await URLSession.shared.download(from: steamSetupURL)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw SteamInstallError.downloadFailed("unexpected server response")
-        }
         let setupPath = (NSTemporaryDirectory() as NSString).appendingPathComponent("SteamSetup.exe")
         try? FileManager.default.removeItem(atPath: setupPath)
-        try FileManager.default.moveItem(at: tempURL, to: URL(fileURLWithPath: setupPath))
+        try await ProgressDownload.save(from: steamSetupURL, to: setupPath, onBytes: bytes)
 
         progress("Preparing the Steam bottle…")
         let bottle = steamBottle

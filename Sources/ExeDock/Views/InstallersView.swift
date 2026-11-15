@@ -88,7 +88,7 @@ struct InstallersView: View {
             selection = .catalog(item.id)
         } label: {
             HStack(spacing: 10) {
-                mark(for: item.name, steam: item.isSteam)
+                CatalogIcon(name: item.name, host: item.pageURL.host, bundleID: item.isSteam ? "com.valvesoftware.steam" : localBundleID(item.id), side: 28)
                 Text(item.name)
                     .font(.system(size: 14, weight: .semibold))
                     .lineLimit(1)
@@ -115,7 +115,7 @@ struct InstallersView: View {
             selection = .file
         } label: {
             HStack(spacing: 10) {
-                mark(for: title, steam: false)
+                CatalogIcon(name: title, host: nil, side: 28)
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
                     .lineLimit(1)
@@ -147,10 +147,11 @@ struct InstallersView: View {
         let bottleName = bottleNames[item.id] ?? item.name
         return VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .top, spacing: 16) {
-                mark(for: item.name, steam: item.isSteam, side: 64)
+                CatalogIcon(name: item.name, host: item.pageURL.host, bundleID: item.isSteam ? "com.valvesoftware.steam" : localBundleID(item.id), side: 64)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.name)
                         .font(.system(size: 28, weight: .bold))
+                    ratingRow(stars: item.ratingStars, label: item.ratingLabel)
                     Text(statusLine(for: item))
                         .font(.system(size: 14))
                         .foregroundStyle(.secondary)
@@ -160,6 +161,7 @@ struct InstallersView: View {
                 catalogAction(item, bottleName: bottleName)
             }
 
+            if showsBar(id: item.id) { installBar }
             Text(item.summary)
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
@@ -239,7 +241,7 @@ struct InstallersView: View {
         let title = programURL?.deletingPathExtension().lastPathComponent ?? "From a file"
         return VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .top, spacing: 16) {
-                mark(for: title, steam: false, side: 64)
+                CatalogIcon(name: title, host: nil, side: 64)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.system(size: 28, weight: .bold))
@@ -252,6 +254,7 @@ struct InstallersView: View {
                 fileAction
             }
 
+            if showsBar(id: nil) { installBar }
             Text(programURL == nil
                  ? "Choose a Windows setup that is not in the list. Playdock gives it a new bottle, installs the usual runtime components, and opens the setup window."
                  : "Playdock copies this setup into a new bottle and opens it. Finish the Windows installer in that window.")
@@ -294,6 +297,50 @@ struct InstallersView: View {
             Button("Install") { startProgramInstall() }
                 .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
                 .disabled(model.isInstallingSteam || model.programInstallMessage != nil)
+        }
+    }
+
+    private func showsBar(id: String?) -> Bool {
+        guard model.installerProgress != nil else { return false }
+        if id == nil { return model.catalogInstallID == nil }
+        return model.catalogInstallID == id || (id == "steam" && model.isInstallingSteam)
+    }
+
+    private var installBar: some View {
+        let progress = model.installerProgress
+        return VStack(alignment: .leading, spacing: 6) {
+            if let fraction = progress?.fraction {
+                ProgressView(value: fraction)
+                    .tint(skin.accent)
+            } else {
+                ProgressView()
+                    .tint(skin.accent)
+            }
+            HStack(alignment: .firstTextBaseline) {
+                Text(progress?.message ?? "Installing…")
+                    .lineLimit(1)
+                Spacer(minLength: 12)
+                if let size = progress?.sizeLabel {
+                    Text(size)
+                        .monospacedDigit()
+                }
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private func ratingRow(stars: Int, label: String) -> some View {
+        HStack(spacing: 3) {
+            ForEach(0..<5, id: \.self) { index in
+                Image(systemName: index < stars ? "star.fill" : "star")
+                    .font(.system(size: 12))
+                    .foregroundStyle(index < stars ? Color.yellow : Color.secondary.opacity(0.45))
+            }
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
         }
     }
 
@@ -375,14 +422,33 @@ struct InstallersView: View {
         model.installDownloadedProgram(at: programURL.path, bottleName: fileBottleName)
     }
 
-    private func mark(for name: String, steam: Bool, side: CGFloat = 28) -> some View {
+    private func localBundleID(_ id: String) -> String? {
+        switch id {
+        case "discord": return "com.hnc.Discord"
+        case "epic": return "com.epicgames.EpicGamesLauncher"
+        default: return nil
+        }
+    }
+}
+
+/// The vendor's own icon when this Mac has the app, otherwise the site icon, otherwise a letter.
+private struct CatalogIcon: View {
+    let name: String
+    let host: String?
+    var bundleID: String?
+    var side: CGFloat = 28
+    @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
+    @LocalState private var image: NSImage?
+
+    var body: some View {
         Group {
-            if steam, let icon = macSteamIcon {
-                Image(nsImage: icon)
+            if let image {
+                Image(nsImage: image)
                     .resizable()
                     .frame(width: side, height: side)
                     .clipShape(RoundedRectangle(cornerRadius: side > 40 ? 14 : 6, style: .continuous))
             } else {
+                let skin = PlaydockSkin(rawValue: skinRaw) ?? .luxury
                 Text(String(name.prefix(1)).uppercased())
                     .font(.system(size: side * 0.42, weight: .bold))
                     .foregroundStyle(skin.accent)
@@ -390,12 +456,35 @@ struct InstallersView: View {
                     .background(skin.accent.opacity(0.16), in: RoundedRectangle(cornerRadius: side > 40 ? 14 : 6, style: .continuous))
             }
         }
+        .task(id: host) { image = await CatalogIconCache.shared.image(host: host, bundleID: bundleID) }
     }
+}
 
-    private var macSteamIcon: NSImage? {
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.valvesoftware.steam") else { return nil }
-        let icon = NSWorkspace.shared.icon(forFile: url.path)
-        icon.size = NSSize(width: 64, height: 64)
-        return icon
+private actor CatalogIconCache {
+    static let shared = CatalogIconCache()
+    private var memory: [String: NSImage] = [:]
+
+    func image(host: String?, bundleID: String?) async -> NSImage? {
+        if let bundleID, let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            let icon = NSWorkspace.shared.icon(forFile: url.path)
+            icon.size = NSSize(width: 128, height: 128)
+            return icon
+        }
+        guard let host else { return nil }
+        if let cached = memory[host] { return cached }
+        let folder = ("~/Library/Application Support/ExeDock/InstallerIcons" as NSString).expandingTildeInPath
+        let file = (folder as NSString).appendingPathComponent(host.replacingOccurrences(of: "/", with: "_") + ".png")
+        if let existing = NSImage(contentsOfFile: file) {
+            memory[host] = existing
+            return existing
+        }
+        guard let remote = URL(string: "https://www.google.com/s2/favicons?domain=\(host)&sz=128") else { return nil }
+        guard let (data, response) = try? await URLSession.shared.data(from: remote),
+              let http = response as? HTTPURLResponse, http.statusCode == 200,
+              let downloaded = NSImage(data: data), downloaded.size.width > 8 else { return nil }
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        try? data.write(to: URL(fileURLWithPath: file))
+        memory[host] = downloaded
+        return downloaded
     }
 }
