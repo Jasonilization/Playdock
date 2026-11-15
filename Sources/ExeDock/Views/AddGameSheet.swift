@@ -299,14 +299,33 @@ struct AddGameSheet: View {
         discoveringStatus = "Discovering game details…"
         Task {
             let discovered = await CustomGameMetadataDiscovery.discover(exePath: exePath, folderName: folderName)
-            await MainActor.run { discoveringStatus = "Moving \(folderName ?? (exePath as NSString).lastPathComponent) into Playdock…" }
+            let displayName = folderName ?? (exePath as NSString).lastPathComponent
+            let staysInWrapper = BottleManager.shared.discoverSikarugirWrapperBottles().contains { exePath.hasPrefix($0.driveCPath) }
+            await MainActor.run {
+                discoveringStatus = staysInWrapper ? "Adding \(displayName)…" : "Creating a bottle for \(displayName)…"
+            }
             do {
+                let gameID = UUID().uuidString
+                let bottleName = discovered.productName ?? folderName ?? CustomGame.cleanedName(fromExePath: exePath)
+                // A Sikarugir app already has its own prefix. Moving those files into a new
+                // bottle would pull the game out of the app that already runs it.
+                if BottleManager.shared.discoverSikarugirWrapperBottles().contains(where: { exePath.hasPrefix($0.driveCPath) }) {
+                    await MainActor.run {
+                        stopSecurityScopedAccessIfNeeded()
+                        model.addCustomGame(CustomGame(id: gameID, exePath: exePath, discovered: discovered))
+                        model.refreshBottlesAndApps()
+                        dismiss()
+                    }
+                    return
+                }
                 let finalExePath = try await Task.detached(priority: .utility) {
-                    try CustomGameFileImporter.importIntoManagedBottle(exePath: exePath, pickedFolderPath: pickedFolderPath)
+                    let bottle = BottleManager.shared.gameBottle(id: gameID, name: bottleName)
+                    return try CustomGameFileImporter.importIntoGameBottle(exePath: exePath, pickedFolderPath: pickedFolderPath, bottle: bottle)
                 }.value
                 await MainActor.run {
                     stopSecurityScopedAccessIfNeeded()
-                    model.addCustomGame(CustomGame(exePath: finalExePath, discovered: discovered))
+                    model.addCustomGame(CustomGame(id: gameID, exePath: finalExePath, discovered: discovered, bottleID: gameID))
+                    model.refreshBottlesAndApps()
                     dismiss()
                 }
             } catch {

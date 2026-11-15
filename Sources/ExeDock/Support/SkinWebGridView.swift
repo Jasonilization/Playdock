@@ -21,7 +21,7 @@ struct SkinWebGridEntry: Encodable, Equatable {
     /// the real majority case, previously the only one with no badge of its own at all. Defaulted
     /// so this field's own addition stays independently buildable - the one real call site
     /// (`GameModeView.webGridEntries`) starts actually setting it in a separate, later piece.
-    let windows: Bool = false
+    var windows: Bool = false
     let running: Bool
     let size: String?
     let hours: String?
@@ -29,6 +29,9 @@ struct SkinWebGridEntry: Encodable, Equatable {
     /// card art, deliberately separate from the source badges (Custom/Mac/Windows), which the
     /// "hide badges" setting governs: this one is yours, not Provenance.
     var favorite: Bool = false
+    /// Install folder exists, Steam has not finished the download. The card opens the page;
+    /// it does not offer Play.
+    var downloading: Bool = false
 }
 
 /// The real per-skin HTML/CSS from `ten-playdocks.html`, rendered by an actual `WKWebView` instead
@@ -82,6 +85,12 @@ struct SkinWebGridView: NSViewRepresentable {
         return webView
     }
 
+    /// WKWebView's own fitting size is the whole document. If SwiftUI honors that, the grid grows
+    /// past the window and the bottom is clipped with no way to scroll to it.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: WKWebView, context: Context) -> CGSize? {
+        CGSize(width: proposal.width ?? 800, height: proposal.height ?? 600)
+    }
+
     func updateNSView(_ webView: WKWebView, context: Context) {
         context.coordinator.onOpen = onOpen
         context.coordinator.render(skin: skin, entries: entries, userName: userName, isDark: isDark, hideBadges: hideBadges)
@@ -94,6 +103,9 @@ struct SkinWebGridView: NSViewRepresentable {
         weak var webView: WKWebView?
         private var isPageReady = false
         private var searchFocusApplied: Bool?
+        private var rendered: RenderKey?
+        private var appliedFocus: String?
+        private var didApplyFocus = false
         private var pending: (skin: PlaydockSkin, entries: [SkinWebGridEntry], userName: String, isDark: Bool, hideBadges: Bool)?
 
         init(onOpen: @escaping (String) -> Void) {
@@ -119,9 +131,14 @@ struct SkinWebGridView: NSViewRepresentable {
                 return
             }
             pending = nil
+            let key = RenderKey(skin: skin.rawValue, entries: entries, userName: userName, isDark: isDark, hideBadges: hideBadges)
+            // SwiftUI calls this on every parent refresh. Rebuilding the page each time
+            // re-parses every card image and is what made the library feel laggy.
+            guard rendered != key else { return }
             guard let entriesJSON = jsonString(entries) else { return }
             let meta = WebMeta(user: userName, theme: isDark ? "dark" : "light", hideBadges: hideBadges)
             guard let metaJSON = jsonString(meta) else { return }
+            rendered = key
             let js = "window.PlaydockRender && window.PlaydockRender(\(jsLiteral(skin.rawValue)), \(jsLiteral(entriesJSON)), \(jsLiteral(metaJSON)));"
             webView.evaluateJavaScript(js, completionHandler: nil)
         }
@@ -131,6 +148,9 @@ struct SkinWebGridView: NSViewRepresentable {
         /// ready, same deferred-until-loaded contract `render(skin:entries:userName:isDark:)` has.
         func setFocus(_ id: String?) {
             guard isPageReady, let webView else { return }
+            if didApplyFocus, appliedFocus == id { return }
+            didApplyFocus = true
+            appliedFocus = id
             let arg = id.map(jsLiteral) ?? "null"
             webView.evaluateJavaScript("window.PlaydockSetFocus && window.PlaydockSetFocus(\(arg));", completionHandler: nil)
         }
@@ -139,6 +159,14 @@ struct SkinWebGridView: NSViewRepresentable {
             guard isPageReady, let webView, searchFocusApplied != focused else { return }
             searchFocusApplied = focused
             webView.evaluateJavaScript("window.PlaydockSetSearchFocus && window.PlaydockSetSearchFocus(\(focused));", completionHandler: nil)
+        }
+
+        private struct RenderKey: Equatable {
+            let skin: String
+            let entries: [SkinWebGridEntry]
+            let userName: String
+            let isDark: Bool
+            let hideBadges: Bool
         }
 
         private struct WebMeta: Encodable { let user: String; let theme: String; let hideBadges: Bool }

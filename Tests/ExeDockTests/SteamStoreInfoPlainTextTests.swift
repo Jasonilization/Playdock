@@ -16,8 +16,14 @@ struct SteamStoreInfoPlainTextTests {
     @Test func brBecomesLineBreak() {
         let html = "Line one<br>Line two<br/>Line three"
         let plain = SteamStoreInfo.plainText(fromHTML: html)
-        #expect(plain.contains("Line one\nLine two"))
-        #expect(plain.contains("Line two\nLine three"))
+        #expect(plain.contains("Line one\n\nLine two"))
+        #expect(plain.contains("Line two\n\nLine three"))
+    }
+
+    @Test func gluedSentencesBecomeParagraphs() {
+        let plain = SteamStoreInfo.readableParagraphs(from: "Step into the space between dreams.Dreamcore is a game.\nDreampools: a maze.")
+        #expect(plain.contains("dreams.\n\nDreamcore"))
+        #expect(plain.contains("game.\n\nDreampools:"))
     }
 
     @Test func decodesAmpAndNbsp() {

@@ -71,6 +71,15 @@ actor SteamStoreInfoCache {
         if let headerImageURLString = appData["header_image"] as? String, let headerImageURL = URL(string: headerImageURLString) {
             headerImagePath = await downloadImage(headerImageURL, appID: appID, suffix: "header")
         }
+        // Steam's library hero is the sharp 1920-wide art. The store header is a small logo.
+        var libraryHeroPath: String?
+        if let heroURL = URL(string: "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/library_hero.jpg") {
+            libraryHeroPath = await downloadImage(heroURL, appID: appID, suffix: "library-hero")
+        }
+        var portraitPath: String?
+        if let portraitURL = URL(string: "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/library_600x900.jpg") {
+            portraitPath = await downloadImage(portraitURL, appID: appID, suffix: "portrait")
+        }
         var backgroundImagePath: String?
         if let backgroundURLString = appData["background_raw"] as? String ?? appData["background"] as? String,
            let backgroundURL = URL(string: backgroundURLString) {
@@ -83,12 +92,12 @@ actor SteamStoreInfoCache {
         var screenshotPaths: [String] = []
         var screenshotFullImageURLs: [String] = []
         let screenshots = (appData["screenshots"] as? [[String: Any]]) ?? []
-        for (index, screenshot) in screenshots.prefix(6).enumerated() {
-            guard let thumbURLString = screenshot["path_thumbnail"] as? String, let thumbURL = URL(string: thumbURLString) else { continue }
-            // Kept URL-only on purpose: the full image streams in lazily, the moment someone
-            // actually opens it in the lightbox - never as part of the strip's own fetch.
-            screenshotFullImageURLs.append((screenshot["path_full"] as? String) ?? thumbURLString)
-            if let path = await downloadImage(thumbURL, appID: appID, suffix: "screenshot-\(index)") {
+        for (index, screenshot) in screenshots.prefix(4).enumerated() {
+            let fullString = screenshot["path_full"] as? String
+            let thumbString = screenshot["path_thumbnail"] as? String
+            guard let chosen = fullString ?? thumbString, let imageURL = URL(string: chosen) else { continue }
+            screenshotFullImageURLs.append(fullString ?? chosen)
+            if let path = await downloadImage(imageURL, appID: appID, suffix: "screenshot-\(index)") {
                 screenshotPaths.append(path)
             }
         }
@@ -113,6 +122,8 @@ actor SteamStoreInfoCache {
             shortDescription: (description?.isEmpty == false) ? description : nil,
             aboutTheGame: (aboutTheGame?.isEmpty == false) ? aboutTheGame : nil,
             headerImagePath: headerImagePath,
+            libraryHeroPath: libraryHeroPath,
+            portraitPath: portraitPath,
             backgroundImagePath: backgroundImagePath,
             screenshotPaths: screenshotPaths,
             genres: genres,

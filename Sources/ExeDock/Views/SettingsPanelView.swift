@@ -503,7 +503,7 @@ struct SettingsPanelView: View {
 
     @AppStorage(LibraryLayoutStyle.storageKey) private var libraryLayoutRaw = LibraryLayoutStyle.grid.rawValue
     @AppStorage(PlaydockArtSource.storageKey) private var artSourceRaw = PlaydockArtSource.banner.rawValue
-    @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = true
+    @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = false
     @AppStorage(SettingsLauncher.showLauncherKey) private var showSettingsButton = true
     /// Depends on the badge-wiring unit that defines this key - see this unit's notes.md.
     @AppStorage(GameModeView.hideBadgesKey) private var hideLibraryBadges = false

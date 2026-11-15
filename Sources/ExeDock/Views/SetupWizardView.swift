@@ -191,7 +191,7 @@ struct SetupWizardView: View {
             VStack(spacing: 4) {
                 Text("\(skin.displayName) · \(layout.displayName) · \(artSource.displayName) Art")
                     .font(.callout.weight(.semibold))
-                Text("Nothing else to install - Playdock handles the rest automatically.")
+                Text("Install Steam from the library when you want Windows games, then sign in inside Steam.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

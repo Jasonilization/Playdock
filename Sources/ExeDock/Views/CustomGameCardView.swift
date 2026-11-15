@@ -105,7 +105,6 @@ struct CustomGameCardView: View {
             if runningInfo == nil, !isMissing {
                 Button {
                     onLaunch()
-                    model.launchCustomGame(game)
                 } label: {
                     Label("Launch", systemImage: "play.fill")
                 }
@@ -133,11 +132,11 @@ struct CustomGameCardView: View {
             } label: {
                 Label("Refresh Metadata", systemImage: "arrow.clockwise")
             }
-            if !isMissing, !CustomGameFileImporter.isAlreadyManaged(exePath: game.exePath) {
+            if !isMissing, game.bottleID == nil {
                 Button {
-                    moveIntoManagedBottle()
+                    moveIntoOwnBottle()
                 } label: {
-                    Label("Move into Playdock's Bottle", systemImage: "shippingbox")
+                    Label("Give This Game Its Own Bottle", systemImage: "shippingbox")
                 }
                 .disabled(isMoving)
             }
@@ -235,25 +234,24 @@ struct CustomGameCardView: View {
         model.updateCustomGame(updated)
     }
 
-    /// Moves an already-imported game (one added before this existed, or picked from somewhere
-    /// Playdock decided not to move at the time) into Playdock's own managed bottle - the same move
-    /// `AddGameSheet` now does automatically for new imports, offered here as an explicit, opt-in
-    /// action instead of something Playdock would ever do to an existing game unasked. Exactly what
-    /// resolves "I have subliminal and dreamcore in the same bottle" for a game like Dreamcore that
-    /// currently lives inside a separate, third-party Sikarugir wrapper's own bottle - once moved,
-    /// it launches directly through Playdock's own engine like any other custom game, no wrapper
-    /// app involved at all.
-    private func moveIntoManagedBottle() {
+    /// Copies an older library entry into a bottle of its own. Games added before per-game
+    /// bottles share the Playdock prefix, or still point at a Sikarugir wrapper. This is
+    /// opt-in: nothing moves an existing game unless this is chosen.
+    private func moveIntoOwnBottle() {
         isMoving = true
+        let source = game
         Task {
             do {
                 let newExePath = try await Task.detached(priority: .utility) {
-                    try CustomGameFileImporter.importIntoManagedBottle(exePath: game.exePath, pickedFolderPath: nil)
+                    let bottle = BottleManager.shared.gameBottle(id: source.id, name: source.effectiveName)
+                    return try CustomGameFileImporter.importIntoGameBottle(exePath: source.exePath, pickedFolderPath: nil, bottle: bottle)
                 }.value
-                var updated = game
+                var updated = source
                 updated.exePath = newExePath
+                updated.bottleID = source.id
                 await MainActor.run {
                     model.updateCustomGame(updated)
+                    model.refreshBottlesAndApps()
                     isMoving = false
                 }
             } catch {

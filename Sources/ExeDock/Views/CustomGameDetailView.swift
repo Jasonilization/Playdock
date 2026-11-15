@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 
 private enum CustomDetailAction: Equatable {
-    case launch, settings, reveal, edit, about
+    case favorite, hide, launch, settings, reveal, edit, about
 }
 
 /// The custom-game equivalent of `GameDetailView`, giving a custom game the same full detail
@@ -14,8 +14,12 @@ private enum CustomDetailAction: Equatable {
 /// off the grid card, for the same reason it does for Steam games.
 struct CustomGameDetailView: View {
     @EnvironmentObject private var model: AppModel
+    @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
+    private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
     @ObservedObject private var runningTracker = RunningGameTracker.shared
     @ObservedObject private var controllerObserver = ControllerObserver.shared
+    @ObservedObject private var playActivity = PlayActivityStore.shared
+    @ObservedObject private var curation = LibraryCurationStore.shared
     let game: CustomGame
     let isAdvancedMode: Bool
     let onClose: () -> Void
@@ -29,13 +33,14 @@ struct CustomGameDetailView: View {
     /// Non-nil while a photo is shown full-size over everything else.
     @LocalState private var expandedImagePath: String?
     @LocalState private var gameAccent: Color?
+    @LocalState private var isMoving = false
 
     private var runningInfo: RunningProcessInfo? { runningTracker.runningGames[game.id] }
     private var hasCustomSettings: Bool { model.perGameConfigs[game.id] != nil }
     private var isMissing: Bool { !FileManager.default.fileExists(atPath: game.exePath) }
 
     private var availableActions: [CustomDetailAction] {
-        var actions: [CustomDetailAction] = []
+        var actions: [CustomDetailAction] = [.favorite, .hide]
         if runningInfo == nil && !isMissing { actions.append(.launch) }
         if isAdvancedMode && !isMissing { actions.append(.settings) }
         if !isMissing { actions.append(.reveal) }
@@ -55,38 +60,30 @@ struct CustomGameDetailView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            backdrop
-            VStack(alignment: .leading, spacing: 0) {
-                closeButton
+            SkinBackground(skin: skin)
+                .ignoresSafeArea()
+            GeometryReader { geo in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 22) {
-                        header
-                        if isMissing {
-                            Label("Game location unavailable", systemImage: "exclamationmark.triangle.fill")
-                                .font(.callout)
-                                .foregroundStyle(.orange)
-                        }
-                        // Photos sit in their own column to the right of the text, not stacked
-                        // below it.
-                        HStack(alignment: .top, spacing: 24) {
-                            VStack(alignment: .leading, spacing: 22) {
-                                actionRow
-                                descriptionCard
+                    VStack(alignment: .leading, spacing: 28) {
+                        launcherHero
+                        VStack(alignment: .leading, spacing: 24) {
+                            if isMissing {
+                                Label("Game location unavailable", systemImage: "exclamationmark.triangle.fill")
+                                    .font(.callout)
+                                    .foregroundStyle(.orange)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                            if hasPhotos {
-                                photoGrid
-                            }
+                            header
+                            if hasPhotos { photoGrid }
+                            descriptionCard
                         }
+                        .padding(.horizontal, 32)
                     }
-                    .padding(32)
-                    .frame(maxWidth: 1320, alignment: .leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 160)
+                    .frame(width: geo.size.width, alignment: .topLeading)
                 }
-                .clipped()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.bottom, 72)
+            closeButton
 
             if let expandedImagePath {
                 imageLightbox(expandedImagePath)
@@ -95,7 +92,6 @@ struct CustomGameDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .colorScheme(.dark)
         .task(id: game.id) {
             if let path = game.effectiveArtworkPath { gameAccent = await GameArtColor.dominantColor(forImagePath: path) }
         }
@@ -142,6 +138,11 @@ struct CustomGameDetailView: View {
 
     private func activateFocusedAction() {
         switch availableActions[safe: focusedActionIndex] {
+        case .favorite:
+            curation.toggleFavorite(game.id)
+        case .hide:
+            curation.hide(game.id)
+            onClose()
         case .launch:
             onLaunch()
             model.launchCustomGame(game)
@@ -158,44 +159,85 @@ struct CustomGameDetailView: View {
             onClose()
         } label: {
             Image(systemName: "xmark")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
-                .background(.black.opacity(0.55), in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.25)))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(skin.accent)
+                .frame(width: 34, height: 34)
+                .background(skin.topBarBackground, in: closeShape)
+                .overlay(closeShape.strokeBorder(skin.topBarBorderColor ?? skin.accent.opacity(0.45), lineWidth: skin.borderWidth))
         }
         .buttonStyle(.plain)
         .padding(24)
         .keyboardShortcut(.cancelAction)
     }
 
-    @ViewBuilder
-    private var backdrop: some View {
-        if let path = game.discovered.steamBackgroundPath ?? game.effectiveArtworkPath, let image = LocalImageCache.image(atPath: path) {
-            Image(nsImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .blur(radius: 50)
-                .overlay(Color.black.opacity(0.6))
-                .ignoresSafeArea()
-        } else {
-            LinearGradient(colors: [Color.purple.opacity(0.5), .black], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+    private var closeShape: PlaydockCardShape {
+        PlaydockCardShape(skin: skin, cornerRadius: min(skin.cardRadius, 8))
+    }
+
+    private var launcherHero: some View {
+        HStack(alignment: .center, spacing: 24) {
+            if let path = game.effectiveArtworkPath, let image = LocalImageCache.image(atPath: path) {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 132)
+                    .fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center, spacing: 10) {
+                    Text(game.effectiveName)
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        curation.toggleFavorite(game.id)
+                    } label: {
+                        Image(systemName: curation.isFavorite(game.id) ? "heart.fill" : "heart")
+                            .font(.title3)
+                            .foregroundStyle(curation.isFavorite(game.id) ? .pink : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .focusRing(isFocused(.favorite))
+                    .help(L(curation.isFavorite(game.id) ? "Remove from Favorites" : "Mark as Favorite"))
+                    Menu {
+                        Button(L("Hide This Game from Library"), role: .destructive) {
+                            curation.hide(game.id)
+                            onClose()
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .focusRing(isFocused(.hide))
+                    Text("Custom Game")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.purple.opacity(0.85), in: Capsule())
+                }
+                if !subtitleLine.isEmpty {
+                    Text(subtitleLine)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                actionRow
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(.horizontal, 32)
+        .padding(.top, 64)
+        .padding(.bottom, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                SkinTitleText(text: game.effectiveName, size: 34)
-                    .foregroundStyle(.white)
-                Text("Custom Game")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.purple.opacity(0.85), in: Capsule())
-            }
+        VStack(alignment: .leading, spacing: 18) {
             if game.discovered.steamMetacriticScore != nil || !game.discovered.steamGenres.isEmpty {
                 HStack(spacing: 10) {
                     if let score = game.discovered.steamMetacriticScore {
@@ -206,12 +248,24 @@ struct CustomGameDetailView: View {
                     }
                 }
             }
-            if !subtitleLine.isEmpty {
-                Text(subtitleLine)
+            if let activity = activitySummary {
+                Label(activity, systemImage: "gamecontroller")
                     .font(.callout)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var activitySummary: String? {
+        let total = playActivity.totalSeconds(for: game.id)
+        guard total > 0, let last = playActivity.lastPlayed(game.id) else { return nil }
+        let hours = total / 3600
+        let hoursText = hours < 1 ? "\(max(1, Int((total / 60).rounded(.up)))) min" : (hours < 10 ? String(format: "%.1f h", hours) : "\(Int(hours.rounded())) h")
+        let sessions = playActivity.sessionCount(for: game.id)
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Localization.formattingLocale
+        let relative = formatter.localizedString(for: last, relativeTo: Date())
+        return "\(hoursText) over \(sessions) session\(sessions == 1 ? "" : "s") · last played \(relative)"
     }
 
     @ViewBuilder
@@ -227,39 +281,27 @@ struct CustomGameDetailView: View {
         }
     }
 
-    /// Header art first, then every screenshot - the one list both `hasPhotos` and `photoGrid`
-    /// build rows from, matching `GameDetailView`'s own `allPhotoPaths`.
+    /// Screenshots only. Artwork is already the banner at the top.
     private var allPhotoPaths: [String] {
-        var paths: [String] = []
-        if let artworkPath = game.effectiveArtworkPath { paths.append(artworkPath) }
-        paths.append(contentsOf: game.discovered.steamScreenshotPaths)
-        return paths
+        game.discovered.steamScreenshotPaths
     }
 
     /// True whenever there's actually something to put in `photoGrid`.
     private var hasPhotos: Bool { !allPhotoPaths.isEmpty }
 
-    /// A fixed-width column of photos to the right of the text - matches `GameDetailView`'s own
-    /// treatment exactly (see that view's doc comment for the full reasoning: fixed width *and*
-    /// height in one `.frame()` call before `.fill` crops it, so every photo renders at the same
-    /// size regardless of its own screenshot's native aspect ratio).
     private var photoGrid: some View {
-        let rows = allPhotoPaths.chunked(into: 2)
-        return VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Media")
-                .font(.headline)
-                .foregroundStyle(.white)
-            VStack(alignment: .leading, spacing: 20) {
-                ForEach(rows.indices, id: \.self) { rowIndex in
-                    HStack(spacing: 20) {
-                        ForEach(rows[rowIndex], id: \.self) { path in
-                            photoThumbnail(path)
-                        }
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.primary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(allPhotoPaths, id: \.self) { path in
+                        photoThumbnail(path)
                     }
                 }
             }
         }
-        .frame(width: 560, alignment: .leading)
     }
 
     private func photoThumbnail(_ path: String) -> some View {
@@ -267,11 +309,11 @@ struct CustomGameDetailView: View {
             if let image = LocalImageCache.image(atPath: path) {
                 Image(nsImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 270, height: 155)
-                    .skinArtTreatment()
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .contentShape(RoundedRectangle(cornerRadius: 10))
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 360, height: 202)
+                    .background(Color.black.opacity(0.45))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .onTapGesture { expandedImagePath = path }
             }
         }
@@ -310,7 +352,7 @@ struct CustomGameDetailView: View {
     private func metacriticBadge(_ score: Int) -> some View {
         Text("\(score)")
             .font(.callout.weight(.bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(metacriticColor(score), in: RoundedRectangle(cornerRadius: 5))
@@ -327,10 +369,10 @@ struct CustomGameDetailView: View {
     private func tag(_ text: String) -> some View {
         Text(text)
             .font(.caption.weight(.medium))
-            .foregroundStyle(.white.opacity(0.8))
+            .foregroundStyle(.primary)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
+            .background(skin.accent.opacity(0.14), in: PlaydockCardShape(skin: skin, cornerRadius: min(skin.cardRadius, 6)))
     }
 
     private var subtitleLine: String {
@@ -343,16 +385,15 @@ struct CustomGameDetailView: View {
 
 
     private var actionRow: some View {
-        HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
+        HStack(spacing: 16) {
             if runningInfo != nil {
                 RunningBadge(compact: true)
             } else if isMissing {
                 Button("Locate Game") { locateGame() }
                     .buttonStyle(.big)
-                    .frame(maxWidth: 220)
                 Button("Remove") { model.removeCustomGame(game); onClose() }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                    .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
             } else {
                 Button {
                     onLaunch()
@@ -360,7 +401,7 @@ struct CustomGameDetailView: View {
                 } label: {
                     if model.launchingTarget == .custom(game.id) {
                         HStack(spacing: 8) {
-                            ProgressView().controlSize(.small).tint(.white)
+                            ProgressView().controlSize(.small).tint(.primary)
                             Text("Launching…")
                         }
                     } else {
@@ -369,7 +410,6 @@ struct CustomGameDetailView: View {
                 }
                 .buttonStyle(.big(accentOverride: gameAccent))
                 .disabled(model.launchingTarget != nil)
-                .frame(maxWidth: 260)
                 .focusRing(isFocused(.launch))
             }
             if isAdvancedMode && !isMissing {
@@ -378,8 +418,7 @@ struct CustomGameDetailView: View {
                 } label: {
                     Label(hasCustomSettings ? "Custom Settings" : "Settings", systemImage: hasCustomSettings ? "slider.horizontal.3" : "gearshape")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
                 .focusRing(isFocused(.settings))
                 .popover(isPresented: $showingSettings) {
                     CustomGameSettingsPopover(game: game)
@@ -391,8 +430,7 @@ struct CustomGameDetailView: View {
                 } label: {
                     Label("Reveal", systemImage: "folder")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
                 .focusRing(isFocused(.reveal))
             }
             Button {
@@ -400,11 +438,48 @@ struct CustomGameDetailView: View {
             } label: {
                 Label("Edit", systemImage: "pencil")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+            .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
             .focusRing(isFocused(.edit))
         }
+        if game.bottleID == nil && !isMissing {
+            Button {
+                moveIntoOwnBottle()
+            } label: {
+                Label(isMoving ? "Creating a bottle…" : "Give this game its own bottle", systemImage: "shippingbox")
+            }
+            .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
+            .disabled(isMoving)
+        }
+        }
         .padding(.top, 8)
+    }
+
+    /// Older library entries share one prefix, or still point at a Sikarugir wrapper. This
+    /// copies the game into a bottle of its own. Nothing moves unless this is chosen.
+    private func moveIntoOwnBottle() {
+        isMoving = true
+        let source = game
+        Task {
+            do {
+                let newExePath = try await Task.detached(priority: .utility) {
+                    let bottle = BottleManager.shared.gameBottle(id: source.id, name: source.effectiveName)
+                    return try CustomGameFileImporter.importIntoGameBottle(exePath: source.exePath, pickedFolderPath: nil, bottle: bottle)
+                }.value
+                var updated = source
+                updated.exePath = newExePath
+                updated.bottleID = source.id
+                await MainActor.run {
+                    model.updateCustomGame(updated)
+                    model.refreshBottlesAndApps()
+                    isMoving = false
+                }
+            } catch {
+                await MainActor.run {
+                    isMoving = false
+                    model.errorMessage = error.localizedDescription
+                }
+            }
+        }
     }
 
     private func locateGame() {

@@ -20,10 +20,9 @@ struct BigButtonStyle: ButtonStyle {
             look: playdockButtonLook(skin: skin, prominent: prominent, isPressed: configuration.isPressed, accentOverride: accentOverride),
             skin: skin,
             font: .title3.weight(.semibold),
-            horizontalPadding: 24,
-            verticalPadding: 16
+            horizontalPadding: 28,
+            verticalPadding: 14
         )
-        .frame(maxWidth: .infinity)
     }
 }
 

@@ -28,29 +28,31 @@ struct CDriveView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            VStack(alignment: .leading, spacing: 12) {
                 Picker("Bottle", selection: bottleSelection) {
                     ForEach(model.bottles) { bottle in
                         Text(bottle.isReadOnly ? "\(bottle.name) (Sikarugir)" : bottle.name)
                             .tag(Optional(bottle.id))
                     }
                 }
-                .frame(maxWidth: 280)
-                Spacer()
-                Button {
-                    model.refreshBottlesAndApps()
-                } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                .frame(maxWidth: 420)
+                HStack(spacing: 12) {
+                    Button {
+                        model.refreshBottlesAndApps()
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin, compact: true))
+                    Button {
+                        if !currentFolder.isEmpty { model.revealInFinder(currentFolder) }
+                    } label: {
+                        Label("Open in Finder", systemImage: "arrow.up.forward.app")
+                    }
+                    .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin, compact: true))
                 }
-                .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin, compact: true))
-                Button {
-                    if !currentFolder.isEmpty { model.revealInFinder(currentFolder) }
-                } label: {
-                    Label("Open in Finder", systemImage: "arrow.up.forward.app")
-                }
-                .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin, compact: true))
             }
-            .padding(16)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             // "top bar will be the same look... every aspect of the app should be the appearance,"
             // per live feedback - this row used to sit on the native window background with only
             // a manually-added accent line standing in for real theming. Now the exact same real
@@ -92,7 +94,7 @@ struct CDriveView: View {
                         }
                     }
                     .listStyle(.inset)
-                    .environment(\.defaultMinListRowHeight, 44)
+                    .environment(\.defaultMinListRowHeight, 52)
                     .onChange(of: focusedIndex) { index in
                         guard let index, entries.indices.contains(index) else { return }
                         withAnimation { scrollProxy.scrollTo(entries[index].id, anchor: .center) }
@@ -166,8 +168,8 @@ struct CDriveView: View {
             Spacer()
         }
         .font(.callout)
-        .padding(.horizontal, 12)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
     }
 }
 

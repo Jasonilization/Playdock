@@ -31,7 +31,10 @@ enum CDriveScanner {
     /// Every bottle ExeDock knows about: its own bottles plus any read-only discovered Sikarugir
     /// wrapper bottles.
     static func allKnownBottles() -> [Bottle] {
-        [BottleManager.shared.defaultBottle, BottleManager.shared.steamBottle] + BottleManager.shared.discoverSikarugirWrapperBottles()
+        let names = Dictionary(uniqueKeysWithValues: CustomGameStore.loadAll().map { ($0.id, $0.effectiveName) })
+        return [BottleManager.shared.defaultBottle, BottleManager.shared.steamBottle]
+            + BottleManager.shared.ownedGameBottles(names: names)
+            + BottleManager.shared.discoverSikarugirWrapperBottles()
     }
 
     /// Prefers an exe whose name matches the folder name, else falls back to the largest exe -

@@ -10,7 +10,7 @@ struct SteamStoreInfo: Codable, Equatable {
     /// guessing "is this incomplete?" from which fields happen to be empty (a genuinely sparse but
     /// fully-fetched entry - an obscure app with no Metacritic score, say - would otherwise look
     /// permanently stale under that heuristic).
-    static let currentSchemaVersion = 4
+    static let currentSchemaVersion = 6
 
     let shortDescription: String?
     /// The full "About This Game" text, HTML tags stripped down to plain text (with paragraph
@@ -19,6 +19,11 @@ struct SteamStoreInfo: Codable, Equatable {
     var aboutTheGame: String?
     /// Path to a locally cached copy of the header image, if one downloaded successfully.
     let headerImagePath: String?
+    /// Steam's library hero (about 1920×620). This is the wide library picture, not the
+    /// logo that sits beside the title on the game page.
+    var libraryHeroPath: String?
+    /// Steam's portrait box (600×900) for list rows and portrait tiles.
+    var portraitPath: String?
     /// Path to a locally cached copy of the wide background/hero art, if one downloaded
     /// successfully - meant for a full-screen detail view backdrop, not the small grid card.
     var backgroundImagePath: String?
@@ -35,13 +40,15 @@ struct SteamStoreInfo: Codable, Equatable {
     var screenshotFullImageURLs: [String] = []
     var schemaVersion: Int = Self.currentSchemaVersion
 
-    init(shortDescription: String?, aboutTheGame: String? = nil, headerImagePath: String?, backgroundImagePath: String? = nil,
+    init(shortDescription: String?, aboutTheGame: String? = nil, headerImagePath: String?, libraryHeroPath: String? = nil, portraitPath: String? = nil, backgroundImagePath: String? = nil,
          screenshotPaths: [String] = [], genres: [String] = [], releaseDate: String? = nil, developers: [String] = [],
          publishers: [String] = [], metacriticScore: Int? = nil, metacriticURL: String? = nil, categories: [String] = [],
          screenshotFullImageURLs: [String] = []) {
         self.shortDescription = shortDescription
         self.aboutTheGame = aboutTheGame
         self.headerImagePath = headerImagePath
+        self.libraryHeroPath = libraryHeroPath
+        self.portraitPath = portraitPath
         self.backgroundImagePath = backgroundImagePath
         self.screenshotPaths = screenshotPaths
         self.genres = genres
@@ -72,6 +79,8 @@ struct SteamStoreInfo: Codable, Equatable {
         shortDescription = try container.decodeIfPresent(String.self, forKey: .shortDescription)
         aboutTheGame = try container.decodeIfPresent(String.self, forKey: .aboutTheGame)
         headerImagePath = try container.decodeIfPresent(String.self, forKey: .headerImagePath)
+        libraryHeroPath = try container.decodeIfPresent(String.self, forKey: .libraryHeroPath)
+        portraitPath = try container.decodeIfPresent(String.self, forKey: .portraitPath)
         backgroundImagePath = try container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         screenshotPaths = try container.decodeIfPresent([String].self, forKey: .screenshotPaths) ?? []
         genres = try container.decodeIfPresent([String].self, forKey: .genres) ?? []
@@ -88,7 +97,7 @@ struct SteamStoreInfo: Codable, Equatable {
     /// Explicit so the synthesized *encoder* covers every field (the custom decoder reads
     /// leniently; without this list, `screenshotFullImageURLs` would silently never be saved).
     private enum CodingKeys: String, CodingKey {
-        case shortDescription, aboutTheGame, headerImagePath, backgroundImagePath
+        case shortDescription, aboutTheGame, headerImagePath, libraryHeroPath, portraitPath, backgroundImagePath
         case screenshotPaths, screenshotFullImageURLs
         case genres, categories, releaseDate, developers, publishers
         case metacriticScore, metacriticURL, schemaVersion
@@ -116,6 +125,26 @@ struct SteamStoreInfo: Codable, Equatable {
         }
         text = lines.joined(separator: "\n")
         text = text.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return readableParagraphs(from: text)
+    }
+
+    /// Older cached copy glued the next sentence onto the period (`dreams.Dreamcore`) and
+    /// kept section breaks as a single newline, so the About block read as one slab. This
+    /// only splits where a letter, then punctuation, then a capital run together with no
+    /// space, and turns a lone line break into a paragraph gap.
+    static func readableParagraphs(from text: String) -> String {
+        var result = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+        result = result.replacingOccurrences(
+            of: "([a-z][.!?])([A-Z])",
+            with: "$1\n\n$2",
+            options: .regularExpression
+        )
+        result = result.replacingOccurrences(
+            of: "(?<!\\n)\\n(?!\\n)",
+            with: "\n\n",
+            options: .regularExpression
+        )
+        result = result.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

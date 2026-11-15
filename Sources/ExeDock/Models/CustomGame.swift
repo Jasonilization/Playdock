@@ -43,19 +43,24 @@ struct CustomGame: Codable, Identifiable, Equatable {
     var addedAt: Date
     var discovered: DiscoveredMetadata
     var overrides: CustomGameOverrides
+    /// When set, this game has its own bottle under `Bottles/Games/<bottleID>`. Older library
+    /// entries leave this nil and keep launching from whichever prefix already contains the exe.
+    var bottleID: String?
 
     init(
         id: String = UUID().uuidString,
         exePath: String,
         addedAt: Date = Date(),
         discovered: DiscoveredMetadata = DiscoveredMetadata(),
-        overrides: CustomGameOverrides = CustomGameOverrides()
+        overrides: CustomGameOverrides = CustomGameOverrides(),
+        bottleID: String? = nil
     ) {
         self.id = id
         self.exePath = exePath
         self.addedAt = addedAt
         self.discovered = discovered
         self.overrides = overrides
+        self.bottleID = bottleID
     }
 
     var effectiveName: String {

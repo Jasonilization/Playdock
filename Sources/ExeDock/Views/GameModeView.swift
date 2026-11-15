@@ -62,7 +62,7 @@ struct GameModeView: View {
     /// that came from), so letting someone turn it off entirely addresses both complaints, not just
     /// the visual one.
     static let showSteamIconKey = "com.exedock.showSteamIcon"
-    @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = true
+    @AppStorage(GameModeView.showSteamIconKey) private var showSteamIcon = false
     /// "a setting to hide labels" - one global switch for every Custom/Mac/Windows badge, native
     /// layouts and the WebView-rendered ones alike, rather than a per-badge-kind toggle nobody
     /// asked for. Nothing reads this yet - a separate, later piece wires it into the actual badge
@@ -71,7 +71,7 @@ struct GameModeView: View {
     @AppStorage(GameModeView.hideBadgesKey) private var hideLibraryBadges = false
     /// The floating Settings launcher's shown/minimized state - `true` is the full pill, `false`
     /// collapses it to an edge tab, exactly the way `showSteamIcon` works for the Steam icon.
-    @AppStorage(SettingsLauncher.showLauncherKey) private var showSettingsLauncher = true
+    @AppStorage(SettingsLauncher.showLauncherKey) private var showSettingsLauncher = false
     @LocalState private var search = ""
     /// Drives the full-window `SettingsPanelView` overlay (it used to be a small `.sheet`).
     @LocalState private var showingSettings = false
@@ -198,10 +198,15 @@ struct GameModeView: View {
                 art: SkinWebArt.dataURI(forImagePath: presentation?.artPath),
                 custom: isCustom,
                 mac: isMac,
+                windows: !isCustom && !isMac,
                 running: runningTracker.runningGames[entry.id] != nil,
                 size: sizeText,
                 hours: totalSecondsPlayed > 0 ? Self.playHoursText(totalSecondsPlayed) : nil,
-                favorite: curation.isFavorite(entry.id)
+                favorite: curation.isFavorite(entry.id),
+                downloading: {
+                    if case .steam(let game) = entry { return game.isDownloading }
+                    return false
+                }()
             )
         }
     }
@@ -223,40 +228,40 @@ struct GameModeView: View {
             for entry in libraryEntries where libraryPresentations[entry.id] == nil {
                 group.addTask { (entry.id, await LibraryPresentation.resolve(entry)) }
             }
+            var resolved: [String: LibraryPresentation] = [:]
             for await (id, presentation) in group {
-                libraryPresentations[id] = presentation
+                resolved[id] = presentation
+            }
+            if !resolved.isEmpty {
+                libraryPresentations.merge(resolved) { _, new in new }
             }
         }
     }
 
     var body: some View {
-        if !model.isGameModeUnlocked {
-            lockedState
-        } else {
-            dashboard
-        }
+        dashboard
     }
 
     // MARK: - Locked
 
-    private var lockedState: some View {
-        VStack(spacing: 24) {
+    private var steamInstallBanner: some View {
+        HStack(spacing: 14) {
             if model.isInstallingSteam {
-                LoadingDotsView(message: installingMessage)
+                ProgressView()
+                Text(installingMessage)
+                    .font(.callout)
             } else {
-                Image(systemName: "gamecontroller")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.secondary)
-                Text("Your games live here once Steam is installed.")
-                    .font(.title2)
-                Button("Install & Run Steam") {
-                    model.installAndRunSteam()
-                }
-                .buttonStyle(.big)
-                .frame(maxWidth: 320)
+                Text("Install official Steam to add Windows games. Games already here stay in the library.")
+                    .font(.callout)
+                Spacer(minLength: 8)
+                Button("Install Steam") { model.installAndRunSteam() }
+                    .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(skin.accent.opacity(0.12))
     }
 
     private var installingMessage: String {
@@ -300,6 +305,9 @@ struct GameModeView: View {
             }
 
             VStack(spacing: 0) {
+                if !model.isGameModeUnlocked {
+                    steamInstallBanner
+                }
                 header
                 // No separate Divider() here anymore - header's own new skin-accent bottom border
                 // (see header's doc comment) already does this row's job, and a plain gray divider
@@ -344,6 +352,7 @@ struct GameModeView: View {
                             // to draw a visible ring. See window.PlaydockSetFocus in skins.js.
                             focusedID: focusedCardID,
                             searchFocused: controllerObserver.libraryFocus == .search,
+                            hideBadges: hideLibraryBadges,
                             onOpen: openLibraryEntry
                         )
                         .frame(width: geometry.size.width, height: geometry.size.height)
@@ -385,6 +394,7 @@ struct GameModeView: View {
             // ControllerLayer *and* actually connected) - this padding with no controller attached
             // would just be a permanent, pointless gap at the bottom of the grid.
             .padding(.bottom, gridBottomInset)
+            .padding(.trailing, cornerReserve)
             .animation(.easeInOut(duration: 0.2), value: controllerObserver.isConnected)
 
             // The two bottom-right floating controls - the Steam icon and (stacked just above it)
@@ -398,53 +408,58 @@ struct GameModeView: View {
                     .allowsHitTesting(false)
             }
 
-            if let detailGame {
-                GameDetailView(game: detailGame, isAdvancedMode: isAdvancedMode) {
-                    self.detailGame = nil
-                } onLaunch: {
-                    self.detailGame = nil
-                    launchOverlayGame = detailGame
-                } onOpenSimilar: { similar in
-                    self.detailGame = similar
-                }
-                .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                .zIndex(1)
-            }
-
-            if let detailCustomGame {
-                CustomGameDetailView(game: detailCustomGame, isAdvancedMode: isAdvancedMode) {
-                    self.detailCustomGame = nil
-                } onLaunch: {
-                    self.detailCustomGame = nil
-                    launchOverlayCustomGame = detailCustomGame
-                }
-                .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                .zIndex(1)
-            }
-
-            if let launchOverlayGame {
-                LaunchOverlayView(game: launchOverlayGame, config: model.config(for: launchOverlayGame))
-                    .transition(.opacity.combined(with: .scale(scale: 0.94)))
+            // Animated on their own, not on the library underneath. An animation on the
+            // whole dashboard was redrawing the game grid on every frame of the transition.
+            Group {
+                if let detailGame {
+                    GameDetailView(game: detailGame, isAdvancedMode: isAdvancedMode) {
+                        self.detailGame = nil
+                    } onLaunch: {
+                        // Stay on the page. Launch already flips the button to "Launching…".
+                        // Covering the window here is what left people stuck on the launch screen.
+                    } onOpenSimilar: { similar in
+                        self.detailGame = similar
+                    }
+                    .transition(.playdockPage)
                     .zIndex(1)
-            }
+                }
 
-            if let launchOverlayCustomGame {
-                CustomLaunchOverlayView(
-                    game: launchOverlayCustomGame,
-                    statusLine: "Launching via \(model.resolvedBottle(forExePath: launchOverlayCustomGame.exePath).name)…"
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.94)))
-                .zIndex(1)
+                if let detailCustomGame {
+                    CustomGameDetailView(game: detailCustomGame, isAdvancedMode: isAdvancedMode) {
+                        self.detailCustomGame = nil
+                    } onLaunch: {
+                        // Stay on the page. The Launch button already shows progress.
+                    }
+                    .transition(.playdockPage)
+                    .zIndex(1)
+                }
+
+                if let launchOverlayGame {
+                    LaunchOverlayView(game: launchOverlayGame, config: model.config(for: launchOverlayGame)) {
+                        self.launchOverlayGame = nil
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
+                }
+
+                if let launchOverlayCustomGame {
+                    CustomLaunchOverlayView(
+                        game: launchOverlayCustomGame,
+                        statusLine: "Launching via \(model.bottle(for: launchOverlayCustomGame).name)…"
+                    ) {
+                        self.launchOverlayCustomGame = nil
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
+                }
             }
+            .animation(PlaydockMotion.page, value: detailGame?.appID)
+            .animation(PlaydockMotion.page, value: detailCustomGame?.id)
+            .animation(PlaydockMotion.page, value: launchOverlayGame?.appID)
+            .animation(PlaydockMotion.page, value: launchOverlayCustomGame?.id)
 
             settingsOverlay
         }
-        .animation(.easeInOut(duration: 0.2), value: model.launchingTarget)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: launchOverlayGame?.appID)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: launchOverlayCustomGame?.id)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: detailGame?.appID)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: detailCustomGame?.id)
-        .animation(.easeInOut(duration: 0.4), value: themedGame?.appID)
         .skinned()
         // Used to pin every skin to one fixed appearance here (see git history for why - a real
         // Color.primary-vs-Dark-Mode bug this was the first fix for). Superseded now: "make sure
@@ -461,8 +476,11 @@ struct GameModeView: View {
         .onChange(of: model.steamGames) { _ in
             runningTracker.syncWatchedGames(watchTargets)
         }
-        .onChange(of: model.customGames) { _ in
+        .onChange(of: model.customGames) { games in
             runningTracker.syncWatchedGames(watchTargets)
+            if let current = detailCustomGame, let updated = games.first(where: { $0.id == current.id }) {
+                detailCustomGame = updated
+            }
         }
         .onAppear {
             runningTracker.syncWatchedGames(watchTargets)
@@ -476,6 +494,11 @@ struct GameModeView: View {
             activateFocusedTarget()
         }
         .onChange(of: controllerObserver.secondaryPress) { _ in
+            if launchOverlayGame != nil || launchOverlayCustomGame != nil {
+                launchOverlayGame = nil
+                launchOverlayCustomGame = nil
+                return
+            }
             guard isDashboardTheActiveControllerLayer, libraryLayout != .grid else { return }
             if case .card = controllerObserver.libraryFocus {
                 controllerObserver.libraryFocus = .settings
@@ -524,6 +547,10 @@ struct GameModeView: View {
             Text(installedGameCountLabel)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if libraryLayout != .grid {
+                librarySearchField
+                    .frame(maxWidth: 280)
+            }
             Spacer()
             // Grouped under one shared, skin-tinted backing instead of floating as separate bordered
             // controls, matching the rest of the top bar's own look. Sort lives
@@ -533,7 +560,7 @@ struct GameModeView: View {
             // capability the mockups never needed), so it stays as native chrome alongside
             // Add/Refresh/Settings instead of being dropped - it still governs every layout's
             // ordering, not just Grid's.
-            HStack(spacing: 6) {
+            HStack(spacing: 14) {
                 favoritesToggle
                     .focusRing(isControlFocused(.favorites))
                 sortMenu
@@ -554,16 +581,16 @@ struct GameModeView: View {
                     openSettings()
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
             .background(skin.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous)
                     .strokeBorder(skin.accent.opacity(0.18), lineWidth: skin.borderWidth)
             )
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
         // "make sure the top bar matches (the account and sort part) the colour etc." - this used
         // to be a generic `.bar` material with just an accent-colored bottom rule standing in for
         // real theming. Now the exact same real `.topbar` background/border/glow every other
@@ -589,7 +616,7 @@ struct GameModeView: View {
     /// exactly so the pair reads as one control family.
     private var favoritesToggle: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.15)) { favoritesOnly.toggle() }
+            withAnimation(PlaydockMotion.chrome) { favoritesOnly.toggle() }
         } label: {
             Image(systemName: favoritesOnly ? "heart.fill" : "heart")
                 .font(.callout.weight(.medium))
@@ -632,7 +659,7 @@ struct GameModeView: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .animation(.easeInOut(duration: 0.2), value: sortOption)
+        .animation(PlaydockMotion.chrome, value: sortOption)
     }
 
     /// A soft rounded-square, icon-only button - used for the header's secondary actions
@@ -641,11 +668,8 @@ struct GameModeView: View {
     private func headerIconButton(systemImage: String, help: String, isFocused: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.title3)
-                .frame(width: 34, height: 34)
         }
-        .buttonStyle(.bordered)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .buttonStyle(SkinIconButtonStyle(skin: skin))
         .focusRing(isFocused)
         .help(help)
     }
@@ -679,8 +703,8 @@ struct GameModeView: View {
         // exactly why the collapsed tab landed somewhere unreachable/invisible instead of neatly
         // docked to the edge. Every child below now sizes itself to this *same* pair of numbers,
         // so there's only ever one real size in play, not two disagreeing ones.
-        let width: CGFloat = collapsed ? 34 : 200
-        let height: CGFloat = collapsed ? 116 : 200
+        let width: CGFloat = collapsed ? 34 : 72
+        let height: CGFloat = collapsed ? 116 : 72
         let wellRadius = min(skin.cardRadius, collapsed ? 16 : 44)
         let well: AnyShape = collapsed
             ? AnyShape(LeftRoundedRect(radius: max(wellRadius, 6)))
@@ -688,7 +712,7 @@ struct GameModeView: View {
 
         return ZStack(alignment: .topLeading) {
             ZStack {
-                steamIcon(size: 200, cornerRadius: 44)
+                steamIcon(size: 48, cornerRadius: 14)
                     .opacity(isLaunching ? 0.3 : 1)
                 if isLaunching {
                     ProgressView().controlSize(.large).scaleEffect(1.8)
@@ -760,7 +784,7 @@ struct GameModeView: View {
         // fixed 24pt inset only while expanded, matching the padding this always had.
         .padding(.trailing, collapsed ? 0 : 24)
         .padding(.bottom, collapsed ? 40 : 24)
-        .animation(.easeInOut(duration: 0.3), value: showSteamIcon)
+        .animation(PlaydockMotion.chrome, value: showSteamIcon)
     }
 
     @ViewBuilder
@@ -807,23 +831,23 @@ struct GameModeView: View {
                 .allowsHitTesting(noDashboardOverlayActive && !showingSettings)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-        .animation(.easeInOut(duration: 0.3), value: showSteamIcon)
-        .animation(.easeInOut(duration: 0.3), value: showSettingsLauncher)
+        .animation(PlaydockMotion.chrome, value: showSteamIcon)
+        .animation(PlaydockMotion.chrome, value: showSettingsLauncher)
     }
 
     @ViewBuilder
     private var settingsOverlay: some View {
         if showingSettings {
             SettingsPanelView {
-                withAnimation(.easeInOut(duration: 0.25)) { showingSettings = false }
+                withAnimation(PlaydockMotion.page) { showingSettings = false }
             }
-            .transition(.opacity)
+            .transition(.playdockPage)
             .zIndex(3)
         }
     }
 
     private func openSettings() {
-        withAnimation(.easeInOut(duration: 0.25)) { showingSettings = true }
+        withAnimation(PlaydockMotion.page) { showingSettings = true }
     }
 
     /// A floating Settings launcher that mirrors `steamFloatingIcon`: one continuous view that is
@@ -838,7 +862,7 @@ struct GameModeView: View {
         let height: CGFloat = collapsed ? 92 : 46
         // Clear the Steam icon whatever state it's in: expanded it's a 200pt icon 24pt off the
         // bottom, collapsed a 116pt edge tab starting 40pt up. Sit just above either.
-        let bottomInset: CGFloat = showSteamIcon ? (24 + 200 + 14) : (40 + 116 + 12)
+        let bottomInset: CGFloat = showSteamIcon ? (24 + 72 + 14) : (40 + 116 + 12)
         let shape: AnyShape = collapsed ? AnyShape(LeftRoundedRect(radius: 14)) : AnyShape(Capsule())
 
         return ZStack(alignment: .topLeading) {
@@ -896,7 +920,7 @@ struct GameModeView: View {
         .focusRing(isControlFocused(.settingsLauncher))
         .padding(.trailing, collapsed ? 0 : 22)
         .padding(.bottom, bottomInset)
-        .animation(.easeInOut(duration: 0.3), value: showSettingsLauncher)
+        .animation(PlaydockMotion.chrome, value: showSettingsLauncher)
     }
 
     private var profileAvatar: some View {
@@ -912,6 +936,30 @@ struct GameModeView: View {
         .frame(width: 34, height: 34)
         .clipShape(RoundedRectangle(cornerRadius: 9))
         .hoverSpin()
+    }
+
+    /// Shelves, sidebar, carousel, and the rest have no search field inside the page. Grid keeps
+    /// the one drawn by each skin. This field drives the same `search` filter those layouts already use.
+    private var librarySearchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField(L("Search your games"), text: $search)
+                .textFieldStyle(.plain)
+            if !search.isEmpty {
+                Button { search = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(skin.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: skin.cardRadius, style: .continuous)
+                .strokeBorder(skin.accent.opacity(0.18), lineWidth: skin.borderWidth)
+        )
+        .focusRing(controllerObserver.libraryFocus == .search)
     }
 
     private var searchBar: some View {
@@ -973,6 +1021,13 @@ struct GameModeView: View {
         return max(Self.gridBottomPaddingMinimum, controllerPad)
     }
 
+    /// The edge tabs sit on top of the library. This keeps the last column out from under them.
+    private var cornerReserve: CGFloat {
+        let steam: CGFloat = showSteamIcon ? 100 : 44
+        let settings: CGFloat = showSettingsLauncher ? 100 : 44
+        return max(steam, settings)
+    }
+
     /// Non-hidden Steam plus custom games - what the header count should reflect, not Steam alone.
     private var installedVisibleGameCount: Int {
         model.steamGames.filter { !curation.isHidden($0.appID) }.count
@@ -1009,14 +1064,14 @@ struct GameModeView: View {
     /// D-pad up/down jump the "wrong" number of cards at worst, never break the actual visual
     /// layout the way it did when this same measurement was load-bearing for column count itself.
     /// Grid's real, live layout is the WebView's own CSS - `.grid{grid-template-columns:repeat(
-    /// auto-fill,minmax(250px,1fr));gap:24px;}` in skins.css, a fixed 250px/24px regardless of how
+    /// auto-fill,minmax(280px,1fr));gap:36px;}` in skins.css, a fixed 280px/36px regardless of how
     /// many entries there are - not `idealCardSizeTier` (a *different*, count-dependent sizing table
     /// that only ever applied to the native `GameCardView` grid, which nothing renders anymore).
     /// Using the wrong constants here doesn't break the actual grid, but it does make the D-pad ring
     /// jump to a visually wrong row - exactly the kind of thing that reads as "navigation is broken"
     /// even though the mechanism underneath works.
-    private static let webCardMinWidth: CGFloat = 250
-    private static let webCardGap: CGFloat = 24
+    private static let webCardMinWidth: CGFloat = 280
+    private static let webCardGap: CGFloat = 36
     private var columnCount: Int {
         guard gridWidth > 0 else { return 1 }
         return max(1, Int((gridWidth + Self.webCardGap) / (Self.webCardMinWidth + Self.webCardGap)))
@@ -1055,9 +1110,7 @@ struct GameModeView: View {
     /// The control directly under the header: the page's search field on the grid, otherwise the
     /// games themselves, otherwise the corner controls.
     private var belowHeader: LibraryControl {
-        if libraryLayout == .grid { return .search }
-        if !libraryEntries.isEmpty { return .card(0) }
-        return bottomRow.last ?? .uiScale
+        .search
     }
 
     private var aboveBottom: LibraryControl {
@@ -1178,7 +1231,7 @@ struct GameModeView: View {
             guard sections.indices.contains(index) else { return }
             model.selectedSection = sections[index]
         case .favorites:
-            withAnimation(.easeInOut(duration: 0.15)) { favoritesOnly.toggle() }
+            withAnimation(PlaydockMotion.chrome) { favoritesOnly.toggle() }
         case .sort:
             cycleSort()
         case .add:
@@ -1229,7 +1282,7 @@ struct GameModeView: View {
                             game: game, isAdvancedMode: isAdvancedMode, artworkHeight: artworkHeight,
                             isFocused: isFocused
                         ) {
-                            launchOverlayGame = game
+                            model.launchSteamGame(game)
                         } onOpenDetail: {
                             detailGame = game
                         }
@@ -1254,7 +1307,7 @@ struct GameModeView: View {
                             game: customGame, isAdvancedMode: isAdvancedMode, artworkHeight: artworkHeight,
                             isFocused: isFocused
                         ) {
-                            launchOverlayCustomGame = customGame
+                            model.launchCustomGame(customGame)
                         } onOpenDetail: {
                             detailCustomGame = customGame
                         }
@@ -1278,13 +1331,21 @@ struct GameModeView: View {
     @ViewBuilder
     private var alternateLayout: some View {
         let openDetail: (LibraryEntry) -> Void = { openLibraryEntry(id: $0.id) }
+        let launchEntry: (LibraryEntry) -> Void = { entry in
+            switch entry {
+            case .steam(let game):
+                model.launchSteamGame(game)
+            case .custom(let game):
+                model.launchCustomGame(game)
+            }
+        }
         switch libraryLayout {
         case .grid: EmptyView() // unreachable - handled above
-        case .shelves: LibraryShelvesLayout(entries: libraryEntries, onOpenDetail: openDetail)
-        case .sidebar: LibrarySidebarLayout(entries: libraryEntries, onOpenDetail: openDetail)
+        case .shelves: LibraryShelvesLayout(entries: libraryEntries, onOpenDetail: openDetail, onLaunch: launchEntry)
+        case .sidebar: LibrarySidebarLayout(entries: libraryEntries, onOpenDetail: openDetail, onLaunch: launchEntry)
         case .steam: LibrarySteamStyleLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, focusedID: focusedCardID, onOpenDetail: openDetail)
         case .carousel: LibraryCarouselLayout(entries: libraryEntries, onOpenDetail: openDetail)
-        case .spotlight: LibrarySpotlightLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, focusedID: focusedCardID, onOpenDetail: openDetail)
+        case .spotlight: LibrarySpotlightLayout(entries: libraryEntries, webGridEntries: webGridEntries, skin: skin, isDark: systemColorScheme == .dark, focusedID: focusedCardID, onOpenDetail: openDetail, onLaunch: launchEntry)
         }
     }
 
@@ -1379,10 +1440,9 @@ private struct GameCardView: View {
             } label: {
                 Label("View Details", systemImage: "info.circle")
             }
-            if runningInfo == nil {
+            if runningInfo == nil && !game.isPreviewSample && !game.isDownloading {
                 Button {
                     onLaunch()
-                    model.launchSteamGame(game)
                 } label: {
                     Label("Launch", systemImage: "play.fill")
                 }
@@ -1531,6 +1591,8 @@ private enum DetailAction: Equatable {
 
 struct GameDetailView: View {
     @EnvironmentObject private var model: AppModel
+    @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
+    private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
     @ObservedObject private var runningTracker = RunningGameTracker.shared
     @ObservedObject private var controllerObserver = ControllerObserver.shared
     /// Live play-activity for this game - totals, session count, last-played - from the local
@@ -1575,7 +1637,7 @@ struct GameDetailView: View {
     /// highlights a Settings button that isn't rendered outside Advanced Mode).
     private var availableActions: [DetailAction] {
         var actions: [DetailAction] = [.favorite, .hide]
-        if runningInfo == nil { actions.append(.launch) }
+        if runningInfo == nil && !game.isPreviewSample && !game.isDownloading { actions.append(.launch) }
         // A native macOS Steam game has no ExeDock-managed wine bottle/engine to configure.
         if isAdvancedMode && game.source == .wineBottle { actions.append(.settings) }
         actions.append(.reveal)
@@ -1630,49 +1692,27 @@ struct GameDetailView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            Color(red: 0.07, green: 0.07, blue: 0.09)
+            SkinBackground(skin: skin)
                 .ignoresSafeArea()
-            backdrop
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            VStack(alignment: .leading, spacing: 0) {
-                closeButton
+            GeometryReader { geo in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 22) {
-                        header
-                        // Photos sit in their own column to the right of the text, not stacked
-                        // below it.
-                        HStack(alignment: .top, spacing: 24) {
-                            VStack(alignment: .leading, spacing: 22) {
-                                actionRow
-                                reliabilityBanner
-                                descriptionCard
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                            if hasPhotos {
-                                photoGrid
-                            }
+                    VStack(alignment: .leading, spacing: 28) {
+                        launcherHero
+                        VStack(alignment: .leading, spacing: 24) {
+                            header
+                            if hasPhotos { photoGrid }
+                            reliabilityBanner
+                            descriptionCard
+                            if !similarGames.isEmpty { moreLikeThis }
                         }
-
-                        if !similarGames.isEmpty {
-                            moreLikeThis
-                        }
+                        .padding(.horizontal, 32)
                     }
-                    .padding(32)
-                    // The double .frame() is deliberate, not redundant: the first caps the content
-                    // column's own width so it stays readable at 1320pt; the second then re-expands
-                    // that capped block to fill whatever width the ScrollView actually has and
-                    // re-applies leading alignment *within* that full width. A single
-                    // `.frame(maxWidth: 1320, alignment: .leading)` only caps the view's own size -
-                    // it doesn't reliably left-anchor it against a wider ancestor, which is exactly
-                    // what put this content off-screen entirely: confirmed live, content rendering
-                    // well past the left edge of the window with no way to reach the close button.
-                    .frame(maxWidth: 1320, alignment: .leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 160)
+                    .frame(width: geo.size.width, alignment: .topLeading)
                 }
-                .clipped()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.bottom, 72)
+            closeButton
 
             if let expandedPhotoIndex {
                 photoLightbox(at: expandedPhotoIndex)
@@ -1681,7 +1721,6 @@ struct GameDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .colorScheme(.dark)
         .task(id: game.appID) {
             storeInfo = await SteamStoreInfoCache.shared.info(for: game.metadataAppID)
             if let path = storeInfo?.headerImagePath { gameAccent = await GameArtColor.dominantColor(forImagePath: path) }
@@ -1736,71 +1775,84 @@ struct GameDetailView: View {
             onClose()
         } label: {
             Image(systemName: "xmark")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
-                // A real solid backing, not just the SF Symbol's own faint built-in shadow layer -
-                // busy, high-contrast game art (bright whites, bold text baked into the artwork
-                // itself) could wash the old icon-only close button out almost completely, leaving
-                // no visible way out of a detail view.
-                .background(.black.opacity(0.55), in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.25)))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(skin.accent)
+                .frame(width: 34, height: 34)
+                .background(skin.topBarBackground, in: closeShape)
+                .overlay(closeShape.strokeBorder(skin.topBarBorderColor ?? skin.accent.opacity(0.45), lineWidth: skin.borderWidth))
         }
         .buttonStyle(.plain)
         .padding(24)
         .keyboardShortcut(.cancelAction)
     }
 
-    @ViewBuilder
-    private var backdrop: some View {
-        if let path = storeInfo?.backgroundImagePath ?? storeInfo?.headerImagePath, let image = LocalImageCache.image(atPath: path) {
-            Image(nsImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .blur(radius: 50)
-                .overlay(Color.black.opacity(0.78))
-                .ignoresSafeArea()
-        } else {
-            LinearGradient(colors: [Color.accentColor.opacity(0.5), .black], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+    private var closeShape: PlaydockCardShape {
+        PlaydockCardShape(skin: skin, cornerRadius: min(skin.cardRadius, 8))
+    }
+
+    /// The picture, the name, and Launch on the same surface. No blur band and no box around
+    /// the art — that frame was the picture letterboxed inside a rounded rectangle.
+    private var launcherHero: some View {
+        HStack(alignment: .center, spacing: 24) {
+            if let path = storeInfo?.headerImagePath ?? storeInfo?.backgroundImagePath,
+               let image = LocalImageCache.image(atPath: path) {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 132)
+                    .fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center, spacing: 10) {
+                    Text(game.name)
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        curation.toggleFavorite(game.appID)
+                    } label: {
+                        Image(systemName: curation.isFavorite(game.appID) ? "heart.fill" : "heart")
+                            .font(.title3)
+                            .foregroundStyle(curation.isFavorite(game.appID) ? .pink : skin.accent.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                    .focusRing(isFocused(.favorite))
+                    .help(L(curation.isFavorite(game.appID) ? "Remove from Favorites" : "Mark as Favorite"))
+                    Menu {
+                        Button(L("Hide This Game from Library"), role: .destructive) {
+                            curation.hide(game.appID)
+                            onClose()
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.title3)
+                            .foregroundStyle(skin.accent)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .focusRing(isFocused(.hide))
+                }
+                if !subtitleLine.isEmpty {
+                    Text(subtitleLine)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                actionRow
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(.horizontal, 32)
+        .padding(.top, 64)
+        .padding(.bottom, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                SkinTitleText(text: game.name, size: 34)
-                    .foregroundStyle(.white)
-                Button {
-                    curation.toggleFavorite(game.appID)
-                } label: {
-                    Image(systemName: curation.isFavorite(game.appID) ? "heart.fill" : "heart")
-                        .font(.title2)
-                        .foregroundStyle(curation.isFavorite(game.appID) ? .pink : .white.opacity(0.45))
-                }
-                .buttonStyle(.plain)
-                .focusRing(isFocused(.favorite))
-                .help(L(curation.isFavorite(game.appID) ? "Remove from Favorites" : "Mark as Favorite"))
-                // Second-class actions tucked into one menu, not another visible circle -
-                // "hide this game" is rare, reversible (Settings > Hidden Games), and out of the
-                // way here instead of competing with the favorite heart.
-                Menu {
-                    Button(L("Hide This Game from Library"), role: .destructive) {
-                        curation.hide(game.appID)
-                        onClose()
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.title3)
-                        .foregroundStyle(.white.opacity(0.55))
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .focusRing(isFocused(.hide))
-            }
+        VStack(alignment: .leading, spacing: 18) {
             if storeInfo?.metacriticScore != nil || !(storeInfo?.genres.isEmpty ?? true) {
-                HStack(spacing: 10) {
+                DetailWrap(spacing: 10) {
                     if let score = storeInfo?.metacriticScore {
                         metacriticBadge(score)
                     }
@@ -1815,25 +1867,21 @@ struct GameDetailView: View {
             // rendered as compact chips right under the genre tags. Anything Playdock doesn't
             // specifically recognize just doesn't chip (no cryptic raw store strings).
             if !capabilityChips.isEmpty {
-                HStack(spacing: 8) {
+                DetailWrap(spacing: 10) {
                     ForEach(capabilityChips, id: \.label) { chip in
                         Label(L(chip.label), systemImage: chip.icon)
-                            .font(.caption.weight(.semibold))
-                            .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(.white.opacity(0.10), in: Capsule())
-                            .overlay(Capsule().stroke(.white.opacity(0.18)))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(skin.accent.opacity(0.16), in: Capsule())
                     }
                 }
-            }
-            if !subtitleLine.isEmpty {
-                Text(subtitleLine)
-                    .font(.callout)
-                    .foregroundStyle(.white.opacity(0.6))
             }
             if let activity = activitySummary {
                 Label(activity, systemImage: "gamecontroller")
                     .font(.callout)
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -1868,13 +1916,10 @@ struct GameDetailView: View {
         }
     }
 
-    /// Header art first, then every screenshot, in that order - the one list both `hasPhotos` and
-    /// `photoGrid` build rows from.
+    /// Screenshots only. The header art is already the banner, so repeating it here made the
+    /// first "screenshot" a copy of the picture at the top of the page.
     private var allPhotoPaths: [String] {
-        var paths: [String] = []
-        if let headerImagePath = storeInfo?.headerImagePath { paths.append(headerImagePath) }
-        paths.append(contentsOf: storeInfo?.screenshotPaths ?? [])
-        return paths
+        storeInfo?.screenshotPaths ?? []
     }
 
     /// The store categories worth a chip up front, in a fixed display order so "Full controller
@@ -1928,7 +1973,7 @@ struct GameDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(L("More like this"))
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
                     ForEach(similarGames, id: \.game.appID) { similar in
@@ -1940,17 +1985,18 @@ struct GameDetailView: View {
                                     Image(nsImage: image)
                                         .resizable().aspectRatio(contentMode: .fill)
                                         .frame(width: 148, height: 69)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .skinArtTreatment()
+                                        .clipShape(PlaydockCardShape(skin: skin, cornerRadius: min(skin.cardRadius, 8)))
                                 } else {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(.white.opacity(0.07))
+                                    PlaydockCardShape(skin: skin, cornerRadius: min(skin.cardRadius, 8))
+                                        .fill(skin.topBarBackground)
                                         .frame(width: 148, height: 69)
-                                        .overlay(Image(systemName: "gamecontroller").foregroundStyle(.white.opacity(0.3)))
+                                        .overlay(Image(systemName: "gamecontroller").foregroundStyle(skin.accent.opacity(0.7)))
                                 }
                                 Text(similar.game.name)
                                     .font(.caption.weight(.medium))
-                                    .foregroundStyle(.white.opacity(0.9))
-                                    .lineLimit(1)
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(2)
                                     .frame(width: 148, alignment: .leading)
                             }
                         }
@@ -1995,15 +2041,14 @@ struct GameDetailView: View {
                         .font(.callout.weight(.semibold))
                     Text(L("That's usually the engine/graphics configuration, not the game. Let Playdock look up what actually works for this title."))
                         .font(.callout)
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(.secondary)
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { showingCompatibilityFinder.toggle() }
+                        withAnimation(PlaydockMotion.chrome) { showingCompatibilityFinder.toggle() }
                     } label: {
                         Label(L(showingCompatibilityFinder ? "Hide Compatibility Finder" : "Find a Working Configuration"),
                               systemImage: "magnifyingglass")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
+                    .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
 
                     if showingCompatibilityFinder {
                         FindBestConfigurationSection(itemID: game.appID, itemName: game.name)
@@ -2012,8 +2057,7 @@ struct GameDetailView: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.yellow.opacity(0.3)))
+                .cardSurface()
             } else {
                 // Quiet positive/mixed signal - no banner chrome for what's working.
                 Label(
@@ -2024,35 +2068,26 @@ struct GameDetailView: View {
                     systemImage: summary.failures == 0 ? "checkmark.circle" : "exclamationmark.circle"
                 )
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(.secondary)
             }
         }
     }
 
-    /// A fixed-width column of photos to the right of the text, replacing an earlier full-width row
-    /// layout. Two thumbnails per row rather than one, sized up generously, with the content column
-    /// widened to match so the text side doesn't get squeezed. Each thumbnail gets both its width
-    /// *and* height fixed in one `.frame()` call
-    /// before `.fill` crops it, so every photo renders at exactly the same size no matter its own
-    /// screenshot's native aspect ratio. Tap one to open the *complete*, uncropped image via
-    /// `imageLightbox` - "images are expandable for the more detail pictures."
+    /// A sideways filmstrip, the way a launcher shows screenshots. Each frame keeps the whole
+    /// picture (fit, not a center crop) so UI in the shot isn't sliced off.
     private var photoGrid: some View {
-        let rows = allPhotoPaths.chunked(into: 2)
-        return VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Media")
-                .font(.headline)
-                .foregroundStyle(.white)
-            VStack(alignment: .leading, spacing: 20) {
-                ForEach(rows.indices, id: \.self) { rowIndex in
-                    HStack(spacing: 20) {
-                        ForEach(rows[rowIndex], id: \.self) { path in
-                            photoThumbnail(path)
-                        }
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.primary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(allPhotoPaths, id: \.self) { path in
+                        photoThumbnail(path)
                     }
                 }
             }
         }
-        .frame(width: 560, alignment: .leading)
     }
 
     private func photoThumbnail(_ path: String) -> some View {
@@ -2060,11 +2095,11 @@ struct GameDetailView: View {
             if let image = LocalImageCache.image(atPath: path) {
                 Image(nsImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 270, height: 155)
-                    .skinArtTreatment()
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .contentShape(RoundedRectangle(cornerRadius: 10))
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 360, height: 202)
+                    .background(Color.black.opacity(0.45))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .onTapGesture { expandedPhotoIndex = allPhotoPaths.firstIndex(of: path) }
             }
         }
@@ -2100,7 +2135,7 @@ struct GameDetailView: View {
     private func metacriticBadge(_ score: Int) -> some View {
         Text("\(score)")
             .font(.callout.weight(.bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(metacriticColor(score), in: RoundedRectangle(cornerRadius: 5))
@@ -2116,11 +2151,11 @@ struct GameDetailView: View {
 
     private func tag(_ text: String) -> some View {
         Text(text)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(.white.opacity(0.8))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(skin.accent.opacity(0.16), in: Capsule())
     }
 
     private var subtitleLine: String {
@@ -2136,10 +2171,14 @@ struct GameDetailView: View {
 
 
     private var actionRow: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             if runningInfo != nil {
                 RunningBadge(compact: true)
-            } else {
+            } else if game.isDownloading {
+                Label("Still downloading in Steam", systemImage: "arrow.down.circle")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            } else if !game.isPreviewSample {
                 Button {
                     onLaunch()
                     model.launchSteamGame(game)
@@ -2155,7 +2194,6 @@ struct GameDetailView: View {
                 }
                 .buttonStyle(.big(accentOverride: gameAccent))
                 .disabled(model.launchingTarget != nil)
-                .frame(maxWidth: 260)
                 .focusRing(isFocused(.launch))
             }
             if isAdvancedMode && game.source == .wineBottle {
@@ -2164,8 +2202,7 @@ struct GameDetailView: View {
                 } label: {
                     Label(hasCustomSettings ? "Custom Settings" : "Settings", systemImage: hasCustomSettings ? "slider.horizontal.3" : "gearshape")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
                 .focusRing(isFocused(.settings))
                 .popover(isPresented: $showingSettings) {
                     GameSettingsPopover(game: game)
@@ -2176,19 +2213,16 @@ struct GameDetailView: View {
             } label: {
                 Label("Reveal", systemImage: "folder")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+            .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
             .focusRing(isFocused(.reveal))
             Button {
                 model.openStorePage(for: game)
             } label: {
                 Label("Store Page", systemImage: "safari")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+            .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
             .focusRing(isFocused(.storePage))
         }
-        .padding(.top, 8)
     }
 
     private var installFolderPath: String { game.installFolderPath }
@@ -2236,10 +2270,11 @@ private struct DashboardBackdropView: View {
 private struct LaunchOverlayView: View {
     let game: SteamGame
     let config: GameModeConfig
+    let onDismiss: () -> Void
     @LocalState private var headerImagePath: String?
 
     var body: some View {
-        LaunchOverlayContent(name: game.name, artworkPath: headerImagePath, statusLine: engineSummary)
+        LaunchOverlayContent(name: game.name, artworkPath: headerImagePath, statusLine: engineSummary, onDismiss: onDismiss)
             .task {
                 headerImagePath = await SteamStoreInfoCache.shared.info(for: game.metadataAppID)?.headerImagePath
             }
@@ -2270,9 +2305,10 @@ private struct LaunchOverlayView: View {
 private struct CustomLaunchOverlayView: View {
     let game: CustomGame
     let statusLine: String
+    let onDismiss: () -> Void
 
     var body: some View {
-        LaunchOverlayContent(name: game.effectiveName, artworkPath: game.effectiveArtworkPath, statusLine: statusLine)
+        LaunchOverlayContent(name: game.effectiveName, artworkPath: game.effectiveArtworkPath, statusLine: statusLine, onDismiss: onDismiss)
     }
 }
 
@@ -2280,43 +2316,41 @@ private struct LaunchOverlayContent: View {
     let name: String
     let artworkPath: String?
     let statusLine: String
+    let onDismiss: () -> Void
 
     var body: some View {
         ZStack {
-            background
-            VStack(spacing: 14) {
-                Spacer()
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+                .onTapGesture { onDismiss() }
+            VStack(spacing: 16) {
+                if let artworkPath, let image = LocalImageCache.image(atPath: artworkPath) {
+                    Image(nsImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 320, maxHeight: 140)
+                }
                 Text(name)
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                LoadingDotsView(message: "LAUNCHING…")
+                LoadingDotsView(message: "Launching")
                 if !statusLine.isEmpty {
                     Text(statusLine)
-                        .font(.callout)
-                        .foregroundStyle(.white.opacity(0.75))
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.7))
                 }
-                Spacer()
+                Button("Back to library", action: onDismiss)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.85))
             }
+            .padding(28)
+            .frame(maxWidth: 420)
+            .background(Color(white: 0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        // This overlay's background is always a dark blurred image regardless of system appearance,
-        // so force dark-mode semantic colors (.secondary etc. inside LoadingDotsView) rather than
-        // risking low-contrast mid-gray text if the system happens to be in light mode.
         .colorScheme(.dark)
-    }
-
-    @ViewBuilder
-    private var background: some View {
-        if let artworkPath, let image = LocalImageCache.image(atPath: artworkPath) {
-            Image(nsImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .blur(radius: 40)
-                .overlay(Color.black.opacity(0.55))
-        } else {
-            LinearGradient(colors: [Color.accentColor.opacity(0.5), .black], startPoint: .top, endPoint: .bottom)
-        }
+        .onExitCommand { onDismiss() }
     }
 }
 

@@ -39,6 +39,7 @@ let ALL_GAMES = [];
 let META = { user: 'Player', theme: 'light' };
 let CURRENT_SKIN = 'luxury';
 let QUERY = '';
+let lastEntranceKey = '';
 
 function doRender() {
   const stage = document.getElementById('stage');
@@ -54,6 +55,17 @@ function doRender() {
   const selEnd = activeWasSearch ? document.activeElement.selectionEnd : null;
 
   stage.innerHTML = build(filtered, META);
+
+  // Replay the rise only when the library itself changed (filter, sort, skin, first
+  // paint). A search keystroke also changes the list, but replaying then makes typing
+  // feel like the page is rebuilding under the cursor.
+  const entranceKey = CURRENT_SKIN + '|' + filtered.map(g => g.id).join(',');
+  if (!activeWasSearch && entranceKey !== lastEntranceKey) {
+    lastEntranceKey = entranceKey;
+    stage.classList.remove('settled');
+    void stage.offsetWidth;
+    stage.classList.add('settled');
+  }
 
   if (activeWasSearch) {
     const input = document.getElementById('search-input');
@@ -95,6 +107,12 @@ const badge = (gm, customLabel) => {
 // grid section) can render the exact same cards Grid itself does - not a second approximation of
 // them - without also pulling in that skin's topbar/h1. design_* below call these same functions,
 // so there is exactly one place each skin's card markup is written.
+function cardStatus(gm, openLabel) {
+  if (gm.running) return null;
+  if (gm.downloading) return '<button class="cta">Downloading</button>';
+  return `<button class="cta">${openLabel}</button>`;
+}
+
 const CARDS = {
   luxury: (games) => games.map(gm => `
     <div class="card" ${click(gm.id)}>
@@ -105,7 +123,7 @@ const CARDS = {
         <p class="title">${esc(gm.title)}</p>
         <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
         <p class="desc">${esc(gm.desc)}</p>
-        ${gm.running ? '<div class="run"><span class="dot"></span>Running</div>' : '<button class="cta">View Details</button>'}
+        ${gm.running ? '<div class="run"><span class="dot"></span>Running</div>' : (cardStatus(gm, 'View Details') || '')}
       </div>
     </div>`).join(''),
 
@@ -116,7 +134,7 @@ const CARDS = {
         <p class="title">${esc(gm.title)}</p>
         <span class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</span>
         <p class="desc">${esc(gm.desc)}</p>
-        ${gm.running ? '<button class="cta run">● Running</button>' : '<button class="cta">Launch →</button>'}
+        ${gm.running ? '<button class="cta run">● Running</button>' : cardStatus(gm, 'Open')}
       </div>
     </div>`).join(''),
 
@@ -127,7 +145,7 @@ const CARDS = {
         <p class="title">${esc(gm.title)}</p>
         <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
         <p class="desc">${esc(gm.desc)}</p>
-        ${gm.running ? '<button class="cta run">● RUNNING</button>' : '<button class="cta">LAUNCH ▸</button>'}
+        ${gm.running ? '<button class="cta run">● RUNNING</button>' : cardStatus(gm, 'OPEN ▸')}
       </div>
     </div>`).join(''),
 
@@ -137,7 +155,7 @@ const CARDS = {
       <p class="title">${esc(gm.title)}</p>
       <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
       <p class="desc">${esc(gm.desc)}</p>
-      ${gm.running ? '<button class="cta run">● Running</button>' : '<button class="cta">Launch</button>'}
+      ${gm.running ? '<button class="cta run">● Running</button>' : cardStatus(gm, 'Open')}
     </div>`).join(''),
 
   pixel: (games) => games.map(gm => `
@@ -147,10 +165,16 @@ const CARDS = {
         <p class="title">${esc(gm.title)}</p>
         <p class="genre">${esc(gm.genre)}${gm.hours ? ` · <span class="ptime">${esc(gm.hours)}</span>` : ''}</p>
         <p class="desc">${esc(gm.desc)}</p>
-        ${gm.running ? '<button class="cta run">■ LIVE</button>' : '<button class="cta">START ▶</button>'}
+        ${gm.running ? '<button class="cta run">■ LIVE</button>' : cardStatus(gm, 'OPEN ▶')}
       </div>
     </div>`).join(''),
 };
+
+function luxuryKicker(games) {
+  if (!games.length) return "Nothing here yet. Install Steam or add a game.";
+  const running = games.find(g => g.running);
+  return running ? `Continue playing ${running.title}` : "Installed and ready to play";
+}
 
 /* ================= 1. Luxury ================= */
 function design_luxury(games, meta) {
@@ -162,7 +186,7 @@ function design_luxury(games, meta) {
       </div>
       <main>
         <h1>Your Library</h1>
-        <p class="kicker">Installed and ready to play</p>
+        <p class="kicker">${luxuryKicker(games)}</p>
         <div class="grid">${CARDS.luxury(games)}</div>
       </main>
     </div>`;
@@ -173,7 +197,7 @@ function design_brutal(games, meta) {
   return `
     <div class="brut">
       <div class="topbar"><div class="who">PLAYDOCK</div><input id="search-input" class="search" type="text" placeholder="SEARCH YOUR GAMES_" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
-      <main><h1>Library</h1><div class="grid">${CARDS.brutalist(games)}</div></main>
+      <main><h1>Library</h1>${games.length ? "" : '<p class="kicker">Nothing here yet. Install Steam or add a game.</p>'}<div class="grid">${CARDS.brutalist(games)}</div></main>
     </div>`;
 }
 
@@ -183,7 +207,9 @@ function design_cyber(games, meta) {
   const customCount = games.filter(g => g.custom).length;
   // A real status line instead of invented "connection secure" flavor text - the actual counts a
   // library owner would want at a glance, not stock hacker-movie dialogue.
-  const kicker = runningCount > 0
+  const kicker = games.length === 0
+    ? "Nothing here yet. Install Steam or add a game."
+    : runningCount > 0
     ? `${runningCount} running now`
     : `${games.length} games${customCount ? ` · ${customCount} custom` : ''}`;
   return `
@@ -198,7 +224,7 @@ function design_neu(games, meta) {
   return `
     <div class="neu">
       <div class="topbar"><div class="spacer"></div><input id="search-input" class="search" type="text" placeholder="Search your games" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
-      <main><h1>Your Library</h1><div class="grid">${CARDS.soft(games)}</div></main>
+      <main><h1>Your Library</h1>${games.length ? "" : '<p class="kicker">Nothing here yet. Install Steam or add a game.</p>'}<div class="grid">${CARDS.soft(games)}</div></main>
     </div>`;
 }
 
@@ -207,7 +233,7 @@ function design_pixel(games, meta) {
   return `
     <div class="pix">
       <div class="topbar"><span class="who">PLAYDOCK</span><div class="spacer"></div><input id="search-input" class="search" type="text" placeholder="FIND GAME_" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
-      <main><h1>SELECT GAME</h1><div class="grid">${CARDS.pixel(games)}</div></main>
+      <main><h1>SELECT GAME</h1>${games.length ? "" : '<p class="kicker">Nothing here yet. Install Steam or add a game.</p>'}<div class="grid">${CARDS.pixel(games)}</div></main>
       <div class="prompt">PRESS A TO SELECT</div>
     </div>`;
 }
@@ -221,14 +247,14 @@ function design_list(games, meta) {
       <div class="genre">${esc(gm.genre)}</div>
       <div class="num">${esc(gm.size || '')}</div>
       <div class="num">${esc(gm.hours || '')}</div>
-      <div class="status">${gm.running ? '<span class="run-pill">● Running</span>' : '<button class="launch">Launch →</button>'}</div>
+      <div class="status">${gm.running ? '<span class="run-pill">● Running</span>' : (gm.downloading ? '<button class="launch">Downloading</button>' : '<button class="launch">Open</button>')}</div>
     </div>`).join('');
   return `
     <div class="lst">
       <div class="topbar"><span class="who">Playdock</span><div class="spacer"></div><input id="search-input" class="search" type="text" placeholder="Search" value="${esc(QUERY)}" oninput="handleSearchInput(this.value)"></div>
       <main>
         <h1>Library</h1>
-        <p class="sub">Sorted by name</p>
+        <p class="sub">${games.length ? "Sorted by name" : "Nothing here yet. Install Steam or add a game."}</p>
         <div class="head"><span></span><span>Title</span><span>Genre</span><span style="text-align:right">Size</span><span style="text-align:right">Played</span><span></span></div>
         ${rows}
       </main>

@@ -40,6 +40,12 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
         return webView
     }
 
+    /// Same contract as `SkinWebGridView.sizeThatFits` — a fragment must stay inside the frame
+    /// Steam-style and Spotlight give it, and scroll inside that frame.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: WKWebView, context: Context) -> CGSize? {
+        CGSize(width: proposal.width ?? 800, height: proposal.height ?? 600)
+    }
+
     func updateNSView(_ webView: WKWebView, context: Context) {
         context.coordinator.onOpen = onOpen
         context.coordinator.render(skin: skin, entries: entries, isDark: isDark, hideBadges: hideBadges)
@@ -50,6 +56,9 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
         var onOpen: (String) -> Void
         weak var webView: WKWebView?
         private var isPageReady = false
+        private var rendered: RenderKey?
+        private var appliedFocus: String?
+        private var didApplyFocus = false
         private var pending: (skin: PlaydockSkin, entries: [SkinWebGridEntry], isDark: Bool, hideBadges: Bool)?
 
         init(onOpen: @escaping (String) -> Void) {
@@ -75,8 +84,11 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
                 return
             }
             pending = nil
+            let key = RenderKey(skin: skin.rawValue, entries: entries, isDark: isDark, hideBadges: hideBadges)
+            guard rendered != key else { return }
             guard let entriesJSON = jsonString(entries) else { return }
             guard let themeJSON = jsonString(WebTheme(theme: isDark ? "dark" : "light", hideBadges: hideBadges)) else { return }
+            rendered = key
             let js = "window.PlaydockRenderGridFragment && window.PlaydockRenderGridFragment(\(jsLiteral(skin.rawValue)), \(jsLiteral(entriesJSON)), \(jsLiteral(themeJSON)));"
             webView.evaluateJavaScript(js, completionHandler: nil)
         }
@@ -84,8 +96,18 @@ struct SkinWebGridFragmentView: NSViewRepresentable {
         /// See `SkinWebGridView.Coordinator.setFocus(_:)` - identical contract, id-matched.
         func setFocus(_ id: String?) {
             guard isPageReady, let webView else { return }
+            if didApplyFocus, appliedFocus == id { return }
+            didApplyFocus = true
+            appliedFocus = id
             let arg = id.map(jsLiteral) ?? "null"
             webView.evaluateJavaScript("window.PlaydockSetFocus && window.PlaydockSetFocus(\(arg));", completionHandler: nil)
+        }
+
+        private struct RenderKey: Equatable {
+            let skin: String
+            let entries: [SkinWebGridEntry]
+            let isDark: Bool
+            let hideBadges: Bool
         }
 
         private struct WebTheme: Encodable { let theme: String; let hideBadges: Bool }

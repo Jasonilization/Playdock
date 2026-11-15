@@ -12,16 +12,24 @@ import ImageIO
 /// force-cropping the landscape `header.jpg` banner into a portrait frame because portrait art was
 /// never looked for in the first place.
 enum SteamLibraryCache {
-    private static func cacheDir(appID: String) -> String {
-        ("~/Library/Application Support/Steam/appcache/librarycache/\(appID)" as NSString).expandingTildeInPath
+    /// Mac Steam first, then the Windows bottle's own cache. A game installed only through
+    /// Playdock's Steam never writes art into the Mac client's librarycache.
+    private static func cacheDirs(appID: String) -> [String] {
+        let mac = ("~/Library/Application Support/Steam/appcache/librarycache/\(appID)" as NSString).expandingTildeInPath
+        let wine = (SteamInstaller.steamBottle.driveCPath as NSString)
+            .appendingPathComponent("Program Files (x86)/Steam/appcache/librarycache/\(appID)")
+        return [mac, wine]
     }
 
     /// Real, native portrait box art (600x900) for this app, if Steam has ever cached it locally -
     /// only true once the game has actually been viewed in Steam's own library UI at least once, so
     /// this is a real "might not exist yet" rather than "always available."
     static func portraitArtPath(appID: String) -> String? {
-        let path = (cacheDir(appID: appID) as NSString).appendingPathComponent("library_600x900.jpg")
-        return FileManager.default.fileExists(atPath: path) ? path : nil
+        for dir in cacheDirs(appID: appID) {
+            let path = (dir as NSString).appendingPathComponent("library_600x900.jpg")
+            if FileManager.default.fileExists(atPath: path) { return path }
+        }
+        return nil
     }
 
     /// The best real square icon Steam has cached for this app, if any - scans for SHA1-hash-named
@@ -31,13 +39,20 @@ enum SteamLibraryCache {
     /// exist in the same folder and are real but are not decodable images (confirmed live) - never
     /// considered here.
     static func iconPath(appID: String) -> String? {
-        let dir = cacheDir(appID: appID)
-        guard let files = try? FileManager.default.contentsOfDirectory(atPath: dir) else { return nil }
         let hashPattern = try? NSRegularExpression(pattern: "^[0-9a-f]{20,40}\\.(jpg|jpeg|png)$", options: .caseInsensitive)
         var best: (path: String, size: Int)?
+        for dir in cacheDirs(appID: appID) {
+            guard let files = try? FileManager.default.contentsOfDirectory(atPath: dir) else { continue }
+            best = bestIcon(in: files, dir: dir, pattern: hashPattern, current: best)
+        }
+        return best?.path
+    }
+
+    private static func bestIcon(in files: [String], dir: String, pattern: NSRegularExpression?, current: (path: String, size: Int)?) -> (path: String, size: Int)? {
+        var best = current
         for file in files {
             let range = NSRange(file.startIndex..<file.endIndex, in: file)
-            guard hashPattern?.firstMatch(in: file, range: range) != nil else { continue }
+            guard pattern?.firstMatch(in: file, range: range) != nil else { continue }
             let path = (dir as NSString).appendingPathComponent(file)
             guard let source = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
                   let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
@@ -48,6 +63,6 @@ enum SteamLibraryCache {
                 best = (path, width)
             }
         }
-        return best?.path
+        return best
     }
 }

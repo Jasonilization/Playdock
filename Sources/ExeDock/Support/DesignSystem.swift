@@ -467,7 +467,49 @@ private struct TileSurface: ViewModifier {
         return step3
             .shadow(color: shadowColor, radius: shadowRadius, x: shadowX, y: shadowY)
             .scaleEffect(hoverScale)
-            .animation(.easeOut(duration: 0.16), value: isHovering)
+            .animation(PlaydockMotion.chrome, value: isHovering)
+    }
+}
+
+/// One motion language for the whole launcher. Header, library, game page, and settings
+/// used to each pick their own duration, so the app felt like several apps stacked.
+enum PlaydockMotion {
+    /// A control acknowledging a press. Short, and it does not bounce.
+    static let press = Animation.easeOut(duration: 0.12)
+    /// Header, filters, and switching Steam / C: Drive.
+    static let chrome = Animation.timingCurve(0.22, 0.8, 0.28, 1, duration: 0.28)
+    /// Opening a game, Settings, or the moment after Launch. The page rises into place.
+    static let page = Animation.spring(response: 0.46, dampingFraction: 0.88)
+    /// The library backdrop crossfading to the selected game's art.
+    static let backdrop = Animation.easeInOut(duration: 0.45)
+}
+
+extension AnyTransition {
+    /// A game page or settings panel arriving. It rises a short distance and fades.
+    /// Leaving fades in place so the library is already there underneath.
+    static var playdockPage: AnyTransition {
+        .asymmetric(
+            insertion: .opacity.combined(with: .offset(y: 22)),
+            removal: .opacity
+        )
+    }
+}
+
+/// Icon buttons in the library header. Same accent, radius, and press as the skin's own
+/// cards, instead of AppKit's bordered button, which never picked up the active look.
+struct SkinIconButtonStyle: ButtonStyle {
+    var skin: PlaydockSkin
+
+    func makeBody(configuration: Configuration) -> some View {
+        let shape = PlaydockCardShape(skin: skin, cornerRadius: min(skin.cardRadius, 10))
+        configuration.label
+            .font(.callout.weight(.semibold))
+            .frame(width: 36, height: 32)
+            .foregroundStyle(skin.accent)
+            .background(skin.accent.opacity(configuration.isPressed ? 0.24 : 0.12), in: shape)
+            .overlay(shape.stroke(skin.accent.opacity(0.28), lineWidth: max(skin.borderWidth, 1)))
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(PlaydockMotion.press, value: configuration.isPressed)
     }
 }
 

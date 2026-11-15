@@ -215,8 +215,8 @@ struct ContentView: View {
             }
         }
         .id(model.selectedSection)
-        .transition(.opacity)
-        .animation(.easeInOut(duration: 0.2), value: model.selectedSection)
+        .transition(.playdockPage)
+        .animation(PlaydockMotion.chrome, value: model.selectedSection)
     }
 
     private var dropZone: some View {

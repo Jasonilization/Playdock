@@ -1,19 +1,8 @@
 import Foundation
 
-/// Moves a freshly-picked (or already-imported) custom game's files into Playdock's own managed
-/// bottle, so it launches through exactly the same engine as every other custom game - no
-/// dependency on some pre-existing, third-party Sikarugir wrapper bottle, no separate config path
-/// to juggle: pick a game folder from anywhere on disk and Playdock moves it into the bottle and
-/// gets it ready to launch. Every game gets its own subfolder
-/// (`drive_c/CustomGames/<name>`), so different games' files never collide even though they all
-/// share one bottle - `ExeRunner` already sets each launch's working directory to the exe's own
-/// folder, so "which game's config/save path is active" already tracks whichever one is actually
-/// running, with nothing further needed here for that part.
-///
-/// This is exactly what makes "for new users" automatic too: the destination bottle
-/// (`BottleManager.shared.defaultBottle`) is already created and initialized at first launch by
-/// `SetupCoordinator`, with no separate setup step of its own - the `CustomGames` subfolder is just
-/// created on demand, the first time anything actually needs it.
+/// Moves a freshly-picked (or already-imported) custom game's files into that game's own
+/// bottle. Each game gets a fresh prefix (`Bottles/Games/<id>`), so two games never share a
+/// C: drive, a registry, or a save folder. The bottle is wineboot'd on first launch, not here.
 enum CustomGameFileImporter {
     enum ImportError: Error, LocalizedError {
         case moveFailed(String)
@@ -25,16 +14,16 @@ enum CustomGameFileImporter {
         }
     }
 
-    /// Moves the game into Playdock's managed bottle and returns its new exe path. `pickedFolderPath`
-    /// is the folder the user explicitly chose (via "Choose Folder…," or a dropped folder) if there
+    /// Moves the game into `bottle` and returns its new exe path. `pickedFolderPath` is the
+    /// folder the user explicitly chose (via "Choose Folder…," or a dropped folder) if there
     /// was one - that whole folder is moved as a unit. For a lone exe (no folder explicitly chosen),
     /// this moves the exe's own containing folder instead (it very often has sibling DLLs/assets it
     /// needs), *unless* that folder is broad enough that moving it wholesale would relocate unrelated
     /// files (the user's home directory, Desktop, Downloads, a volume root, …) - in that one case,
-    /// only the exe file itself is moved.
-    static func importIntoManagedBottle(exePath: String, pickedFolderPath: String?) throws -> String {
+    /// only the exe file itself is moved. Files land in `drive_c/Game`, one game per bottle.
+    static func importIntoGameBottle(exePath: String, pickedFolderPath: String?, bottle: Bottle) throws -> String {
         let fm = FileManager.default
-        let customGamesRoot = (BottleManager.shared.defaultBottle.driveCPath as NSString).appendingPathComponent("CustomGames")
+        let customGamesRoot = (bottle.driveCPath as NSString).appendingPathComponent("Game")
         try fm.createDirectory(atPath: customGamesRoot, withIntermediateDirectories: true)
 
         let sourceFolder = pickedFolderPath ?? safeContainingFolder(forExePath: exePath)
@@ -87,9 +76,11 @@ enum CustomGameFileImporter {
         }
     }
 
-    /// True once a game's exe already lives inside Playdock's own managed bottle - nothing to move.
-    static func isAlreadyManaged(exePath: String) -> Bool {
-        exePath.hasPrefix(BottleManager.shared.defaultBottle.driveCPath)
+    /// True once a game's exe already lives inside the bottle Playdock created for it.
+    static func isInGameBottle(exePath: String, bottleID: String?) -> Bool {
+        guard let bottleID else { return false }
+        let bottle = BottleManager.shared.gameBottle(id: bottleID, name: "")
+        return exePath.hasPrefix(bottle.driveCPath)
     }
 
     /// The exe's own containing folder, unless that folder is broad enough that moving it wholesale
