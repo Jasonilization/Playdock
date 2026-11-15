@@ -71,15 +71,24 @@ actor SteamStoreInfoCache {
         if let headerImageURLString = appData["header_image"] as? String, let headerImageURL = URL(string: headerImageURLString) {
             headerImagePath = await downloadImage(headerImageURL, appID: appID, suffix: "header")
         }
-        // Steam's library hero is the sharp 1920-wide art. The store header is a small logo.
-        var libraryHeroPath: String?
-        if let heroURL = URL(string: "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/library_hero.jpg") {
-            libraryHeroPath = await downloadImage(heroURL, appID: appID, suffix: "library-hero")
-        }
-        var portraitPath: String?
-        if let portraitURL = URL(string: "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/library_600x900.jpg") {
-            portraitPath = await downloadImage(portraitURL, appID: appID, suffix: "portrait")
-        }
+        // Wide art, best first. A lot of games have no library hero, so the capsule and then
+        // the store header are the fallbacks. The first file that actually downloads wins.
+        let libraryHeroPath = await firstImage(appID: appID, suffix: "library-hero", urls: [
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/library_hero_2x.jpg",
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/library_hero.jpg",
+            "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/\(appID)/library_hero.jpg",
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/capsule_616x353.jpg",
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/header.jpg",
+        ])
+        let portraitPath = await firstImage(appID: appID, suffix: "portrait", urls: [
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/library_600x900_2x.jpg",
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/library_600x900.jpg",
+            "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/\(appID)/library_600x900.jpg",
+        ])
+        let logoPath = await firstImage(appID: appID, suffix: "logo", urls: [
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/\(appID)/logo.png",
+            "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/\(appID)/logo.png",
+        ])
         var backgroundImagePath: String?
         if let backgroundURLString = appData["background_raw"] as? String ?? appData["background"] as? String,
            let backgroundURL = URL(string: backgroundURLString) {
@@ -110,6 +119,19 @@ actor SteamStoreInfoCache {
         let metacritic = appData["metacritic"] as? [String: Any]
         let metacriticScore = metacritic?["score"] as? Int
         let metacriticURL = metacritic?["url"] as? String
+        let achievementBlock = appData["achievements"] as? [String: Any]
+        let achievementTotal = achievementBlock?["total"] as? Int
+        var highlighted: [SteamAchievementHighlight] = []
+        let highlightedRaw = (achievementBlock?["highlighted"] as? [[String: Any]]) ?? []
+        for (index, item) in highlightedRaw.prefix(8).enumerated() {
+            guard let name = item["name"] as? String, !name.isEmpty else { continue }
+            var iconPath: String?
+            if let icon = item["path"] as? String, let iconURL = URL(string: icon) {
+                iconPath = await downloadImage(iconURL, appID: appID, suffix: "achievement-\(index)")
+            }
+            highlighted.append(SteamAchievementHighlight(name: name, iconPath: iconPath))
+        }
+        let reviews = await reviewSummary(appID: appID)
 
         let hasAnyMetadata = description?.isEmpty == false || headerImagePath != nil || !genres.isEmpty
             || !developers.isEmpty || releaseDate != nil
@@ -124,6 +146,7 @@ actor SteamStoreInfoCache {
             headerImagePath: headerImagePath,
             libraryHeroPath: libraryHeroPath,
             portraitPath: portraitPath,
+            logoPath: logoPath,
             backgroundImagePath: backgroundImagePath,
             screenshotPaths: screenshotPaths,
             genres: genres,
@@ -133,8 +156,37 @@ actor SteamStoreInfoCache {
             metacriticScore: metacriticScore,
             metacriticURL: metacriticURL,
             categories: categories,
-            screenshotFullImageURLs: screenshotFullImageURLs
+            screenshotFullImageURLs: screenshotFullImageURLs,
+            reviewSummary: reviews?.summary,
+            reviewPercent: reviews?.percent,
+            reviewCount: reviews?.count,
+            achievementTotal: achievementTotal,
+            highlightedAchievements: highlighted
         )
+    }
+
+    /// Steam's review words ("Very Positive") are not in appdetails. They come from the public
+    /// review summary, which also has the positive count used for the percent.
+    private func reviewSummary(appID: String) async -> (summary: String, percent: Int, count: Int)? {
+        guard let url = URL(string: "https://store.steampowered.com/appreviews/\(appID)?json=1&language=all&purchase_type=all&num_per_page=0") else { return nil }
+        guard let (data, response) = try? await URLSession.shared.data(from: url),
+              let http = response as? HTTPURLResponse, http.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let summary = json["query_summary"] as? [String: Any],
+              let label = summary["review_score_desc"] as? String, !label.isEmpty,
+              let total = summary["total_reviews"] as? Int, total > 0 else { return nil }
+        let positive = summary["total_positive"] as? Int ?? 0
+        let percent = Int((Double(positive) / Double(total) * 100).rounded())
+        return (label, percent, total)
+    }
+
+    /// Tries each URL and keeps the first image that is actually a picture.
+    private func firstImage(appID: String, suffix: String, urls: [String]) async -> String? {
+        for raw in urls {
+            guard let url = URL(string: raw) else { continue }
+            if let path = await downloadImage(url, appID: appID, suffix: suffix) { return path }
+        }
+        return nil
     }
 
     private func downloadImage(_ url: URL, appID: String, suffix: String) async -> String? {
@@ -154,6 +206,12 @@ actor SteamStoreInfoCache {
         try? FileManager.default.removeItem(atPath: destination)
         guard (try? FileManager.default.moveItem(at: downloadResult.url, to: URL(fileURLWithPath: destination))) != nil else {
             DiagnosticsLog.log("Store info [\(appID)]: couldn't move downloaded \(suffix) art into place")
+            return nil
+        }
+        let rawSize = try? FileManager.default.attributesOfItem(atPath: destination)[.size]
+        let byteCount = (rawSize as? NSNumber)?.intValue ?? 0
+        if byteCount < 2048 {
+            try? FileManager.default.removeItem(atPath: destination)
             return nil
         }
         return destination

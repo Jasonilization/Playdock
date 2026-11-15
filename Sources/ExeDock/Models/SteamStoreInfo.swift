@@ -1,5 +1,11 @@
 import Foundation
 
+/// One achievement Steam highlights on the store page, with its icon cached locally when the download worked.
+struct SteamAchievementHighlight: Codable, Equatable, Hashable {
+    var name: String
+    var iconPath: String?
+}
+
 /// Public store metadata for a game - description, artwork, screenshots, genres, release date, and
 /// rating - used to make a game's card (and the richer Game Detail view) feel like part of a real
 /// Steam dashboard instead of a bare file-launcher row. All of it comes from the one `appdetails`
@@ -10,7 +16,7 @@ struct SteamStoreInfo: Codable, Equatable {
     /// guessing "is this incomplete?" from which fields happen to be empty (a genuinely sparse but
     /// fully-fetched entry - an obscure app with no Metacritic score, say - would otherwise look
     /// permanently stale under that heuristic).
-    static let currentSchemaVersion = 6
+    static let currentSchemaVersion = 7
 
     let shortDescription: String?
     /// The full "About This Game" text, HTML tags stripped down to plain text (with paragraph
@@ -19,11 +25,20 @@ struct SteamStoreInfo: Codable, Equatable {
     var aboutTheGame: String?
     /// Path to a locally cached copy of the header image, if one downloaded successfully.
     let headerImagePath: String?
-    /// Steam's library hero (about 1920×620). This is the wide library picture, not the
-    /// logo that sits beside the title on the game page.
+    /// The best wide picture we could download. That is the library hero when Steam has one,
+    /// otherwise the 616×353 capsule, otherwise the store header. Many games have no hero.
     var libraryHeroPath: String?
-    /// Steam's portrait box (600×900) for list rows and portrait tiles.
+    /// Steam's portrait box when one exists. Empty for games that were never given library art.
     var portraitPath: String?
+    /// Transparent store logo, used beside the title. Empty when Steam has no logo file.
+    var logoPath: String?
+    /// Steam's own review label, such as "Very Positive", plus the percent and count behind it.
+    var reviewSummary: String?
+    var reviewPercent: Int?
+    var reviewCount: Int?
+    /// How many achievements the store lists, and the handful it highlights with icons.
+    var achievementTotal: Int?
+    var highlightedAchievements: [SteamAchievementHighlight] = []
     /// Path to a locally cached copy of the wide background/hero art, if one downloaded
     /// successfully - meant for a full-screen detail view backdrop, not the small grid card.
     var backgroundImagePath: String?
@@ -40,15 +55,17 @@ struct SteamStoreInfo: Codable, Equatable {
     var screenshotFullImageURLs: [String] = []
     var schemaVersion: Int = Self.currentSchemaVersion
 
-    init(shortDescription: String?, aboutTheGame: String? = nil, headerImagePath: String?, libraryHeroPath: String? = nil, portraitPath: String? = nil, backgroundImagePath: String? = nil,
+    init(shortDescription: String?, aboutTheGame: String? = nil, headerImagePath: String?, libraryHeroPath: String? = nil, portraitPath: String? = nil, logoPath: String? = nil, backgroundImagePath: String? = nil,
          screenshotPaths: [String] = [], genres: [String] = [], releaseDate: String? = nil, developers: [String] = [],
          publishers: [String] = [], metacriticScore: Int? = nil, metacriticURL: String? = nil, categories: [String] = [],
-         screenshotFullImageURLs: [String] = []) {
+         screenshotFullImageURLs: [String] = [], reviewSummary: String? = nil, reviewPercent: Int? = nil, reviewCount: Int? = nil,
+         achievementTotal: Int? = nil, highlightedAchievements: [SteamAchievementHighlight] = []) {
         self.shortDescription = shortDescription
         self.aboutTheGame = aboutTheGame
         self.headerImagePath = headerImagePath
         self.libraryHeroPath = libraryHeroPath
         self.portraitPath = portraitPath
+        self.logoPath = logoPath
         self.backgroundImagePath = backgroundImagePath
         self.screenshotPaths = screenshotPaths
         self.genres = genres
@@ -62,6 +79,11 @@ struct SteamStoreInfo: Codable, Equatable {
         /// came from, so the lightbox can lazy-load the real image on demand instead of pinning
         /// 6 full-size shots per game on disk for everyone.
         self.screenshotFullImageURLs = screenshotFullImageURLs
+        self.reviewSummary = reviewSummary
+        self.reviewPercent = reviewPercent
+        self.reviewCount = reviewCount
+        self.achievementTotal = achievementTotal
+        self.highlightedAchievements = highlightedAchievements
         self.schemaVersion = Self.currentSchemaVersion
     }
 
@@ -81,6 +103,7 @@ struct SteamStoreInfo: Codable, Equatable {
         headerImagePath = try container.decodeIfPresent(String.self, forKey: .headerImagePath)
         libraryHeroPath = try container.decodeIfPresent(String.self, forKey: .libraryHeroPath)
         portraitPath = try container.decodeIfPresent(String.self, forKey: .portraitPath)
+        logoPath = try container.decodeIfPresent(String.self, forKey: .logoPath)
         backgroundImagePath = try container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         screenshotPaths = try container.decodeIfPresent([String].self, forKey: .screenshotPaths) ?? []
         genres = try container.decodeIfPresent([String].self, forKey: .genres) ?? []
@@ -91,16 +114,22 @@ struct SteamStoreInfo: Codable, Equatable {
         metacriticURL = try container.decodeIfPresent(String.self, forKey: .metacriticURL)
         categories = try container.decodeIfPresent([String].self, forKey: .categories) ?? []
         screenshotFullImageURLs = try container.decodeIfPresent([String].self, forKey: .screenshotFullImageURLs) ?? []
+        reviewSummary = try container.decodeIfPresent(String.self, forKey: .reviewSummary)
+        reviewPercent = try container.decodeIfPresent(Int.self, forKey: .reviewPercent)
+        reviewCount = try container.decodeIfPresent(Int.self, forKey: .reviewCount)
+        achievementTotal = try container.decodeIfPresent(Int.self, forKey: .achievementTotal)
+        highlightedAchievements = try container.decodeIfPresent([SteamAchievementHighlight].self, forKey: .highlightedAchievements) ?? []
         schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 0
     }
 
     /// Explicit so the synthesized *encoder* covers every field (the custom decoder reads
     /// leniently; without this list, `screenshotFullImageURLs` would silently never be saved).
     private enum CodingKeys: String, CodingKey {
-        case shortDescription, aboutTheGame, headerImagePath, libraryHeroPath, portraitPath, backgroundImagePath
+        case shortDescription, aboutTheGame, headerImagePath, libraryHeroPath, portraitPath, logoPath, backgroundImagePath
         case screenshotPaths, screenshotFullImageURLs
         case genres, categories, releaseDate, developers, publishers
         case metacriticScore, metacriticURL, schemaVersion
+        case reviewSummary, reviewPercent, reviewCount, achievementTotal, highlightedAchievements
     }
 
     /// Turns Steam's own HTML-formatted "about the game" copy into plain text: `<br>` becomes a

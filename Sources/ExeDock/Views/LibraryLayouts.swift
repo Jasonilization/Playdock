@@ -34,8 +34,8 @@ struct LibraryPresentation {
             return LibraryPresentation(artPath: game.effectiveArtworkPath, genre: game.discovered.steamGenres.first, description: game.effectiveDescription, isCustom: true, isMac: false, isWindows: false)
         case .steam(let game):
             let info = await SteamStoreInfoCache.shared.info(for: game.metadataAppID)
-            let wide = info?.libraryHeroPath ?? info?.headerImagePath
-            return LibraryPresentation(artPath: preferredArtPath(appID: game.metadataAppID, shape: shape, bannerPath: wide, portraitPath: info?.portraitPath), genre: info?.genres.first, description: info?.shortDescription, isCustom: false, isMac: game.source == .nativeMac, isWindows: game.source == .wineBottle)
+            let wide = info?.libraryHeroPath ?? info?.headerImagePath ?? info?.backgroundImagePath ?? info?.portraitPath
+            return LibraryPresentation(artPath: preferredArtPath(appID: game.metadataAppID, shape: shape, bannerPath: wide, portraitPath: info?.portraitPath ?? info?.headerImagePath), genre: info?.genres.first, description: info?.shortDescription, isCustom: false, isMac: game.source == .nativeMac, isWindows: game.source == .wineBottle)
         }
     }
 
@@ -96,7 +96,7 @@ private struct SmallArtIcon: View {
     @LocalState private var presentation: LibraryPresentation?
 
     var body: some View {
-        artView(path: presentation?.artPath, id: entry.id)
+        artView(path: presentation?.artPath, id: entry.id, fills: false)
             .frame(width: width, height: height)
             .skinArtTreatment()
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))

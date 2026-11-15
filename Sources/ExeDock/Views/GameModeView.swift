@@ -1700,7 +1700,9 @@ struct GameDetailView: View {
                         launcherHero
                         VStack(alignment: .leading, spacing: 24) {
                             header
+                            steamReviews
                             if hasPhotos { photoGrid }
+                            achievementsSection
                             reliabilityBanner
                             descriptionCard
                             if !similarGames.isEmpty { moreLikeThis }
@@ -1794,7 +1796,7 @@ struct GameDetailView: View {
     /// the art — that frame was the picture letterboxed inside a rounded rectangle.
     private var launcherHero: some View {
         HStack(alignment: .center, spacing: 24) {
-            if let path = storeInfo?.headerImagePath ?? storeInfo?.backgroundImagePath,
+            if let path = storeInfo?.logoPath ?? storeInfo?.headerImagePath ?? storeInfo?.backgroundImagePath,
                let image = LocalImageCache.image(atPath: path) {
                 Image(nsImage: image)
                     .resizable()
@@ -1847,6 +1849,83 @@ struct GameDetailView: View {
         .padding(.top, 64)
         .padding(.bottom, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Steam's own review words and the percent behind them. Shown only when the store returned a count.
+    @ViewBuilder
+    private var steamReviews: some View {
+        if let summary = storeInfo?.reviewSummary {
+            HStack(spacing: 8) {
+                if let percent = storeInfo?.reviewPercent {
+                    HStack(spacing: 2) {
+                        ForEach(0..<5, id: \.self) { index in
+                            Image(systemName: index < reviewStars(percent) ? "star.fill" : "star")
+                                .font(.system(size: 13))
+                                .foregroundStyle(index < reviewStars(percent) ? Color.yellow : Color.secondary.opacity(0.4))
+                        }
+                    }
+                }
+                Text(summary)
+                    .font(.system(size: 15, weight: .semibold))
+                if let percent = storeInfo?.reviewPercent, let count = storeInfo?.reviewCount {
+                    Text("\(percent)% of \(count.formatted()) reviews")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func reviewStars(_ percent: Int) -> Int {
+        switch percent {
+        case 95...: return 5
+        case 80..<95: return 4
+        case 70..<80: return 3
+        case 40..<70: return 2
+        default: return 1
+        }
+    }
+
+    /// The achievements Steam puts on the store page: the total, and the highlighted icons.
+    @ViewBuilder
+    private var achievementsSection: some View {
+        if let total = storeInfo?.achievementTotal, total > 0 {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Text("Achievements")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text("\(total)")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                if !(storeInfo?.highlightedAchievements.isEmpty ?? true) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 14) {
+                            ForEach(storeInfo?.highlightedAchievements ?? [], id: \.name) { item in
+                                VStack(spacing: 6) {
+                                    if let path = item.iconPath, let image = LocalImageCache.image(atPath: path) {
+                                        Image(nsImage: image)
+                                            .resizable()
+                                            .frame(width: 56, height: 56)
+                                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .fill(skin.accent.opacity(0.16))
+                                            .frame(width: 56, height: 56)
+                                    }
+                                    Text(item.name)
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .lineLimit(2)
+                                        .frame(width: 88)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private var header: some View {
