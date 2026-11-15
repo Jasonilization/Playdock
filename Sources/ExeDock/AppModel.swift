@@ -48,6 +48,8 @@ final class AppModel: ObservableObject {
     @Published var launchingTarget: LaunchTarget?
     /// Set while a downloaded Windows installer is being prepared. Nil once its window is open.
     @Published var programInstallMessage: String?
+    /// Which catalog row `programInstallMessage` belongs to. Nil for a setup file the user picked.
+    @Published var catalogInstallID: String?
     /// Debug-only: appends a handful of real, well-known games (with real appIDs, so their genuine
     /// Steam art/rating/description come through the normal metadata pipeline) so the grid's layout
     /// - especially the dynamic card sizing - can be checked with more than whatever's actually
@@ -355,45 +357,93 @@ final class AppModel: ObservableObject {
     /// `bottleName`. Copies the file into that bottle, installs the usual runtime components,
     /// then opens the installer window. It does not try to guess which game the setup produced.
     func installDownloadedProgram(at exePath: String, bottleName: String) {
-        guard programInstallMessage == nil else { return }
-        guard !isInstallingSteam else {
-            errorMessage = "Steam is still installing. Wait for that to finish."
+        let fileTitle = ((exePath as NSString).lastPathComponent as NSString).deletingPathExtension
+        stageAndOpen(setupAt: exePath, bottleID: "installer-" + fileTitle, bottleName: bottleName, catalogID: nil)
+    }
+
+    /// Downloads one catalog installer and opens it in that program's own bottle.
+    func installCatalogItem(_ item: CatalogInstaller, bottleName: String) {
+        guard !item.isSteam else {
+            installAndRunSteam()
             return
         }
-        let trimmed = bottleName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let fileTitle = ((exePath as NSString).lastPathComponent as NSString).deletingPathExtension
-        let displayName = trimmed.isEmpty ? fileTitle : trimmed
-        let bottleID = "installer-" + fileTitle
-        programInstallMessage = "Preparing the bottle…"
+        guard beginProgramInstall(catalogID: item.id) else { return }
+        programInstallMessage = "Downloading \(item.name)…"
+        let downloadURL = item.downloadURL
+        let fileName = item.fileName
+        let bottleID = item.bottleID
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                let bottle = BottleManager.shared.gameBottle(id: bottleID, name: displayName)
-                let wineBinary = try SikarugirEngine.wineBinaryPath()
-                try BottleManager.shared.ensureInitialized(bottle, wineBinary: wineBinary, scheduleRuntime: false)
-                await MainActor.run { self?.programInstallMessage = "Installing runtime components…" }
-                do {
-                    try await WinetricksRunner.runDefaultVerbs(in: bottle) { message in
-                        Task { @MainActor in self?.programInstallMessage = message }
-                    }
-                } catch {
-                    DiagnosticsLog.log("Installer runtime: \(error.localizedDescription)")
+                let (tempURL, response) = try await URLSession.shared.download(from: downloadURL)
+                guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                    throw SteamInstallError.downloadFailed("unexpected server response")
                 }
-                let fm = FileManager.default
-                let dest = (bottle.driveCPath as NSString).appendingPathComponent((exePath as NSString).lastPathComponent)
-                if fm.fileExists(atPath: dest) { try? fm.removeItem(atPath: dest) }
-                try fm.copyItem(atPath: exePath, toPath: dest)
+                let saved = (NSTemporaryDirectory() as NSString).appendingPathComponent(fileName)
+                try? FileManager.default.removeItem(atPath: saved)
+                try FileManager.default.moveItem(at: tempURL, to: URL(fileURLWithPath: saved))
+                let staged = try await ProgramInstaller.stage(setupPath: saved, bottleID: bottleID, bottleName: bottleName) { message in
+                    Task { @MainActor in self?.programInstallMessage = message }
+                }
                 await MainActor.run {
                     self?.programInstallMessage = nil
-                    self?.statusMessage = "Opened \(displayName). Finish the setup in its window."
-                    self?.run(exePath: dest, bottle: bottle, displayName: displayName)
+                    self?.catalogInstallID = nil
+                    self?.statusMessage = "Opened \(item.name). Finish the setup in its window."
+                    self?.run(exePath: staged.path, bottle: staged.bottle, displayName: item.name)
                 }
             } catch {
                 await MainActor.run {
                     self?.programInstallMessage = nil
+                    self?.catalogInstallID = nil
                     self?.errorMessage = error.localizedDescription
                 }
             }
         }
+    }
+
+    func openCatalogItem(_ item: CatalogInstaller) {
+        if item.isSteam {
+            openSteamClient()
+            return
+        }
+        guard let exe = item.installedExePath() else { return }
+        run(exePath: exe, bottle: item.bottle(named: item.name), displayName: item.name)
+    }
+
+    private func stageAndOpen(setupAt path: String, bottleID: String, bottleName: String, catalogID: String?) {
+        guard beginProgramInstall(catalogID: catalogID) else { return }
+        let displayName = bottleName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? ((path as NSString).lastPathComponent as NSString).deletingPathExtension
+            : bottleName
+        programInstallMessage = "Preparing the bottle…"
+        Task.detached(priority: .userInitiated) { [weak self] in
+            do {
+                let staged = try await ProgramInstaller.stage(setupPath: path, bottleID: bottleID, bottleName: bottleName) { message in
+                    Task { @MainActor in self?.programInstallMessage = message }
+                }
+                await MainActor.run {
+                    self?.programInstallMessage = nil
+                    self?.catalogInstallID = nil
+                    self?.statusMessage = "Opened \(displayName). Finish the setup in its window."
+                    self?.run(exePath: staged.path, bottle: staged.bottle, displayName: displayName)
+                }
+            } catch {
+                await MainActor.run {
+                    self?.programInstallMessage = nil
+                    self?.catalogInstallID = nil
+                    self?.errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func beginProgramInstall(catalogID: String?) -> Bool {
+        guard programInstallMessage == nil else { return false }
+        guard !isInstallingSteam else {
+            errorMessage = "Steam is still installing. Wait for that to finish."
+            return false
+        }
+        catalogInstallID = catalogID
+        return true
     }
 
     func installAndRunSteam() {

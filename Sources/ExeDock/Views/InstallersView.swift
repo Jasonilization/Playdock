@@ -1,28 +1,38 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The install catalog. Each row is one real setup, with the download, the bottle, and the
-/// extra components written out before anything runs. Steam uses Valve's official installer.
-/// The other row runs a setup file the user already has, in a bottle of its own.
+/// The install catalog. Each row is a real Windows setup: the vendor's download, its own
+/// bottle, and the runtime components, written out before anything runs.
 struct InstallersView: View {
     @EnvironmentObject private var model: AppModel
     @AppStorage(PlaydockSkin.storageKey) private var skinRaw = PlaydockSkin.luxury.rawValue
     private var skin: PlaydockSkin { PlaydockSkin(rawValue: skinRaw) ?? .luxury }
 
-    private enum Recipe: Hashable {
-        case steam
-        case program
+    private enum Selection: Hashable {
+        case catalog(String)
+        case file
     }
 
-    @LocalState private var recipe: Recipe = .steam
+    @LocalState private var selection: Selection = .catalog("steam")
+    @LocalState private var query = ""
     @LocalState private var pickingProgram = false
     @LocalState private var programURL: URL?
-    @LocalState private var bottleName = ""
+    @LocalState private var bottleNames: [String: String] = [:]
     @LocalState private var editingBottleName = false
+    @LocalState private var fileBottleName = ""
+    @LocalState private var editingFileBottle = false
 
-    private var programTitle: String {
-        guard let programURL else { return "Windows installer" }
-        return programURL.deletingPathExtension().lastPathComponent
+    private var matches: [CatalogInstaller] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return CatalogInstaller.all }
+        return CatalogInstaller.all.filter {
+            $0.name.localizedCaseInsensitiveContains(trimmed)
+        }
+    }
+
+    private var selectedInstaller: CatalogInstaller? {
+        guard case .catalog(let id) = selection else { return nil }
+        return CatalogInstaller.all.first { $0.id == id }
     }
 
     var body: some View {
@@ -35,13 +45,13 @@ struct InstallersView: View {
         }
         .background(SkinBackground(skin: skin).ignoresSafeArea())
         .fontDesign(skin.fontDesign)
-        .fileImporter(isPresented: $pickingProgram, allowedContentTypes: [UTType(filenameExtension: "exe") ?? .data]) { result in
+        .fileImporter(isPresented: $pickingProgram, allowedContentTypes: [UTType(filenameExtension: "exe") ?? .data, UTType(filenameExtension: "msi") ?? .data]) { result in
             guard case .success(let url) = result else { return }
             _ = url.startAccessingSecurityScopedResource()
             programURL = url
-            bottleName = url.deletingPathExtension().lastPathComponent
-            editingBottleName = false
-            recipe = .program
+            fileBottleName = url.deletingPathExtension().lastPathComponent
+            editingFileBottle = false
+            selection = .file
         }
     }
 
@@ -52,31 +62,38 @@ struct InstallersView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
                 .padding(.top, 18)
-                .padding(.bottom, 8)
-            recipeRow(.steam, title: "Steam", installed: SteamInstaller.isSteamInstalled)
-            recipeRow(.program, title: programURL == nil ? "Windows installer" : programTitle, installed: false)
-            Spacer()
+            TextField("Search", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 6)
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(matches) { item in
+                        catalogRow(item)
+                    }
+                    fileRow
+                }
+                .padding(.bottom, 24)
+            }
         }
-        .frame(width: 240)
+        .frame(width: 260)
         .frame(maxHeight: .infinity)
         .background(skin.topBarBackground.opacity(0.55))
     }
 
-    private func recipeRow(_ item: Recipe, title: String, installed: Bool) -> some View {
-        let selected = recipe == item
+    private func catalogRow(_ item: CatalogInstaller) -> some View {
+        let selected = selection == .catalog(item.id)
         return Button {
-            recipe = item
+            editingBottleName = false
+            selection = .catalog(item.id)
         } label: {
             HStack(spacing: 10) {
-                Image(nsImage: item == .steam ? steamIcon : programIcon)
-                    .resizable()
-                    .frame(width: 28, height: 28)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                Text(title)
+                mark(for: item.name, steam: item.isSteam)
+                Text(item.name)
                     .font(.system(size: 14, weight: .semibold))
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                if installed {
+                if item.installedExePath() != nil {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(skin.accent)
                 }
@@ -91,37 +108,59 @@ struct InstallersView: View {
         .padding(.horizontal, 8)
     }
 
+    private var fileRow: some View {
+        let title = programURL?.deletingPathExtension().lastPathComponent ?? "From a file"
+        let selected = selection == .file
+        return Button {
+            selection = .file
+        } label: {
+            HStack(spacing: 10) {
+                mark(for: title, steam: false)
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(selected ? skin.accent.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .foregroundStyle(.primary)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 8)
+    }
+
     @ViewBuilder
     private var detail: some View {
         ScrollView {
-            switch recipe {
-            case .steam: steamDetail
-            case .program: programDetail
+            if let item = selectedInstaller {
+                catalogDetail(item)
+            } else {
+                fileDetail
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var steamDetail: some View {
-        VStack(alignment: .leading, spacing: 22) {
+    private func catalogDetail(_ item: CatalogInstaller) -> some View {
+        let bottleName = bottleNames[item.id] ?? item.name
+        return VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .top, spacing: 16) {
-                Image(nsImage: steamIcon)
-                    .resizable()
-                    .frame(width: 64, height: 64)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                mark(for: item.name, steam: item.isSteam, side: 64)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Steam")
+                    Text(item.name)
                         .font(.system(size: 28, weight: .bold))
-                    Text(steamStatusLine)
+                    Text(statusLine(for: item))
                         .font(.system(size: 14))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 12)
-                steamAction
+                catalogAction(item, bottleName: bottleName)
             }
 
-            Text("Valve's client for buying, downloading, and playing Windows games. Playdock downloads the official setup and installs it into a Windows 10 bottle named Steam. You sign in inside Steam.")
+            Text(item.summary)
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -129,17 +168,29 @@ struct InstallersView: View {
 
             HStack(spacing: 18) {
                 Spacer()
-                linkButton("More info", url: "https://store.steampowered.com/about/")
-                linkButton("Download page", url: "https://store.steampowered.com/about/")
+                linkButton("More info", url: item.pageURL, symbol: "info.circle")
+                linkButton("Download page", url: item.pageURL, symbol: "arrow.down.circle")
             }
 
             Text("Details")
                 .font(.system(size: 18, weight: .semibold))
 
             VStack(alignment: .leading, spacing: 0) {
-                planRow("Playdock will download the installer from Valve.", detail: SteamInstaller.steamSetupURL.absoluteString)
-                planRow("Playdock will install Steam into a Windows 10 bottle named Steam.")
-                planRow("The setup is the English silent installer. Sign-in happens inside Steam after it opens.")
+                planRow("Playdock will download the installer from the vendor.", detail: item.downloadURL.absoluteString)
+                if item.isSteam {
+                    planRow("Playdock will install Steam into a Windows 10 bottle named Steam.")
+                    planRow("The setup is the English silent installer. Sign-in happens inside Steam after it opens.")
+                } else {
+                    bottleNameRow(
+                        sentence: "Playdock will install it into a Windows 10 bottle named \(bottleName).",
+                        name: Binding(
+                            get: { bottleNames[item.id] ?? item.name },
+                            set: { bottleNames[item.id] = $0 }
+                        ),
+                        editing: $editingBottleName
+                    )
+                    planRow("The vendor's setup window opens. You finish it there, including sign-in.")
+                }
                 planRow("Playdock will also install Visual C++, DirectX 9, and Windows core fonts.")
             }
         }
@@ -149,23 +200,25 @@ struct InstallersView: View {
     }
 
     @ViewBuilder
-    private var steamAction: some View {
-        if model.isInstallingSteam {
-            VStack(alignment: .trailing, spacing: 8) {
-                ProgressView()
-                Text(installingMessage)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 220, alignment: .trailing)
-            }
-        } else if SteamInstaller.isSteamInstalled {
-            Button("Open Steam") { model.openSteamClient() }
+    private func catalogAction(_ item: CatalogInstaller, bottleName: String) -> some View {
+        if item.isSteam, model.isInstallingSteam {
+            progress(installingMessage)
+        } else if model.catalogInstallID == item.id, let message = model.programInstallMessage {
+            progress(message)
+        } else if item.installedExePath() != nil {
+            Button("Open") { model.openCatalogItem(item) }
                 .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
                 .disabled(model.launchingTarget != nil)
         } else {
-            Button("Install") { model.installAndRunSteam() }
-                .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
+            Button("Install") {
+                if item.isSteam {
+                    model.installAndRunSteam()
+                } else {
+                    model.installCatalogItem(item, bottleName: bottleName)
+                }
+            }
+            .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
+            .disabled(model.isInstallingSteam || model.programInstallMessage != nil)
         }
     }
 
@@ -174,22 +227,21 @@ struct InstallersView: View {
         return "Installing Steam…"
     }
 
-    private var steamStatusLine: String {
-        if model.isInstallingSteam { return installingMessage }
-        if SteamInstaller.isSteamInstalled { return "Installed in the Steam bottle." }
-        if case .failed(let message) = model.steamStatus { return message }
+    private func statusLine(for item: CatalogInstaller) -> String {
+        if item.isSteam, model.isInstallingSteam { return installingMessage }
+        if model.catalogInstallID == item.id, let message = model.programInstallMessage { return message }
+        if item.installedExePath() != nil { return "Installed in the \(item.name) bottle." }
+        if item.isSteam, case .failed(let message) = model.steamStatus { return message }
         return "Official Windows installer."
     }
 
-    private var programDetail: some View {
-        VStack(alignment: .leading, spacing: 22) {
+    private var fileDetail: some View {
+        let title = programURL?.deletingPathExtension().lastPathComponent ?? "From a file"
+        return VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .top, spacing: 16) {
-                Image(nsImage: programIcon)
-                    .resizable()
-                    .frame(width: 64, height: 64)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                mark(for: title, steam: false, side: 64)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(programTitle)
+                    Text(title)
                         .font(.system(size: 28, weight: .bold))
                         .fixedSize(horizontal: false, vertical: true)
                     Text(programURL == nil ? "A setup file you already downloaded." : "Runs in its own Windows 10 bottle.")
@@ -197,12 +249,12 @@ struct InstallersView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 12)
-                programAction
+                fileAction
             }
 
             Text(programURL == nil
-                 ? "Choose a Windows setup program. Playdock gives it a new bottle, installs the usual runtime components, and opens the setup window. It does not guess which game the setup creates."
-                 : "Playdock copies this setup into a new bottle and opens it. Finish the Windows installer in that window, then add the game to the library if you want it on the shelf.")
+                 ? "Choose a Windows setup that is not in the list. Playdock gives it a new bottle, installs the usual runtime components, and opens the setup window."
+                 : "Playdock copies this setup into a new bottle and opens it. Finish the Windows installer in that window.")
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -214,7 +266,11 @@ struct InstallersView: View {
             VStack(alignment: .leading, spacing: 0) {
                 if let programURL {
                     planRow("Playdock will run this setup.", detail: programURL.path)
-                    bottleNameRow
+                    bottleNameRow(
+                        sentence: "Playdock will install it into a Windows 10 bottle named \(fileBottleName.isEmpty ? title : fileBottleName).",
+                        name: $fileBottleName,
+                        editing: $editingFileBottle
+                    )
                 } else {
                     planRow("Playdock will run the setup file you choose.")
                     planRow("It goes in a new Windows 10 bottle, named after the file unless you rename it.")
@@ -228,43 +284,47 @@ struct InstallersView: View {
     }
 
     @ViewBuilder
-    private var programAction: some View {
-        if let message = model.programInstallMessage {
-            VStack(alignment: .trailing, spacing: 8) {
-                ProgressView()
-                Text(message)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 240, alignment: .trailing)
-            }
+    private var fileAction: some View {
+        if selection == .file, model.catalogInstallID == nil, let message = model.programInstallMessage {
+            progress(message)
         } else if programURL == nil {
             Button("Choose Installer…") { pickingProgram = true }
                 .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
         } else {
             Button("Install") { startProgramInstall() }
                 .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
-                .disabled(model.isInstallingSteam)
+                .disabled(model.isInstallingSteam || model.programInstallMessage != nil)
         }
     }
 
-    private var bottleNameRow: some View {
+    private func progress(_ message: String) -> some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            ProgressView()
+            Text(message)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: 240, alignment: .trailing)
+        }
+    }
+
+    private func bottleNameRow(sentence: String, name: Binding<String>, editing: Binding<Bool>) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(skin.accent)
                 .padding(.top, 2)
             VStack(alignment: .leading, spacing: 6) {
-                Text("Playdock will install it into a Windows 10 bottle named \(bottleName.isEmpty ? programTitle : bottleName).")
+                Text(sentence)
                     .font(.system(size: 14))
                     .fixedSize(horizontal: false, vertical: true)
-                if editingBottleName {
-                    TextField("Bottle name", text: $bottleName)
+                if editing.wrappedValue {
+                    TextField("Bottle name", text: name)
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: 280)
                 }
             }
             Spacer(minLength: 8)
-            Button(editingBottleName ? "Done" : "Edit") { editingBottleName.toggle() }
+            Button(editing.wrappedValue ? "Done" : "Edit") { editing.wrappedValue.toggle() }
                 .buttonStyle(.borderless)
                 .foregroundStyle(skin.accent)
         }
@@ -299,12 +359,11 @@ struct InstallersView: View {
         }
     }
 
-    private func linkButton(_ title: String, url: String) -> some View {
+    private func linkButton(_ title: String, url: URL, symbol: String) -> some View {
         Button {
-            guard let destination = URL(string: url) else { return }
-            NSWorkspace.shared.open(destination)
+            NSWorkspace.shared.open(url)
         } label: {
-            Label(title, systemImage: title == "Download page" ? "arrow.down.circle" : "info.circle")
+            Label(title, systemImage: symbol)
                 .font(.system(size: 13))
         }
         .buttonStyle(.plain)
@@ -313,28 +372,30 @@ struct InstallersView: View {
 
     private func startProgramInstall() {
         guard let programURL else { return }
-        model.installDownloadedProgram(at: programURL.path, bottleName: bottleName)
+        model.installDownloadedProgram(at: programURL.path, bottleName: fileBottleName)
     }
 
-    private var steamIcon: NSImage {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.valvesoftware.steam") {
-            let icon = NSWorkspace.shared.icon(forFile: url.path)
-            icon.size = NSSize(width: 64, height: 64)
-            return icon
+    private func mark(for name: String, steam: Bool, side: CGFloat = 28) -> some View {
+        Group {
+            if steam, let icon = macSteamIcon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: side, height: side)
+                    .clipShape(RoundedRectangle(cornerRadius: side > 40 ? 14 : 6, style: .continuous))
+            } else {
+                Text(String(name.prefix(1)).uppercased())
+                    .font(.system(size: side * 0.42, weight: .bold))
+                    .foregroundStyle(skin.accent)
+                    .frame(width: side, height: side)
+                    .background(skin.accent.opacity(0.16), in: RoundedRectangle(cornerRadius: side > 40 ? 14 : 6, style: .continuous))
+            }
         }
-        let symbol = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: "Steam") ?? NSImage()
-        symbol.size = NSSize(width: 64, height: 64)
-        return symbol
     }
 
-    private var programIcon: NSImage {
-        if let programURL {
-            let icon = NSWorkspace.shared.icon(forFile: programURL.path)
-            icon.size = NSSize(width: 64, height: 64)
-            return icon
-        }
-        let symbol = NSImage(systemSymbolName: "doc.badge.plus", accessibilityDescription: "Installer") ?? NSImage()
-        symbol.size = NSSize(width: 64, height: 64)
-        return symbol
+    private var macSteamIcon: NSImage? {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.valvesoftware.steam") else { return nil }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        icon.size = NSSize(width: 64, height: 64)
+        return icon
     }
 }
