@@ -41,9 +41,6 @@ struct ContentView: View {
             }
             .frame(width: geometry.size.width / uiScale, height: geometry.size.height / uiScale, alignment: .topLeading)
             .scaleEffect(uiScale, anchor: .topLeading)
-            // scaleEffect does not change the layout size. Without this second frame the smaller
-            // (or larger) box is placed in the window and the scaled picture no longer starts at
-            // the corner, so the whole UI looks shifted.
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
         }
         .alert("Playdock", isPresented: errorBinding) {

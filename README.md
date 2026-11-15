@@ -7,9 +7,10 @@ A Mac dashboard for the Windows games (and programs you might want to run) you'r
 on top of the Sikarugir engine.
 
 Steam is the main feature here: install it once, and Playdock shows your library as a proper grid -
-box art, a short description, your account's name and avatar - with a big icon you double-click to
-open Steam itself, same as you would on the desktop. Drag-and-drop `.exe` support is still in here
-too, tucked under "Exe Loader" in the sidebar for when you just need to run something once.
+box art, a short description, your account's name and avatar. Installed store clients sit on the
+right edge as small icons; click one to open it. If none are installed, that spot is a question
+mark that opens the Install tab. Drag-and-drop `.exe` support is still in here too, under the
+C: Drive tab.
 
 ## Developing again
 
@@ -115,6 +116,14 @@ No Xcode required, just Swift + Command Line Tools:
 ```
 
 ## What's new
+
+**Install tab, launcher icons, and a library that fills the window (1.4.0)** - The Install tab
+lists the store clients (Steam, Epic, Battle.net, GOG Galaxy, Ubisoft Connect, EA App, Rockstar,
+itch, Amazon Games, Riot, Discord), each with its own icon, an honest rating, and a download
+progress bar. A game page shows Steam's own review score and highlighted achievements, and falls
+back when a game has no wide banner. Installed clients get the same minimized edge tab Steam
+already had. The library uses the whole window instead of leaving an empty band along the bottom
+and right.
 
 **Playtime, favorites, and a real settings panel (1.3.0)** - Playdock finally answers "how much
 have I actually played this?": real play sessions recorded by watching game processes (no Steam

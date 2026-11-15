@@ -6,7 +6,7 @@
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:transparent;}
-#stage{min-height:100vh;padding-bottom:96px;}
+#stage{min-height:100vh;padding-bottom:24px;}
 #stage img,#stage svg{max-width:100%;}
 /* Every skin's .search is now a real <input> (was static text) - normalize the parts a browser's
    own default input chrome would otherwise fight each skin's own border/background/font styling
@@ -39,7 +39,7 @@ input.search::placeholder{color:inherit;opacity:0.6;}
 #stage.settled .card:nth-child(5),#stage.settled .row:nth-child(5){animation-delay:.12s;}
 #stage.settled .card:nth-child(6),#stage.settled .row:nth-child(6){animation-delay:.15s;}
 #stage.settled .card:nth-child(n+7),#stage.settled .row:nth-child(n+7){animation-delay:.18s;}
-@keyframes playdock-rise{from{opacity:0;}to{opacity:1;}}
+@keyframes playdock-rise{from{transform:translateY(8px);}to{transform:none;}}
 
 /* A game found in the real, separate macOS Steam client's own library gets this instead of
    ".badge"'s "Custom" - same real per-skin shape/position (this always renders alongside the base

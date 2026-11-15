@@ -1012,20 +1012,15 @@ struct GameModeView: View {
     /// line of `.caption`/`.callout` text) - kept as one shared constant so the bottom padding that
     /// makes room for it and the bar's own size can't quietly drift apart.
     private static let legendBarHeight: CGFloat = 40
-    private static let gridBottomPaddingMinimum: CGFloat = 72
 
-    /// Room for the native UI-size slider (always) and the controller legend bar when it's showing.
+    /// The controller legend is the only thing that needs the library to step up. The size
+    /// slider and the launcher tabs float on top of the page, so they don't leave a blank band.
     private var gridBottomInset: CGFloat {
-        let controllerPad = isDashboardTheActiveControllerLayer && controllerObserver.isConnected ? Self.legendBarHeight : 0
-        return max(Self.gridBottomPaddingMinimum, controllerPad)
+        isDashboardTheActiveControllerLayer && controllerObserver.isConnected ? Self.legendBarHeight : 0
     }
 
-    /// The edge tabs sit on top of the library. This keeps the last column out from under them.
-    private var cornerReserve: CGFloat {
-        let steam: CGFloat = showSteamIcon && !installedLaunchers.isEmpty ? 180 : 44
-        let settings: CGFloat = showSettingsLauncher ? 100 : 44
-        return max(steam, settings)
-    }
+    /// Launcher names, when shown, sit on top of the right edge. The page itself stays full width.
+    private var cornerReserve: CGFloat { 0 }
 
     /// Non-hidden Steam plus custom games - what the header count should reflect, not Steam alone.
     private var installedVisibleGameCount: Int {
