@@ -11,7 +11,9 @@ box art, a short description, your account's name and avatar - with a big icon y
 open Steam itself, same as you would on the desktop. Drag-and-drop `.exe` support is still in here
 too, tucked under "Exe Loader" in the sidebar for when you just need to run something once.
 
-## NOTICE: Due to skool reasons, Playdock had a much slower rate of development for a while. Development is active again, with changes queued and shipped as small reviewable upgrades through Ship Manager. Thanks to everyone who's liked, used, or followed this lil side project ❤️
+## Developing again
+
+School slowed Playdock down for a while. Development is active again. The library, the game page, and the Install tab are changing in this repo now. Thanks to everyone who has liked, used, or followed this side project.
 
 ## Screenshots
 
