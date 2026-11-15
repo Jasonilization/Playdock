@@ -843,7 +843,7 @@ struct SettingsPanelView: View {
                     Text(LF("Version %@", appVersion))
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                    Text(L("A Mac dashboard for the Windows games you run through Wine."))
+                    Text(L("A free alternative to CrossOver for the Windows games you run on your Mac."))
                         .font(.callout)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(L("Built on the Sikarugir engine."))

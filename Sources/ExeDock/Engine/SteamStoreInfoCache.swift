@@ -33,8 +33,9 @@ actor SteamStoreInfoCache {
             return onDisk
         }
         let fetched = await fetchFromNetwork(appID)
-        memoryCache[appID] = fetched
+        // A miss is not cached. Steam being down once should not make Refresh a no-op forever.
         if let fetched {
+            memoryCache[appID] = fetched
             writeToDisk(appID, fetched)
         }
         return fetched

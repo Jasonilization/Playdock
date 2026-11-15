@@ -211,7 +211,7 @@ enum Localization {
         "Version %@": "版本 %@",
         "Built on the Sikarugir engine.": "基于 Sikarugir 引擎构建。",
         "Contact": "联系方式",
-        "A Mac dashboard for the Windows games you run through Wine.": "用于管理通过 Wine 运行的 Windows 游戏的 Mac 面板。",
+        "A free alternative to CrossOver for the Windows games you run on your Mac.": "在 Mac 上运行 Windows 游戏的免费 CrossOver 替代方案。",
     ]
 
     private static let french: [String: String] = [
@@ -284,7 +284,7 @@ enum Localization {
         "Version %@": "Version %@",
         "Built on the Sikarugir engine.": "Basé sur le moteur Sikarugir.",
         "Contact": "Contact",
-        "A Mac dashboard for the Windows games you run through Wine.": "Un tableau de bord Mac pour les jeux Windows lancés via Wine.",
+        "A free alternative to CrossOver for the Windows games you run on your Mac.": "Une alternative gratuite à CrossOver pour les jeux Windows sur Mac.",
     ]
 
     private static let spanish: [String: String] = [
@@ -357,7 +357,7 @@ enum Localization {
         "Version %@": "Versión %@",
         "Built on the Sikarugir engine.": "Basado en el motor Sikarugir.",
         "Contact": "Contacto",
-        "A Mac dashboard for the Windows games you run through Wine.": "Un panel de Mac para los juegos de Windows que ejecutas con Wine.",
+        "A free alternative to CrossOver for the Windows games you run on your Mac.": "Una alternativa gratuita a CrossOver para los juegos de Windows en el Mac.",
     ]
 
     private static let german: [String: String] = [
@@ -430,7 +430,7 @@ enum Localization {
         "Version %@": "Version %@",
         "Built on the Sikarugir engine.": "Basiert auf der Sikarugir-Engine.",
         "Contact": "Kontakt",
-        "A Mac dashboard for the Windows games you run through Wine.": "Ein Mac-Dashboard für die Windows-Spiele, die du über Wine spielst.",
+        "A free alternative to CrossOver for the Windows games you run on your Mac.": "Eine kostenlose Alternative zu CrossOver für Windows-Spiele auf dem Mac.",
     ]
 
     private static let japanese: [String: String] = [
@@ -503,7 +503,7 @@ enum Localization {
         "Version %@": "バージョン %@",
         "Built on the Sikarugir engine.": "Sikarugir エンジンを基に構築されています。",
         "Contact": "連絡先",
-        "A Mac dashboard for the Windows games you run through Wine.": "Wine で動かす Windows ゲームのための Mac 向けダッシュボードです。",
+        "A free alternative to CrossOver for the Windows games you run on your Mac.": "Mac で Windows ゲームを遊ぶための、CrossOver の無料の代替です。",
     ]
 
     private static let portuguese: [String: String] = [
@@ -576,6 +576,6 @@ enum Localization {
         "Version %@": "Versão %@",
         "Built on the Sikarugir engine.": "Construído sobre o motor Sikarugir.",
         "Contact": "Contato",
-        "A Mac dashboard for the Windows games you run through Wine.": "Um painel de Mac para os jogos de Windows que você roda pelo Wine.",
+        "A free alternative to CrossOver for the Windows games you run on your Mac.": "Uma alternativa gratuita ao CrossOver para os jogos de Windows no Mac.",
     ]
 }

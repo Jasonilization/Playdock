@@ -97,6 +97,9 @@ struct GameModeView: View {
     /// (`SkinWebGridView`) - kept independently of the native layouts' own per-tile resolution so a
     /// game's info only ever needs to be fetched once regardless of which structure is on screen.
     @LocalState private var libraryPresentations: [String: LibraryPresentation] = [:]
+    /// The hard-refresh generation these presentations were loaded for. A newer one means the
+    /// cache was wiped and every card has to fetch again.
+    @LocalState private var resolvedInfoGeneration = 0
 
     private enum GameSortOption: String, CaseIterable, Identifiable {
         case name = "Name"
@@ -226,18 +229,28 @@ struct GameModeView: View {
     /// Resolves every entry currently in the library concurrently (already-resolved entries are
     /// skipped, so this stays cheap on repeat calls) - driven by a `.task(id:)` keyed on the actual
     /// set of entry ids, so adding/removing a game re-resolves only what's actually new.
+    /// Changes when the library membership changes or Settings/Refresh wipes the store cache.
+    private var presentationRefreshToken: String {
+        libraryEntries.map(\.id).joined(separator: ",") + "#\(model.gameInfoGeneration)"
+    }
+
     private func resolveLibraryPresentations() async {
+        let generation = model.gameInfoGeneration
+        let replace = generation != resolvedInfoGeneration
+        if replace {
+            libraryPresentations = [:]
+            resolvedInfoGeneration = generation
+        }
         await withTaskGroup(of: (String, LibraryPresentation).self) { group in
-            for entry in libraryEntries where libraryPresentations[entry.id] == nil {
+            for entry in libraryEntries where replace || libraryPresentations[entry.id] == nil {
                 group.addTask { (entry.id, await LibraryPresentation.resolve(entry)) }
             }
             var resolved: [String: LibraryPresentation] = [:]
             for await (id, presentation) in group {
                 resolved[id] = presentation
             }
-            if !resolved.isEmpty {
-                libraryPresentations.merge(resolved) { _, new in new }
-            }
+            guard model.gameInfoGeneration == generation, !resolved.isEmpty else { return }
+            libraryPresentations.merge(resolved) { _, new in new }
         }
     }
 
@@ -370,7 +383,7 @@ struct GameModeView: View {
                         .onAppear { gridWidth = geometry.size.width }
                         .onChange(of: geometry.size.width) { gridWidth = $0 }
                     }
-                    .task(id: libraryEntries.map(\.id)) {
+                    .task(id: presentationRefreshToken) {
                         await resolveLibraryPresentations()
                     }
                 } else if libraryLayout == .steam || libraryLayout == .spotlight {
@@ -379,7 +392,7 @@ struct GameModeView: View {
                     // SwiftUI approximation - it needs the same real presentations Grid's own
                     // webGridEntries reads from.
                     alternateLayout
-                        .task(id: libraryEntries.map(\.id)) {
+                        .task(id: presentationRefreshToken) {
                             await resolveLibraryPresentations()
                         }
                 } else {
@@ -577,11 +590,10 @@ struct GameModeView: View {
                 .keyboardShortcut("n", modifiers: .command)
 
                 headerIconButton(systemImage: "arrow.clockwise", help: L("Refresh"), isFocused: isControlFocused(.refresh)) {
-                    model.refreshSteamGames()
-                    model.refreshSteamProfile()
+                    model.hardRefreshGameInfo()
                 }
                 .keyboardShortcut("r", modifiers: .command)
-                .disabled(model.isLoadingSteamGames)
+                .disabled(model.isLoadingSteamGames || model.isHardRefreshingGameInfo)
 
                 headerIconButton(systemImage: "gearshape", help: L("Settings"), isFocused: isControlFocused(.settings)) {
                     openSettings()
@@ -1231,9 +1243,8 @@ struct GameModeView: View {
         case .add:
             showingAddGameSheet = true
         case .refresh:
-            guard !model.isLoadingSteamGames else { return }
-            model.refreshSteamGames()
-            model.refreshSteamProfile()
+            guard !model.isLoadingSteamGames, !model.isHardRefreshingGameInfo else { return }
+            model.hardRefreshGameInfo()
         case .settings, .settingsLauncher:
             openSettings()
         case .card(let index):
@@ -1463,7 +1474,7 @@ private struct GameCardView: View {
                 Label("Copy App ID", systemImage: "doc.on.doc")
             }
         }
-        .task(id: game.appID) {
+        .task(id: "\(game.appID)#\(model.gameInfoGeneration)") {
             storeInfo = await SteamStoreInfoCache.shared.info(for: game.metadataAppID)
         }
         .onHover { isHovering in
@@ -1717,7 +1728,7 @@ struct GameDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task(id: game.appID) {
+        .task(id: "\(game.appID)#\(model.gameInfoGeneration)") {
             storeInfo = await SteamStoreInfoCache.shared.info(for: game.metadataAppID)
             if let path = storeInfo?.headerImagePath { gameAccent = await GameArtColor.dominantColor(forImagePath: path) }
             reloadLaunchHistory()
@@ -2309,6 +2320,7 @@ struct GameDetailView: View {
 /// content on top stays perfectly readable.
 private struct DashboardBackdropView: View {
     let game: SteamGame
+    @EnvironmentObject private var model: AppModel
     @LocalState private var headerImagePath: String?
 
     var body: some View {
@@ -2323,7 +2335,7 @@ private struct DashboardBackdropView: View {
                 Color.clear
             }
         }
-        .task(id: game.appID) {
+        .task(id: "\(game.appID)#\(model.gameInfoGeneration)") {
             headerImagePath = await SteamStoreInfoCache.shared.info(for: game.metadataAppID)?.headerImagePath
         }
     }

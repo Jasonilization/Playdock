@@ -3,8 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Wiki](https://img.shields.io/badge/docs-wiki-informational.svg)](https://github.com/Jasonilization/Playdock/wiki)
 
-A Mac dashboard for the Windows games (and programs you might want to run) you're already running through Wine - built
-on top of the Sikarugir engine.
+A free alternative to CrossOver. Playdock is a Mac dashboard for the Windows games (and programs)
+you're already running through Wine, built on the Sikarugir engine. It does not include CrossOver's
+compatibility list, and a title running there is not a promise it runs here.
 
 Steam is the main feature here: install it once, and Playdock shows your library as a proper grid -
 box art, a short description, your account's name and avatar. Installed store clients sit on the

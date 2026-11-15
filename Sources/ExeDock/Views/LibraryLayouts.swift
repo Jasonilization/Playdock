@@ -94,13 +94,14 @@ private struct SmallArtIcon: View {
     var height: CGFloat = 44
     var cornerRadius: CGFloat = 4
     @LocalState private var presentation: LibraryPresentation?
+    @EnvironmentObject private var model: AppModel
 
     var body: some View {
         artView(path: presentation?.artPath, id: entry.id, fills: false)
             .frame(width: width, height: height)
             .skinArtTreatment()
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .task(id: entry.id) { presentation = await LibraryPresentation.resolve(entry, shape: .portrait) }
+            .task(id: "\(entry.id)#\(model.gameInfoGeneration)") { presentation = await LibraryPresentation.resolve(entry, shape: .portrait) }
     }
 }
 
@@ -121,6 +122,7 @@ private struct LibraryEntryTile: View {
     let onOpen: () -> Void
     @ObservedObject private var runningTracker = RunningGameTracker.shared
     @ObservedObject private var curation = LibraryCurationStore.shared
+    @EnvironmentObject private var model: AppModel
     @LocalState private var presentation: LibraryPresentation?
     @LocalState private var isHovering = false
     @LocalState private var gameAccent: Color?
@@ -185,7 +187,7 @@ private struct LibraryEntryTile: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { onOpen() }
-        .task(id: entry.id) {
+        .task(id: "\(entry.id)#\(model.gameInfoGeneration)") {
             presentation = await LibraryPresentation.resolve(entry, shape: artShape)
             if let path = presentation?.artPath { gameAccent = await GameArtColor.dominantColor(forImagePath: path) }
         }
@@ -198,6 +200,7 @@ struct LibraryShelvesLayout: View {
     let entries: [LibraryEntry]
     let onOpenDetail: (LibraryEntry) -> Void
     let onLaunch: (LibraryEntry) -> Void
+    @EnvironmentObject private var model: AppModel
     @ObservedObject private var runningTracker = RunningGameTracker.shared
     @ObservedObject private var controllerObserver = ControllerObserver.shared
     @LocalState private var featuredPresentation: LibraryPresentation?
@@ -261,7 +264,7 @@ struct LibraryShelvesLayout: View {
                     }
                     .id(featured.id)
                     .transition(.opacity)
-                    .task(id: featured.id) {
+                    .task(id: "\(featured.id)#\(model.gameInfoGeneration)") {
                         featuredPresentation = await LibraryPresentation.resolve(featured)
                         if let path = featuredPresentation?.artPath { featuredAccent = await GameArtColor.dominantColor(forImagePath: path) }
                     }
@@ -318,6 +321,7 @@ struct LibrarySidebarLayout: View {
     let onLaunch: (LibraryEntry) -> Void
     @ObservedObject private var runningTracker = RunningGameTracker.shared
     @ObservedObject private var controllerObserver = ControllerObserver.shared
+    @EnvironmentObject private var model: AppModel
     @LocalState private var selectedID: String?
     @LocalState private var presentation: LibraryPresentation?
     @LocalState private var selectedAccent: Color?
@@ -432,7 +436,7 @@ struct LibrarySidebarLayout: View {
                     .clipped()
                     .id(selected.id)
                     .transition(.opacity)
-                    .task(id: selected.id) {
+                    .task(id: "\(selected.id)#\(model.gameInfoGeneration)") {
                         presentation = await LibraryPresentation.resolve(selected)
                         if let path = presentation?.artPath { selectedAccent = await GameArtColor.dominantColor(forImagePath: path) }
                     }
@@ -542,6 +546,7 @@ struct LibraryCarouselLayout: View {
     let onOpenDetail: (LibraryEntry) -> Void
     @LocalState private var focused: String?
     @LocalState private var presentation: LibraryPresentation?
+    @EnvironmentObject private var model: AppModel
     @ObservedObject private var controllerObserver = ControllerObserver.shared
 
     private var focusedEntry: LibraryEntry? { entries.first { $0.id == focused } ?? entries.first }
@@ -624,7 +629,7 @@ struct LibraryCarouselLayout: View {
                             Text(desc).font(.body).foregroundStyle(.secondary).lineLimit(3).frame(maxWidth: 560, alignment: .leading)
                         }
                     }
-                    .task(id: focusedEntry.id) { presentation = await LibraryPresentation.resolve(focusedEntry) }
+                    .task(id: "\(focusedEntry.id)#\(model.gameInfoGeneration)") { presentation = await LibraryPresentation.resolve(focusedEntry) }
                 }
             }
             .frame(minHeight: 90, alignment: .top)
@@ -657,6 +662,7 @@ struct LibrarySpotlightLayout: View {
     var focusedID: String? = nil
     let onOpenDetail: (LibraryEntry) -> Void
     let onLaunch: (LibraryEntry) -> Void
+    @EnvironmentObject private var model: AppModel
     @ObservedObject private var runningTracker = RunningGameTracker.shared
     @ObservedObject private var controllerObserver = ControllerObserver.shared
     @LocalState private var featuredPresentation: LibraryPresentation?
@@ -731,7 +737,7 @@ struct LibrarySpotlightLayout: View {
                     .padding(32)
                     .id(featured.id)
                     .transition(.opacity)
-                    .task(id: featured.id) {
+                    .task(id: "\(featured.id)#\(model.gameInfoGeneration)") {
                         featuredPresentation = await LibraryPresentation.resolve(featured)
                         if let path = featuredPresentation?.artPath { featuredAccent = await GameArtColor.dominantColor(forImagePath: path) }
                     }
