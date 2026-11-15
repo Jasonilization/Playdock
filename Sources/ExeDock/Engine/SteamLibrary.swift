@@ -40,7 +40,10 @@ enum SteamLibrary {
     /// `libraryfolders.vdf` format Steam's own client writes - so a second library folder (an
     /// external drive, say) is picked up automatically too.
     static func installedNativeMacGames() -> [SteamGame] {
-        nativeMacSteamAppsPaths()
+        // The fresh-install machine sets this so the library starts empty. The real app never does,
+        // and the Mac Steam client on disk is never modified either way.
+        if ProcessInfo.processInfo.environment["PLAYDOCK_HIDE_HOST_STEAM"] == "1" { return [] }
+        return nativeMacSteamAppsPaths()
             .flatMap { installedGames(inSteamAppsPath: $0, source: .nativeMac, idPrefix: "MAC-") }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }

@@ -5,7 +5,7 @@ import Foundation
 /// (metadata, the exe path as a reference); never touches the actual game files. Every write is
 /// atomic, and the storage path is injectable so the full CRUD surface is unit-testable.
 enum CustomGameStore {
-    static let path = ("~/Library/Application Support/ExeDock/CustomGames.json" as NSString).expandingTildeInPath
+    static var path: String { SikarugirEngine.supportFile("CustomGames.json") }
 
     static func loadAll(from path: String = CustomGameStore.path) -> [CustomGame] {
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return [] }

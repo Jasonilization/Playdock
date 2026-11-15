@@ -465,7 +465,7 @@ actor CatalogIconCache {
         }
         guard let host else { return nil }
         if let cached = memory[host] { return cached }
-        let folder = ("~/Library/Application Support/ExeDock/InstallerIcons" as NSString).expandingTildeInPath
+        let folder = SikarugirEngine.supportFile("InstallerIcons")
         let file = (folder as NSString).appendingPathComponent(host.replacingOccurrences(of: "/", with: "_") + ".png")
         if let existing = NSImage(contentsOfFile: file) {
             memory[host] = existing

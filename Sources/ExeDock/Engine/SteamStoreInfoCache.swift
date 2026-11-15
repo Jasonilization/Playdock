@@ -11,7 +11,7 @@ actor SteamStoreInfoCache {
     static let shared = SteamStoreInfoCache()
 
     private var memoryCache: [String: SteamStoreInfo?] = [:]
-    private let cacheDir = ("~/Library/Application Support/ExeDock/StoreInfoCache" as NSString).expandingTildeInPath
+    private var cacheDir: String { SikarugirEngine.supportFile("StoreInfoCache") }
 
     /// Drops every in-memory result so the next `info(for:)` re-reads disk (or, after the on-disk
     /// cache has also been wiped, re-fetches from Steam). Used by Settings' "Hard Refresh Game

@@ -13,7 +13,7 @@ struct LaunchOutcomeRecord: Codable {
 /// this: Playdock can only ever know whether the launch *started* without erroring, not whether the
 /// game kept working - same limitation that sank the old automatic launch-retry ladder.
 enum LocalOutcomeTracker {
-    private static let path = ("~/Library/Application Support/ExeDock/LaunchOutcomes.json" as NSString).expandingTildeInPath
+    private static var path: String { SikarugirEngine.supportFile("LaunchOutcomes.json") }
     /// Keeps the file small and the read/tally cost trivial - only recent history is useful signal
     /// anyway (an old outcome under a long-since-changed engine version says little).
     private static let maxStoredRecords = 500

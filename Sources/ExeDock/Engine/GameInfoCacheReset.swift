@@ -12,9 +12,7 @@ import Foundation
 /// glitch in this one would be the wrong trade. Steam repopulates its own art on its own schedule;
 /// this refresh just re-reads whatever's there.
 enum GameInfoCacheReset {
-    private static var appSupport: String {
-        ("~/Library/Application Support/ExeDock" as NSString).expandingTildeInPath
-    }
+    private static var appSupport: String { SikarugirEngine.exeDockSupportDir }
 
     /// Downloaded store metadata + art (`SteamStoreInfoCache`'s own on-disk directory).
     static var storeInfoDir: String { (appSupport as NSString).appendingPathComponent("StoreInfoCache") }

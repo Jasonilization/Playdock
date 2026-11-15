@@ -12,8 +12,7 @@ final class LibraryCurationStore: ObservableObject {
     /// `nonisolated` because it is read as an init default argument, which is evaluated in
     /// the caller's isolation - a pure path constant needs no MainActor guarantee (and under
     /// Swift 6 the isolated form would be a hard error from every nonisolated caller).
-    nonisolated static let defaultPath =
-        ("~/Library/Application Support/ExeDock/LibraryCuration.json" as NSString).expandingTildeInPath
+    nonisolated static var defaultPath: String { SikarugirEngine.supportFile("LibraryCuration.json") }
 
     @Published private(set) var favorites: Set<String> = []
     @Published private(set) var hidden: Set<String> = []

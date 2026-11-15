@@ -4,7 +4,7 @@ import Foundation
 /// JSON-on-disk pattern as `GameSettingsStore`/`SteamStoreInfoCache`. Never hit automatically on a
 /// timer; only read on open, written after a fetch, and bypassed by an explicit Refresh.
 enum CompatibilityCache {
-    private static let cacheDir = ("~/Library/Application Support/ExeDock/CompatibilityCache" as NSString).expandingTildeInPath
+    private static var cacheDir: String { SikarugirEngine.supportFile("CompatibilityCache") }
 
     static func load(appID: String) -> CompatibilityRecommendation? {
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path(for: appID))) else { return nil }

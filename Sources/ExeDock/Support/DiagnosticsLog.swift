@@ -5,7 +5,7 @@ import Foundation
 /// real answer instead of just "well, it looks fine so far." Lives alongside the per-launch wine
 /// logs in `ExeRunner.logsDir`, so one "Open Logs Folder" button in Settings surfaces everything.
 enum DiagnosticsLog {
-    static let path = (ExeRunner.logsDir as NSString).appendingPathComponent("diagnostics.log")
+    static var path: String { (ExeRunner.logsDir as NSString).appendingPathComponent("diagnostics.log") }
 
     static func log(_ message: String) {
         let line = "[\(ISO8601DateFormatter().string(from: Date()))] \(message)\n"

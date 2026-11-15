@@ -32,6 +32,12 @@ enum SikarugirEngine {
         }
         return ("~/Library/Application Support/ExeDock" as NSString).expandingTildeInPath
     }
+
+    /// A file inside the support directory. Every Playdock-owned cache and library file goes
+    /// through here so a fresh-install machine (`PLAYDOCK_SUPPORT_DIR`) cannot write the real one.
+    static func supportFile(_ relativePath: String) -> String {
+        (exeDockSupportDir as NSString).appendingPathComponent(relativePath)
+    }
     /// Where a build of ExeDock before per-engine caching always extracted to - still checked first
     /// so an existing install doesn't silently re-extract (and re-download nothing, but re-pay the
     /// tar cost) something it already has ready to go.

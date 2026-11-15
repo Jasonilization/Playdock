@@ -28,8 +28,7 @@ final class PlayActivityStore: ObservableObject {
     /// it is read as an init default argument, which is evaluated in the caller's isolation -
     /// a pure path constant needs no MainActor guarantee (and under Swift 6 the isolated form
     /// would be a hard error from every nonisolated caller).
-    nonisolated static let defaultPath =
-        ("~/Library/Application Support/ExeDock/PlayActivity.json" as NSString).expandingTildeInPath
+    nonisolated static var defaultPath: String { SikarugirEngine.supportFile("PlayActivity.json") }
 
     /// Sessions under 30s are process noise (the 5s poll can double-count a fast exit/re-check
     /// flicker), not play. Long real sessions are never affected; nothing else is heuristically

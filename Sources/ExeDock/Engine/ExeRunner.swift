@@ -3,7 +3,14 @@ import AppKit
 
 /// Launches Windows executables through the Sikarugir engine ExeDock reuses.
 enum ExeRunner {
-    static let logsDir = ("~/Library/Logs/ExeDock" as NSString).expandingTildeInPath
+    /// Launch logs. A fresh-install machine keeps them inside its own support folder.
+    static var logsDir: String {
+        let env = ProcessInfo.processInfo.environment
+        if let override = env["PLAYDOCK_SUPPORT_DIR"] ?? env["EXEDOCK_SUPPORT_DIR"], !override.isEmpty {
+            return SikarugirEngine.supportFile("Logs")
+        }
+        return ("~/Library/Logs/ExeDock" as NSString).expandingTildeInPath
+    }
 
     enum RunError: Error, LocalizedError, Equatable {
         case missingExecutable(String)
