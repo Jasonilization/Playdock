@@ -215,6 +215,12 @@ enum SikarugirEngine {
         try? fm.createDirectory(atPath: exeDockSupportDir, withIntermediateDirectories: true)
         try? fm.removeItem(atPath: exeDockFrameworksDir)
 
+        let appName = ((sourceFrameworks as NSString).deletingLastPathComponent as NSString)
+            .deletingLastPathComponent
+        let sourceLabel = (appName as NSString).lastPathComponent
+        let expected = directoryByteCount(sourceFrameworks)
+        SetupActivity.phase("Copying runtime libraries from \(sourceLabel)")
+
         // `-c` clonefiles on APFS (instant, copy-on-write) and transparently falls back to a real
         // copy elsewhere - either way this never touches the source wrapper app.
         let process = Process()
@@ -223,6 +229,15 @@ enum SikarugirEngine {
         let errPipe = Pipe()
         process.standardError = errPipe
         try process.run()
+        while process.isRunning {
+            let written = directoryByteCount(exeDockFrameworksDir)
+            let fraction = expected > 0 ? min(0.99, Double(written) / Double(expected)) : nil
+            let amount = expected > 0
+                ? "\(SetupActivity.byteLabel(written)) of \(SetupActivity.byteLabel(expected))"
+                : SetupActivity.byteLabel(written)
+            SetupActivity.tick("Copying runtime libraries from \(sourceLabel) · \(amount)", fraction: fraction)
+            Thread.sleep(forTimeInterval: 0.4)
+        }
         process.waitUntilExit()
         guard process.terminationStatus == 0, fm.fileExists(atPath: exeDockFrameworksDir) else {
             let data = errPipe.fileHandleForReading.readDataToEndOfFile()
@@ -284,12 +299,25 @@ enum SikarugirEngine {
         try? fm.removeItem(atPath: stagingDir)
         try fm.createDirectory(atPath: stagingDir, withIntermediateDirectories: true)
 
+        let engineName = (tarball as NSString).lastPathComponent.replacingOccurrences(of: ".tar.xz", with: "")
+        let expected = uncompressedByteCount(of: tarball)
+        SetupActivity.phase("Unpacking \(engineName)")
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
         process.arguments = ["-xJf", tarball, "-C", stagingDir]
         let errPipe = Pipe()
         process.standardError = errPipe
         try process.run()
+        while process.isRunning {
+            let written = directoryByteCount(stagingDir)
+            let fraction = expected > 0 ? min(0.99, Double(written) / Double(expected)) : nil
+            let amount = expected > 0
+                ? "\(SetupActivity.byteLabel(written)) of \(SetupActivity.byteLabel(expected))"
+                : "\(SetupActivity.byteLabel(written)) unpacked"
+            SetupActivity.tick("Unpacking \(engineName) · \(amount)", fraction: fraction)
+            Thread.sleep(forTimeInterval: 0.4)
+        }
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             let data = errPipe.fileHandleForReading.readDataToEndOfFile()
@@ -313,6 +341,41 @@ enum SikarugirEngine {
         try? fm.removeItem(atPath: destinationDir)
         try fm.moveItem(atPath: sourceDir, toPath: destinationDir)
         try? fm.removeItem(atPath: stagingDir)
+    }
+
+    /// `du -sk` of one path. Used while a copy or unpack is running so the setup screen can show
+    /// bytes done against a known total, instead of a bar that never moves.
+    private static func directoryByteCount(_ path: String) -> Int64 {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/du")
+        process.arguments = ["-sk", path]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
+        guard (try? process.run()) != nil else { return 0 }
+        process.waitUntilExit()
+        let text = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let kilobytes = Int64(text.split(whereSeparator: { $0 == "\t" || $0 == " " }).first.map(String.init) ?? "") ?? 0
+        return kilobytes * 1024
+    }
+
+    /// Uncompressed size of an `.xz` archive, from `xz -l`. Zero when the tool cannot read it.
+    private static func uncompressedByteCount(of tarball: String) -> Int64 {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xz")
+        process.arguments = ["-l", "--robot", tarball]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
+        guard (try? process.run()) != nil else { return 0 }
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return 0 }
+        let text = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        for line in text.split(separator: "\n") where !line.hasPrefix("name\t") && !line.hasPrefix("totals\t") {
+            let fields = line.split(separator: "\t")
+            if fields.count >= 3, let bytes = Int64(fields[2]), bytes > 0 { return bytes }
+        }
+        return 0
     }
 
     /// Last-resort fallback: read (never write) the wine binary bundled inside an already-installed

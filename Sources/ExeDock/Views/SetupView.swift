@@ -30,25 +30,56 @@ struct SetupView: View {
                 .font(.system(size: 52))
                 .foregroundStyle(iconColor)
             SkinTitleText(text: title, size: 22)
-            Text(subtitle)
+            Text(setup.detail.isEmpty ? subtitle : setup.detail)
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: 420)
+                .frame(maxWidth: 460)
+                .monospacedDigit()
             if let current = currentStep {
                 stepTracker(current: current).padding(.top, 6)
             }
             if showsSpinner {
                 Group {
-                    if let fraction = progressFraction {
+                    if let fraction = setup.fraction {
                         ProgressView(value: fraction)
                     } else {
-                        ProgressView(value: nil as Double?)
+                        ProgressView()
                     }
                 }
                 .progressViewStyle(.linear)
-                .frame(maxWidth: 280)
+                .tint(skin.accent)
+                .frame(maxWidth: 420)
                 .padding(.top, 4)
+                if let fraction = setup.fraction {
+                    Text("\(Int((fraction * 100).rounded()))%")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if !setup.log.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(setup.log.enumerated()), id: \.offset) { index, line in
+                        let current = index == setup.log.count - 1 && showsSpinner
+                        HStack(spacing: 8) {
+                            Image(systemName: current ? "circle.dotted" : "checkmark.circle.fill")
+                                .foregroundStyle(current ? skin.accent : Color.green)
+                            Text(line)
+                                .lineLimit(1)
+                        }
+                        .font(.caption)
+                        .foregroundStyle(current ? Color.primary : Color.secondary)
+                    }
+                }
+                .frame(maxWidth: 460, alignment: .leading)
+                .padding(.top, 8)
+            }
+            if showsSpinner {
+                Button("Quit") { NSApp.terminate(nil) }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
+                    .padding(.top, 8)
             }
             if showsRetryButton {
                 Button("Check Again") {
@@ -178,17 +209,6 @@ struct SetupView: View {
         switch setup.stage {
         case .missingSikarugirCreator, .failed: return .orange
         default: return .secondary
-        }
-    }
-
-    private var progressFraction: Double? {
-        switch setup.stage {
-        case .checking: return 0.1
-        case .downloadingEngine: return nil // real download progress isn't tracked byte-by-byte
-        case .extractingEngine: return 0.7
-        case .downloadingRuntimeLibraries: return 0.8
-        case .initializingBottle: return 0.9
-        default: return nil
         }
     }
 

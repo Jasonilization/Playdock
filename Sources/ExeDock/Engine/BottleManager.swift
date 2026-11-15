@@ -63,6 +63,7 @@ final class BottleManager {
         let systemRegPath = (bottle.prefixPath as NSString).appendingPathComponent("system.reg")
         guard !fm.fileExists(atPath: systemRegPath) else { return }
 
+        SetupActivity.phase("Creating the \(bottle.name) bottle")
         try? fm.createDirectory(atPath: ExeRunner.logsDir, withIntermediateDirectories: true)
         let logPath = (ExeRunner.logsDir as NSString).appendingPathComponent("wineboot-\(bottle.name)-\(Int(Date().timeIntervalSince1970)).log")
         fm.createFile(atPath: logPath, contents: nil)
@@ -86,6 +87,7 @@ final class BottleManager {
         // rather than assuming completion the instant it returns.
         let deadline = Date().addingTimeInterval(45)
         while !fm.fileExists(atPath: systemRegPath), Date() < deadline {
+            SetupActivity.tick("Creating the \(bottle.name) bottle · waiting for Windows setup", fraction: nil)
             Thread.sleep(forTimeInterval: 0.5)
         }
 

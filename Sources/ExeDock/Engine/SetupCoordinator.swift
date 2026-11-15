@@ -38,6 +38,12 @@ final class SetupCoordinator: ObservableObject {
     static let sikarugirCreatorPath = "/Applications/Sikarugir Creator.app"
 
     @Published var stage: SetupStage = .checking
+    /// The measurement for the step in progress: "Unpacking Sikarugir-11 · 800 MB of 2.1 GB".
+    @Published var detail: String = ""
+    /// 0...1 when the current step has a real size. Nil while the size is still unknown.
+    @Published var fraction: Double?
+    /// Steps that have started, oldest first. The screen lists these under the bar.
+    @Published var log: [String] = []
 
     private var pollTask: Task<Void, Never>?
     /// Started as early as possible - right alongside whichever engine-acquisition path gets taken,
@@ -53,6 +59,7 @@ final class SetupCoordinator: ObservableObject {
     private var frameworksTask: Task<Void, Error>?
 
     func runSetup() {
+        bindActivity()
         pollTask?.cancel()
         // A genuinely fresh start (first launch, or "Check Again" after a failure) - if the
         // previous attempt's frameworks task already failed (a real, live bug this guarded
@@ -64,6 +71,24 @@ final class SetupCoordinator: ObservableObject {
         pollTask = Task { await performSetup() }
     }
 
+    private func bindActivity() {
+        SetupActivity.bind { [weak self] event in
+            Task { @MainActor in self?.apply(event) }
+        }
+    }
+
+    private func apply(_ event: SetupActivity.Event) {
+        switch event {
+        case .phase(let message):
+            if log.last != message { log.append(message) }
+            detail = message
+            fraction = nil
+        case .tick(let message, let fraction):
+            detail = message
+            self.fraction = fraction
+        }
+    }
+
     private func startFrameworksTaskIfNeeded() {
         guard frameworksTask == nil else { return }
         frameworksTask = Task { try await self.ensureRuntimeFrameworksReadyWork() }
@@ -71,6 +96,7 @@ final class SetupCoordinator: ObservableObject {
 
     /// Called from the setup screen when more than one engine was offered and the user picked one.
     func chooseEngine(_ name: String) {
+        bindActivity()
         pollTask?.cancel()
         startFrameworksTaskIfNeeded()
         pollTask = Task { await extractAndContinue(engineName: name) }
