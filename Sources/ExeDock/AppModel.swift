@@ -238,6 +238,15 @@ final class AppModel: ObservableObject {
     }
 
     func config(for game: SteamGame) -> GameModeConfig { config(forID: game.appID) }
+
+    func launchBackend(for game: SteamGame) -> LaunchBackend {
+        LaunchBackendStore.backend(for: game)
+    }
+
+    func setLaunchBackend(_ backend: LaunchBackend, for game: SteamGame) {
+        LaunchBackendStore.set(backend, for: game)
+        objectWillChange.send()
+    }
     func setOverride(_ config: GameModeConfig?, for game: SteamGame) { setOverride(config, forID: game.appID) }
 
     func config(for game: CustomGame) -> GameModeConfig { config(forID: game.id) }
@@ -274,6 +283,16 @@ final class AppModel: ObservableObject {
         if game.isDownloading {
             errorMessage = "\(game.name) is still downloading in Steam."
             return
+        }
+        switch LaunchBackendStore.backend(for: game) {
+        case .nativeMac:
+            launchNativeMacSteamGame(game)
+            return
+        case .steamPlay:
+            launchSteamPlay(game)
+            return
+        case .playdockWine:
+            break
         }
         if game.source == .nativeMac {
             launchNativeMacSteamGame(game)
@@ -318,8 +337,17 @@ final class AppModel: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
-    /// Opens the Steam client itself (no specific game) - e.g. to browse the store or install
-    /// something new.
+    /// Steam Play: the Mac Steam app runs the game (`steam://rungameid`). Same launch path
+    /// NotProton uses. Playdock Wine stays the bottle path.
+    private func launchSteamPlay(_ game: SteamGame) {
+        guard SteamPlaySupport.nativeSteamAppExists else {
+            errorMessage = "Steam Play needs Steam in /Applications."
+            return
+        }
+        statusMessage = "Steam Play · \(game.name)"
+        SteamPlaySupport.openInSteam(appID: game.metadataAppID)
+    }
+
     func openSteamClient() {
         guard ensureSteamStillInstalled() else { return }
         launchSteam(target: .steam, arguments: [], displayName: "Steam", config: gameModeConfig)

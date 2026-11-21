@@ -129,6 +129,19 @@ h2 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.0
 .shot-row img { display: block; width: 100%; }
 .shot-row figcaption { padding: 10px 14px; font-size: 12.5px; color: var(--dim); }
 
+.watch { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 18px; align-items: stretch; }
+.watch video {
+  width: 100%; display: block; background: #000;
+  border-radius: 14px; border: 1px solid var(--line);
+}
+.yt-slot {
+  border: 1px dashed var(--line); border-radius: 14px;
+  background: var(--panel); padding: 22px;
+  display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  color: var(--dim); min-height: 180px;
+}
+.yt-slot strong { color: var(--fg); font-size: 15px; }
+
 /* how it works */
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: step; }
 .step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; position: relative; }
@@ -169,6 +182,7 @@ footer .right { margin-left: auto; display: flex; gap: 16px; }
   .steps { grid-template-columns: 1fr 1fr; }
   .install-grid { grid-template-columns: 1fr; }
   .shot-row { grid-template-columns: 1fr; }
+  .watch { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
   .features, .steps { grid-template-columns: 1fr; }
@@ -184,6 +198,7 @@ footer .right { margin-left: auto; display: flex; gap: 16px; }
     <nav>
       <a class="nav-link hide-sm" href="#features">Features</a>
       <a class="nav-link hide-sm" href="#screenshots">Screenshots</a>
+      <a class="nav-link hide-sm" href="#watch">Watch</a>
       <a class="nav-link hide-sm" href="#install">Install</a>
       <a class="gh" href="https://github.com/Jasonilization/Playdock">★ GitHub</a>
     </nav>
@@ -223,7 +238,7 @@ footer .right { margin-left: auto; display: flex; gap: 16px; }
       <div class="feature"><div class="icon">🕹️</div><h3>Controller-first, for real</h3>
         <p>D-pad and thumbstick navigation across the whole library, focus rings, and on-screen hints — grab a controller off the couch and never touch the mouse.</p></div>
       <div class="feature"><div class="icon">🖼️</div><h3>Six layouts, six skins</h3>
-        <p>Grid, Shelves, Sidebar, Steam-style, Carousel, Spotlight — each skinned from Luxury to Terminal — with your real Steam art, ratings, and descriptions.</p></div>
+        <p>Grid, Shelves, Sidebar, Steam-style, Carousel, Spotlight — each skinned from Warm to Plain — with your real Steam art, ratings, and descriptions.</p></div>
       <div class="feature"><div class="icon">🧩</div><h3>Per-game engines, one click</h3>
         <p>D3DMetal, DXVK, DXMT, MoltenVK per game, remembered forever. Overrides are stored per title, not per hope.</p></div>
       <div class="feature"><div class="icon">🔎</div><h3>“Find best configuration”</h3>
@@ -232,6 +247,8 @@ footer .right { margin-left: auto; display: flex; gap: 16px; }
         <p>Drag in any <code>.exe</code>: it gets a card, real metadata discovery, per-game config, and the same launch flow as Steam titles.</p></div>
       <div class="feature"><div class="icon">🔒</div><h3>Local-first &amp; quiet</h3>
         <p>No account, no telemetry. Everything Playdock knows lives on your disk — configs, caches, play sessions, the lot.</p></div>
+      <div class="feature"><div class="icon">🎮</div><h3>Steam Play</h3>
+        <p>Pick Playdock Wine, Steam Play, or Native macOS per game. Steam Play starts the game from the Steam app.</p></div>
     </div>
   </div>
 </section>
@@ -241,9 +258,23 @@ footer .right { margin-left: auto; display: flex; gap: 16px; }
     <h2>A library that treats your art like it matters</h2>
     <p class="section-sub">Three of the bundled looks. Same real games, same real data — pick whichever surface feels like your setup.</p>
     <div class="shot-row">
-      <figure><img src="screenshots/soft-steam-style.png" alt="Soft skin with Steam-style layout" loading="lazy"><figcaption>Soft · Steam-style layout</figcaption></figure>
-      <figure><img src="screenshots/terminal-grid.png" alt="Terminal skin grid" loading="lazy"><figcaption>Terminal · Grid</figcaption></figure>
-      <figure><img src="screenshots/minimal-carousel.png" alt="Minimal skin carousel" loading="lazy"><figcaption>Minimal · Carousel</figcaption></figure>
+      <figure><img src="screenshots/soft-steam-style.png" alt="Quiet skin with Steam-style layout" loading="lazy"><figcaption>Quiet · Steam-style layout</figcaption></figure>
+      <figure><img src="screenshots/terminal-grid.png" alt="Signal skin grid" loading="lazy"><figcaption>Signal · Grid</figcaption></figure>
+      <figure><img src="screenshots/minimal-carousel.png" alt="Plain skin carousel" loading="lazy"><figcaption>Plain · Carousel</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="watch">
+  <div class="wrap">
+    <h2>A look at the real app</h2>
+    <p class="section-sub">A short pass through the library, Steam Play, and a launch. The clip is the live window.</p>
+    <div class="watch">
+      <video controls playsinline poster="screenshots/soft-steam-style.png" src="playdock-pass.mp4"></video>
+      <div class="yt-slot">
+        <strong>YouTube</strong>
+        <p>Empty on purpose. A hosted upload can land here later.</p>
+      </div>
     </div>
   </div>
 </section>

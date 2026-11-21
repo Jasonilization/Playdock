@@ -92,32 +92,32 @@ input.search::placeholder{color:inherit;opacity:0.6;}
 .brut{ --bg:#fef6e4; --fg:#111; --accent:#da2e22; --accent2:#211c17; --line:#111; }
 [data-stage-theme="dark"] .brut{ --bg:#1b1712; --fg:#fefbf3; --line:#fefbf3; --accent:#f2483b; --accent2:#f4ecdd; }
 .brut{font-family:'Space Mono',monospace;background:var(--bg);color:var(--fg);min-height:100vh;}
-.brut .topbar{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:stretch;border-bottom:4px solid var(--line);}
-.brut .who{padding:18px 26px;font-family:'Archivo Black';font-size:20px;border-right:4px solid var(--line);}
-.brut .count{padding:18px 26px;font-size:13px;border-right:4px solid var(--line);display:flex;align-items:center;}
+.brut .topbar{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:stretch;border-bottom:2px solid var(--line);}
+.brut .who{padding:18px 26px;font-family:'Archivo Black';font-size:20px;border-right:2px solid var(--line);}
+.brut .count{padding:18px 26px;font-size:13px;border-right:2px solid var(--line);display:flex;align-items:center;}
 .brut .search{flex:1;padding:18px 26px;font-size:13px;background:var(--accent2);color:var(--bg);font-weight:700;}
 .brut main{padding:32px;max-width:1400px;margin:0 auto;}
-.brut h1{font-family:'Archivo Black';font-size:44px;margin:0 0 26px;text-transform:uppercase;letter-spacing:-.01em;}
+.brut h1{font-family:'Archivo Black';font-size:36px;margin:0 0 26px;letter-spacing:-.01em;}
 .brut .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:36px;}
-.brut .card{border:4px solid var(--line);background:var(--bg);box-shadow:8px 8px 0 var(--line);transition:transform .28s cubic-bezier(.22,.8,.28,1),box-shadow .28s cubic-bezier(.22,.8,.28,1);cursor:pointer;}
-.brut .card:hover{transform:translate(-4px,-4px);box-shadow:12px 12px 0 var(--accent);}
-.brut .art{height:120px;border-bottom:4px solid var(--line);position:relative;background-size:cover;background-position:center;filter:saturate(1.3) contrast(1.1);}
+.brut .card{border:2px solid var(--line);background:var(--bg);transition:transform .28s cubic-bezier(.22,.8,.28,1);cursor:pointer;}
+.brut .card:hover{transform:translateY(-2px);}
+.brut .art{height:120px;border-bottom:2px solid var(--line);position:relative;background-size:cover;background-position:center;}
 .brut .badge{position:absolute;top:8px;left:8px;background:var(--fg);color:var(--bg);font-size:10px;font-weight:700;padding:3px 8px;text-transform:uppercase;}
 .brut .body{padding:16px;}
-.brut .title{font-family:'Archivo Black';font-size:17px;margin:0 0 6px;text-transform:uppercase;}
+.brut .title{font-family:'Archivo Black';font-size:17px;margin:0 0 6px;}
 .brut .genre{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;text-transform:uppercase;margin-bottom:10px;}
 .brut .desc{font-size:12px;line-height:1.5;margin:0 0 14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-.brut .cta,.brut .run{display:block;width:100%;text-align:center;padding:10px 0;border:3px solid var(--line);font-family:'Space Mono';font-weight:700;font-size:12px;text-transform:uppercase;cursor:pointer;background:var(--fg);color:var(--bg);}
-.brut .cta:active{transform:translate(2px,2px);}
+.brut .cta,.brut .run{display:block;width:100%;text-align:center;padding:10px 0;border:2px solid var(--line);font-family:'Space Mono';font-weight:700;font-size:12px;cursor:pointer;background:var(--fg);color:var(--bg);}
+.brut .cta:active{transform:translate(1px,1px);}
 .brut .run{background:#06d6a0;color:#111;}
 
 /* ================= 4. Terminal ================= */
-.cyber{ --bg:#05070a; --panel:#0c1118; --line:#1c2733; --fg:#d7f9ff; --sub:#5f7c8c; --accent:#00f0ff; --accent2:#ff2e88; --gridline:rgba(0,240,255,.03); --glow:0 0 10px var(--accent); }
+.cyber{ --bg:#05070a; --panel:#0c1118; --line:#1c2733; --fg:#d7f9ff; --sub:#5f7c8c; --accent:#00c4d4; --accent2:#c94a7a; --gridline:rgba(0,196,212,.03); --glow:none; }
 .cyber{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--fg);min-height:100vh;
   background-image:linear-gradient(var(--gridline) 1px,transparent 1px),linear-gradient(90deg,var(--gridline) 1px,transparent 1px);
   background-size:28px 28px;}
-.cyber .topbar{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;gap:16px;padding:18px 36px;border-bottom:1px solid var(--accent);box-shadow:0 1px 12px -2px var(--accent);}
-.cyber .who{font-family:'Orbitron';font-weight:800;font-size:16px;color:var(--accent);text-shadow:var(--glow);letter-spacing:.04em;}
+.cyber .topbar{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;gap:16px;padding:18px 36px;border-bottom:1px solid var(--accent);}
+.cyber .who{font-family:'Orbitron';font-weight:800;font-size:16px;color:var(--accent);letter-spacing:.04em;}
 .cyber .count{font-size:11px;color:var(--sub);}
 .cyber .spacer{flex:1;}
 .cyber .search{border:1px solid var(--line);background:var(--panel);color:var(--sub);padding:8px 14px;font-size:12px;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);min-width:220px;}
@@ -126,8 +126,8 @@ input.search::placeholder{color:inherit;opacity:0.6;}
 .cyber .kicker{color:var(--accent2);font-size:11px;letter-spacing:.1em;margin:0 0 28px;}
 .cyber .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:36px;}
 .cyber .card{background:var(--panel);border:1px solid var(--line);clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);position:relative;transition:border-color .28s cubic-bezier(.22,.8,.28,1),box-shadow .28s cubic-bezier(.22,.8,.28,1),transform .28s cubic-bezier(.22,.8,.28,1);cursor:pointer;}
-.cyber .card:hover{border-color:var(--accent);box-shadow:0 0 24px -6px var(--accent);transform:translateY(-3px);}
-.cyber .art{height:120px;position:relative;filter:saturate(1.4) contrast(1.15);background-size:cover;background-position:center;}
+.cyber .card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.cyber .art{height:120px;position:relative;background-size:cover;background-position:center;}
 .cyber .art::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.15) 0 2px,transparent 2px 4px);}
 .cyber .badge{position:absolute;top:8px;left:8px;background:var(--accent2);color:#000;font-size:9px;font-weight:700;padding:2px 7px;letter-spacing:.04em;}
 .cyber .body{padding:14px 16px 16px;}
@@ -179,7 +179,7 @@ input.search::placeholder{color:inherit;opacity:0.6;}
 .pix .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:36px;}
 .pix .card{background:var(--panel);border:4px solid #566c86;box-shadow:6px 6px 0 #10121c;position:relative;cursor:pointer;transition:transform .28s cubic-bezier(.22,.8,.28,1),border-color .28s cubic-bezier(.22,.8,.28,1);}
 .pix .card:hover{border-color:var(--accent);transform:translate(-3px,-3px);}
-.pix .art{height:110px;border-bottom:4px solid #566c86;position:relative;background-size:cover;background-position:center;filter:saturate(1.6);}
+.pix .art{height:110px;border-bottom:4px solid #566c86;position:relative;background-size:cover;background-position:center;}
 .pix .badge{position:absolute;top:6px;left:6px;background:var(--accent2);color:#10121c;font-family:'Press Start 2P';font-size:8px;padding:4px 6px;}
 .pix .body{padding:14px;}
 .pix .title{font-family:'Press Start 2P';font-size:12px;color:#fff;margin:0 0 8px;line-height:1.4;}
@@ -235,7 +235,7 @@ input.search::placeholder{color:inherit;opacity:0.6;}
   --bg:#eef5f7; --panel:#ffffff; --line:#c3d8de; --fg:#0d2b33; --sub:#5d7680;
   --accent:#0092a3; --accent2:#c21770; --gridline:rgba(0,146,163,.06); --glow:none;
 }
-[data-stage-theme="light"] .cyber .card:hover{box-shadow:0 0 18px -6px var(--accent);}
+[data-stage-theme="light"] .cyber .card:hover{transform:translateY(-2px);}
 
 /* Pixel, light: a daytime handheld palette (Game Boy Color overworld, not Game Boy Pocket) -
    sky-blue instead of navy, the same warm gold/coral accent pair carried straight over since it

@@ -564,17 +564,20 @@ struct GameModeView: View {
     private var header: some View {
         HStack(spacing: 12) {
             headerTools
-            Spacer(minLength: 12)
-            accountChip
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 168)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
-        // "make sure the top bar matches (the account and sort part) the colour etc." - this used
-        // to be a generic `.bar` material with just an accent-colored bottom rule standing in for
-        // real theming. Now the exact same real `.topbar` background/border/glow every other
-        // themed chrome row in the app uses (`PlaydockSkin.topBarBackground`'s own doc comment has
-        // the real per-skin CSS values this ports), not an approximation.
+        .frame(maxWidth: .infinity)
+        // Opaque fill so the library backdrop (blurred art, skin grids) cannot show through
+        // this row, including while the section changes.
         .background(skin.topBarBackground)
+        .overlay(alignment: .trailing) {
+            accountChip
+                .fixedSize()
+                .padding(.trailing, 20)
+        }
         .overlay(alignment: .bottom) {
             if let borderColor = skin.topBarBorderColor {
                 Rectangle()
@@ -583,6 +586,7 @@ struct GameModeView: View {
                     .shadow(color: skin.topBarHasGlow ? skin.accent.opacity(0.7) : .clear, radius: 6, y: 2)
             }
         }
+        .zIndex(2)
         .animation(.easeInOut(duration: 0.25), value: skinRaw)
     }
 
@@ -1670,8 +1674,7 @@ struct GameDetailView: View {
     private var availableActions: [DetailAction] {
         var actions: [DetailAction] = [.favorite, .hide]
         if runningInfo == nil && !game.isPreviewSample && !game.isDownloading { actions.append(.launch) }
-        // A native macOS Steam game has no ExeDock-managed wine bottle/engine to configure.
-        if isAdvancedMode && game.source == .wineBottle { actions.append(.settings) }
+        if !game.isPreviewSample { actions.append(.settings) }
         actions.append(.reveal)
         actions.append(.storePage)
         if aboutCanExpand { actions.append(.about) }
@@ -2282,57 +2285,85 @@ struct GameDetailView: View {
 
 
     private var actionRow: some View {
-        HStack(alignment: .center, spacing: 12) {
-            if runningInfo != nil {
-                RunningBadge(compact: true)
-            } else if game.isDownloading {
-                Label("Still downloading in Steam", systemImage: "arrow.down.circle")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            } else if !game.isPreviewSample {
-                Button {
-                    onLaunch()
-                    model.launchSteamGame(game)
-                } label: {
-                    if model.launchingTarget == .game(game.appID) {
-                        HStack(spacing: 8) {
-                            ProgressView().controlSize(.small).tint(.white)
-                            Text("Launching…")
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 12) {
+                if runningInfo != nil {
+                    RunningBadge(compact: true)
+                } else if game.isDownloading {
+                    Label("Still downloading in Steam", systemImage: "arrow.down.circle")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                } else if !game.isPreviewSample {
+                    Button {
+                        onLaunch()
+                        model.launchSteamGame(game)
+                    } label: {
+                        if model.launchingTarget == .game(game.appID) {
+                            HStack(spacing: 8) {
+                                ProgressView().controlSize(.small).tint(.white)
+                                Text("Launching…")
+                            }
+                        } else {
+                            Label("Launch", systemImage: "play.fill")
                         }
-                    } else {
-                        Label("Launch", systemImage: "play.fill")
+                    }
+                    .buttonStyle(.big(accentOverride: gameAccent))
+                    .disabled(model.launchingTarget != nil)
+                    .focusRing(isFocused(.launch))
+                }
+                if !game.isPreviewSample {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Label(hasCustomSettings ? "Custom Settings" : "Settings", systemImage: hasCustomSettings ? "slider.horizontal.3" : "gearshape")
+                    }
+                    .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
+                    .focusRing(isFocused(.settings))
+                    .popover(isPresented: $showingSettings) {
+                        GameSettingsPopover(game: game)
                     }
                 }
-                .buttonStyle(.big(accentOverride: gameAccent))
-                .disabled(model.launchingTarget != nil)
-                .focusRing(isFocused(.launch))
-            }
-            if isAdvancedMode && game.source == .wineBottle {
                 Button {
-                    showingSettings = true
+                    model.revealInFinder(installFolderPath)
                 } label: {
-                    Label(hasCustomSettings ? "Custom Settings" : "Settings", systemImage: hasCustomSettings ? "slider.horizontal.3" : "gearshape")
+                    Label("Reveal", systemImage: "folder")
                 }
                 .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
-                .focusRing(isFocused(.settings))
-                .popover(isPresented: $showingSettings) {
-                    GameSettingsPopover(game: game)
+                .focusRing(isFocused(.reveal))
+                Button {
+                    model.openStorePage(for: game)
+                } label: {
+                    Label("Store Page", systemImage: "safari")
                 }
+                .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
+                .focusRing(isFocused(.storePage))
             }
-            Button {
-                model.revealInFinder(installFolderPath)
-            } label: {
-                Label("Reveal", systemImage: "folder")
+            if !game.isPreviewSample {
+                HStack(spacing: 10) {
+                    Text("Launch with")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    Menu {
+                        ForEach(LaunchBackendStore.available(for: game)) { backend in
+                            Button(backend.displayName) {
+                                model.setLaunchBackend(backend, for: game)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(model.launchBackend(for: game).displayName)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 9, weight: .semibold))
+                        }
+                        .foregroundStyle(skin.accent)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                }
+                Text(model.launchBackend(for: game).summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
-            .focusRing(isFocused(.reveal))
-            Button {
-                model.openStorePage(for: game)
-            } label: {
-                Label("Store Page", systemImage: "safari")
-            }
-            .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
-            .focusRing(isFocused(.storePage))
         }
     }
 
@@ -2397,6 +2428,9 @@ private struct LaunchOverlayView: View {
     /// chrome - "the thing saying d3dmetal on mac steam games is a bit misleading," per live
     /// feedback. Empty (not shown) rather than some other placeholder text.
     private var engineSummary: String {
+        let backend = LaunchBackendStore.backend(for: game)
+        if backend == .nativeMac { return LaunchBackend.nativeMac.displayName }
+        if backend == .steamPlay { return "Steam Play · Steam" }
         guard game.source == .wineBottle else { return "" }
         var parts = [config.engineName ?? "Sikarugir"]
         if config.d3dMetal {
@@ -2429,6 +2463,7 @@ private struct LaunchOverlayContent: View {
     let artworkPath: String?
     let statusLine: String
     let onDismiss: () -> Void
+    @LocalState private var logTail = ""
 
     var body: some View {
         ZStack {
@@ -2452,17 +2487,38 @@ private struct LaunchOverlayContent: View {
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.7))
                 }
+                if !logTail.isEmpty {
+                    ScrollView {
+                        Text(logTail)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.72))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 140)
+                }
                 Button("Back to library", action: onDismiss)
                     .buttonStyle(.plain)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.85))
             }
             .padding(28)
-            .frame(maxWidth: 420)
+            .frame(maxWidth: 520)
             .background(Color(white: 0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .colorScheme(.dark)
         .onExitCommand { onDismiss() }
+        .task {
+            while !Task.isCancelled {
+                logTail = Self.tail()
+                try? await Task.sleep(nanoseconds: 400_000_000)
+            }
+        }
+    }
+
+    private static func tail() -> String {
+        guard let path = ExeRunner.lastLogPath, let text = try? String(contentsOfFile: path, encoding: .utf8) else { return "" }
+        let lines = text.split(separator: "\n")
+        return lines.suffix(12).joined(separator: "\n")
     }
 }
 
@@ -2514,6 +2570,16 @@ private struct GameSettingsPopover: View {
                 .padding(14)
             Divider()
             Form {
+                Section("Launch") {
+                    Picker("Backend", selection: backendBinding) {
+                        ForEach(LaunchBackendStore.available(for: game)) { backend in
+                            Text(backend.displayName).tag(backend)
+                        }
+                    }
+                    Text(model.launchBackend(for: game).summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 FindBestConfigurationSection(itemID: game.appID, itemName: game.name)
                 GameSettingsFields(config: configBinding)
                 Button("Use Default Settings") {
@@ -2521,23 +2587,25 @@ private struct GameSettingsPopover: View {
                 }
                 .disabled(model.perGameConfigs[game.appID] == nil)
 
-                Section {
-                    Button {
-                        showingExperiment = true
-                    } label: {
-                        Label("Experiment", systemImage: "flask")
+                if game.source == .wineBottle {
+                    Section {
+                        Button {
+                            showingExperiment = true
+                        } label: {
+                            Label("Experiment", systemImage: "flask")
+                        }
+                    } footer: {
+                        Text("Try a few engine/graphics combinations one at a time and see which actually works.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                } footer: {
-                    Text("Try a few engine/graphics combinations one at a time and see which actually works.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 InspectSection(itemID: game.appID, itemName: game.name, installPath: installFolderPath)
             }
             .formStyle(.grouped)
         }
-        .frame(width: 380, height: 660)
+        .frame(width: 380, height: 720)
         .sheet(isPresented: $showingExperiment) {
             ExperimentSheet(game: game)
         }
@@ -2547,6 +2615,13 @@ private struct GameSettingsPopover: View {
         Binding(
             get: { model.perGameConfigs[game.appID] ?? model.gameModeConfig },
             set: { model.setOverride($0, for: game) }
+        )
+    }
+
+    private var backendBinding: Binding<LaunchBackend> {
+        Binding(
+            get: { model.launchBackend(for: game) },
+            set: { model.setLaunchBackend($0, for: game) }
         )
     }
 

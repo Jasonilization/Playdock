@@ -39,12 +39,12 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
     /// own real identity.
     var displayName: String {
         switch self {
-        case .luxury: return "Luxury"
-        case .brutalist: return "Brutalist"
-        case .cyber: return "Terminal"
-        case .soft: return "Soft"
+        case .luxury: return "Warm"
+        case .brutalist: return "Block"
+        case .cyber: return "Signal"
+        case .soft: return "Quiet"
         case .pixel: return "Pixel"
-        case .minimal: return "Minimal"
+        case .minimal: return "Plain"
         }
     }
 
@@ -52,12 +52,12 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
     /// actually different (materials, shapes, mood) rather than reaching for marketing language.
     var blurb: String {
         switch self {
-        case .luxury: return "Warm, understated, gold accents"
-        case .brutalist: return "Bold blocks, hard offset shadows"
-        case .cyber: return "Dark, cut corners, neon accents"
+        case .luxury: return "Warm paper, gold accents"
+        case .brutalist: return "Square blocks, quiet ink"
+        case .cyber: return "Dark, cut corners, a thin signal line"
         case .soft: return "Rounded, gentle depth"
         case .pixel: return "Retro, dotted grid, blocky"
-        case .minimal: return "Plain, quiet, no decoration"
+        case .minimal: return "Plain, no decoration"
         }
     }
 
@@ -102,7 +102,7 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
         case .brutalist: return Self.dynamicAccent(light: (0.855, 0.180, 0.133), dark: (0.949, 0.282, 0.231))
         // --accent:#00f0ff (dark) / #0092a3 (light) - a bright neon cyan reads fine glowing in
         // the dark but washes out on white, so the real light-mode CSS commits to a deeper teal.
-        case .cyber: return Self.dynamicAccent(light: (0.0, 0.573, 0.639), dark: (0.0, 0.94, 1.0))
+        case .cyber: return Self.dynamicAccent(light: (0.0, 0.573, 0.639), dark: (0.0, 0.77, 0.83))
         case .soft: return Color(red: 0.42, green: 0.45, blue: 1.0)
         // --accent:#f6cf7a (dark) / #c97a1e (light) - same real reasoning as Cyber's.
         case .pixel: return Self.dynamicAccent(light: (0.788, 0.478, 0.118), dark: (0.96, 0.81, 0.48))
@@ -121,7 +121,7 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
         // colour scheme looks very bad": a hot-blue slab next to a hot-pink accent on cream. Gone
         // now - Brutalist collapses to its single red accent here, and the CSS search bar is an
         // ink block instead (see .brut in skins.css).
-        case .cyber: return Self.dynamicAccent(light: (0.761, 0.090, 0.439), dark: (1.0, 0.18, 0.53)) // #ff2e88 / #c21770
+        case .cyber: return Self.dynamicAccent(light: (0.761, 0.090, 0.439), dark: (0.788, 0.290, 0.478))
         case .pixel: return Self.dynamicAccent(light: (0.851, 0.314, 0.184), dark: (0.937, 0.490, 0.341)) // #ef7d57 / #d9502f
         default: return accent
         }
@@ -163,14 +163,15 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
     /// else's is `1px` (Soft has none at all, so this is moot for it).
     var topBarBorderWidth: CGFloat {
         switch self {
-        case .brutalist, .pixel: return 4
+        case .pixel: return 4
+        case .brutalist: return 2
         default: return 1
         }
     }
 
     /// Only Cyber's real `.topbar` adds `box-shadow:0 1px 12px -2px var(--accent)` - a genuine
     /// neon glow under the hairline border, not just a flat line like the other five.
-    var topBarHasGlow: Bool { self == .cyber }
+    var topBarHasGlow: Bool { false }
 
     /// A card's own corner radius under this skin - brutalist/pixel go sharp, everything else
     /// stays rounded to some degree.
@@ -198,7 +199,7 @@ enum PlaydockSkin: String, CaseIterable, Identifiable {
     }
 
     var borderWidth: CGFloat {
-        self == .brutalist ? 3 : 1
+        self == .brutalist ? 2 : 1
     }
 
     var hasShadow: Bool {
@@ -287,17 +288,10 @@ private func dynamicColor(light: (r: Double, g: Double, b: Double), dark: (r: Do
     })
 }
 
-/// Skins whose real mockup card gets a hard, unblurred offset "twin shape" shadow instead of a soft
-/// `.shadow()` glow - Neobrutalist's `box-shadow: 8px 8px 0` and Pixel Arcade's `box-shadow: 6px 6px
-/// 0` are the same real technique, just different ink colors.
+/// Pixel still uses a hard offset twin. Block (brutalist) no longer does.
 private func hardShadowColor(for skin: PlaydockSkin) -> Color? {
     switch skin {
-    // Was `.primary` - fine as near-black on Brutalist's cream, but in dark mode `.primary` is
-    // near-*white*, so every card and button sat on a hard-edged white slab: a wall of glare that
-    // was a big part of "the colour scheme looks very bad." A shadow should read as a shadow in
-    // both modes - near-black ink on paper, a warm charcoal (#4b4237) on the dark ground.
-    case .brutalist: return dynamicColor(light: (0.078, 0.078, 0.078), dark: (0.294, 0.259, 0.216))
-    case .pixel: return Color(red: 0.063, green: 0.071, blue: 0.11) // #10121c, the mockup's own ink
+    case .pixel: return Color(red: 0.063, green: 0.071, blue: 0.11)
     default: return nil
     }
 }
@@ -601,7 +595,7 @@ func playdockButtonLook(skin: PlaydockSkin, prominent: Bool, isPressed: Bool, ac
         // paper, a cream block with dark text on the dark ground - keeping every other Brutalist
         // button trait (hard 3px border, sharp corners, hard offset twin, diagonal press, no
         // scale). skins.css's `.brut .cta` is updated to the same `var(--fg)`/`var(--bg)` pair.
-        return PlaydockButtonLook(fill: AnyShapeStyle(Color.primary), labelColor: Color(nsColor: .windowBackgroundColor), borderColor: .primary, borderWidth: skin.borderWidth, cornerRadius: 0, hardOffsetColor: hardShadowColor(for: .brutalist), pressOffsetX: 2, pressOffsetY: 2, scalesOnPress: false)
+        return PlaydockButtonLook(fill: AnyShapeStyle(Color.primary), labelColor: Color(nsColor: .windowBackgroundColor), borderColor: .primary, borderWidth: skin.borderWidth, cornerRadius: 0, scalesOnPress: false)
     case .cyber:
         // .cyber .cta{border:1px solid var(--accent);background:transparent;color:var(--accent);}
         // .cyber .cta:active{background:var(--accent);color:#00131a;} - inverts solid on press.

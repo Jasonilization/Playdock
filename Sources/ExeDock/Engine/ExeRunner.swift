@@ -3,6 +3,9 @@ import AppKit
 
 /// Launches Windows executables through the Sikarugir engine ExeDock reuses.
 enum ExeRunner {
+    /// The log from the launch that just started. The overlay tails this file.
+    static var lastLogPath: String?
+
     /// Launch logs. A fresh-install machine keeps them inside its own support folder.
     static var logsDir: String {
         let env = ProcessInfo.processInfo.environment
@@ -99,7 +102,7 @@ enum ExeRunner {
     /// custom games that still live in a shared or wrapper prefix. A game with its own bottle
     /// uses ExeDock's engine, because that engine created the prefix.
     @discardableResult
-    static func run(exePath: String, in bottle: Bottle, arguments: [String] = [], config: GameModeConfig = GameModeConfig(), engineName: String? = nil, preferWrapperEngine: Bool = false) async throws -> Process? {
+    static func run(exePath: String, in bottle: Bottle, arguments: [String] = [], config: GameModeConfig = GameModeConfig(), engineName: String? = nil, preferWrapperEngine: Bool = false, extraEnv: [String: String] = [:]) async throws -> Process? {
         guard FileManager.default.fileExists(atPath: exePath) else {
             throw RunError.missingExecutable(exePath)
         }
@@ -123,7 +126,8 @@ enum ExeRunner {
             let libraryPath = "\(appPath)/Contents/Frameworks:\(appPath)/Contents/SharedSupport/wine/lib"
             return try runDirect(
                 exePath: exePath, bottle: bottle, arguments: arguments, config: config,
-                wineBinary: wrapperWine, libraryPath: libraryPath, baseName: baseName, timestamp: timestamp
+                wineBinary: wrapperWine, libraryPath: libraryPath, baseName: baseName, timestamp: timestamp,
+                extraEnv: extraEnv
             )
         }
 
@@ -144,23 +148,27 @@ enum ExeRunner {
         }
         return try runDirect(
             exePath: exePath, bottle: bottle, arguments: arguments, config: config,
-            wineBinary: wineBinary, libraryPath: libraryPath, baseName: baseName, timestamp: timestamp
+            wineBinary: wineBinary, libraryPath: libraryPath, baseName: baseName, timestamp: timestamp,
+            extraEnv: extraEnv
         )
     }
 
     /// Runs an exe by invoking wine directly (no Sikarugir wrapper CLI involved) - shared by
     /// Playdock's own bottles, borrowed-wrapper-engine custom game launches, and now the
     /// fast-fail fallback for a wrapper bottle whose own CLI didn't come up.
-    private static func runDirect(exePath: String, bottle: Bottle, arguments: [String], config: GameModeConfig, wineBinary: String, libraryPath: String, baseName: String, timestamp: String) throws -> Process? {
+    private static func runDirect(exePath: String, bottle: Bottle, arguments: [String], config: GameModeConfig, wineBinary: String, libraryPath: String, baseName: String, timestamp: String, extraEnv: [String: String] = [:]) throws -> Process? {
         let logPath = (logsDir as NSString).appendingPathComponent("\(baseName)-\(timestamp)-direct.log")
+        lastLogPath = logPath
         FileManager.default.createFile(atPath: logPath, contents: nil)
         let cwd = (exePath as NSString).deletingLastPathComponent
         let loader = unixLoaderPath(wineBinary: wineBinary)
+        var extra = config.environment
+        for (key, value) in extraEnv { extra[key] = value }
         let env = loaderEnvironment(
             wineBinary: loader,
             prefixPath: bottle.prefixPath,
             libraryPath: libraryPath,
-            extra: config.environment
+            extra: extra
         )
         // Same argv as the wrapper's own launch. A new session so Playdock is not wrapped
         // around the game; wineserver keeps it after this spawn returns.

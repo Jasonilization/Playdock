@@ -603,6 +603,19 @@ struct SettingsPanelView: View {
             EngineUpdatePanelSection(skin: skin, isFocused: isPaneFocused(.engineUpdate), activateToken: engineActivate)
                 .id(PaneControl.engineUpdate)
 
+            SettingsCard(skin: skin, title: "Steam Play") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(SteamPlaySupport.nativeSteamAppExists ? "Steam is installed." : "Steam is not in /Applications.")
+                    Text(SteamPlaySupport.statusLine)
+                        .foregroundStyle(.secondary)
+                    Text("Each game can start with Playdock Wine, Steam Play, or Native macOS. Steam Play asks Steam to run the game.")
+                        .foregroundStyle(.secondary)
+                    Link("NotProton", destination: SteamPlaySupport.notProtonURL)
+                    Link("steamplay-mac", destination: SteamPlaySupport.steamplayMacURL)
+                }
+                .font(.callout)
+            }
+
             hiddenGamesCard
 
             if isAdvancedMode {

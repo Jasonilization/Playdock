@@ -19,15 +19,15 @@ School slowed Playdock down for a while. Development is active again. The librar
 
 ## Screenshots
 
-<img src="docs/screenshots/terminal-grid.png" alt="Playdock's Grid layout in the Terminal skin, showing a mixed library with Mac and Custom badges" width="800">
+<img src="docs/screenshots/terminal-grid.png" alt="Playdock's Grid layout in the Signal skin, showing a mixed library with Mac and Custom badges" width="800">
 
 <details>
 <summary>More screenshots (Steam-style, Carousel)</summary>
 <br>
 
-<img src="docs/screenshots/soft-steam-style.png" alt="Steam-style layout in the Soft skin" width="800">
+<img src="docs/screenshots/soft-steam-style.png" alt="Steam-style layout in the Quiet skin" width="800">
 
-<img src="docs/screenshots/minimal-carousel.png" alt="Carousel layout in the Minimal skin" width="800">
+<img src="docs/screenshots/minimal-carousel.png" alt="Carousel layout in the Plain skin" width="800">
 
 </details>
 
@@ -94,6 +94,9 @@ missing, Playdock just tells you and waits.
   store API, cached locally), your account name/avatar read straight out of Steam's own local
   config, double-click the Steam icon to launch it. Games installed through the real, separate
   macOS Steam client show up right alongside your Windows-via-Wine library too.
+- **Steam Play** - each game can start with Playdock Wine, Steam Play, or Native macOS. Steam Play
+  asks the Mac Steam app to run the game, the same launch path NotProton uses. Playdock Wine still
+  uses the bottle.
 - **Custom Game Library** - import any Windows game folder (or a lone `.exe`) that isn't on Steam.
   Import moves it into Playdock's own managed bottle automatically, so it launches through the same
   engine as everything else - no per-game setup.
@@ -144,11 +147,11 @@ quieter: hero/sidebar/filter cross-fades instead of hard cuts.
 
 **Real per-skin visual identity + library layouts (1.2.0)** - the dashboard's "Library Look" setting
 (Settings → Library Look) now has real teeth: 6 structurally different layouts (Grid, Shelves,
-Sidebar, Steam-style, Carousel, Spotlight) and 6 real visual skins (Luxury, Brutalist, Terminal,
-Soft, Pixel, Minimal), each rendering the actual mockup HTML/CSS it was designed from rather than an
+Sidebar, Steam-style, Carousel, Spotlight) and 6 real visual skins (Warm, Block, Signal,
+Quiet, Pixel, Plain), each rendering the actual mockup HTML/CSS it was designed from rather than an
 approximation - genuinely different worlds, not the same cards recolored. Grid is rendered by a real
 embedded browser view running the original mockup markup directly; every other layout ports each
-skin's own card shape, shadow language, button recipe, and art treatment (down to Terminal's
+skin's own card shape, shadow language, button recipe, and art treatment (down to Signal's
 scanning CRT overlay) so nothing looks like "just a wallpaper and a font" next to Grid. Every card,
 in every layout, shows a real per-skin action button with genuine raised, tactile depth - not a flat
 color fill - matching Grid's own real cards. Cards and buttons can also pick up a subtle tint from
