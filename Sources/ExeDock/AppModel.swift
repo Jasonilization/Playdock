@@ -194,8 +194,8 @@ final class AppModel: ObservableObject {
     /// True only while `hardRefreshGameInfo()` is doing its cache wipe - drives the Settings
     /// button's spinner and keeps a second tap from stacking.
     @Published private(set) var isHardRefreshingGameInfo = false
-    @Published private(set) var isInstallingNotProton = false
-    @Published private(set) var notProtonInstallMessage: String?
+    @Published private(set) var isSettingUpSteamPlay = false
+    @Published private(set) var steamPlaySetupMessage: String?
 
     /// Bumped every time a hard refresh finishes. Views that cache a game's resolved art/
     /// description in their own `@State` (keyed on the entry id, which a plain `refreshSteamGames()`
@@ -339,31 +339,56 @@ final class AppModel: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
-    /// Steam Play is NotProton. Mac Steam runs (and, if needed, downloads) the Windows game on
-    /// this Mac. Without NotProton, `steam://` sent GTA IV to another computer — do not do that.
+    /// Playdock's own Steam Play. Turns on Windows downloads in Mac Steam, then runs the game
+    /// with Playdock Wine. `steam://` without that setup sent GTA IV to another computer.
     private func launchSteamPlay(_ game: SteamGame) {
         guard SteamPlaySupport.nativeSteamAppExists else {
             errorMessage = "Steam Play needs Steam in /Applications."
             return
         }
-        if SteamPlaySupport.usesMacSteamClient(for: game) {
+        if SteamPlaySupport.isMacBuild(game) {
             statusMessage = "Steam Play · \(game.name)"
             SteamPlaySupport.openInSteam(appID: game.metadataAppID)
             return
         }
-        if SteamPlaySupport.notProtonAppExists {
-            SteamPlaySupport.openNotProton()
-            errorMessage = "Finish Install in NotProton so Steam can download Windows games on this Mac, then launch from Steam."
+        do {
+            let result = try SteamPlaySupport.enable()
+            if result.needsSteamRestart {
+                steamPlaySetupMessage = "Steam Play is on. Steam is restarting so Windows games download on this Mac."
+                SteamPlaySupport.restartMacSteam()
+            }
+        } catch {
+            errorMessage = error.localizedDescription
             return
         }
-        errorMessage = "Steam Play needs NotProton so Mac Steam can download Windows games here."
-        installNotProton()
+        if let exe = SteamPlaySupport.windowsExecutable(for: game) {
+            statusMessage = "Steam Play · \(game.name)"
+            launchSteamPlayExecutable(game, exe: exe)
+            return
+        }
+        statusMessage = "Steam Play · download \(game.name) on this Mac"
+        SteamPlaySupport.openInstallInSteam(appID: game.metadataAppID)
     }
 
-    func openNotProton() {
-        if SteamPlaySupport.openNotProton() { return }
-        SteamPlaySupport.openNotProtonDownloadPage()
-        errorMessage = "NotProton is not installed yet. Install it, open it, and tap Install."
+    private func launchSteamPlayExecutable(_ game: SteamGame, exe: String) {
+        let hasOwnSettings = perGameConfigs[game.appID] != nil
+        let config = hasOwnSettings ? config(for: game) : GameModeConfig.maximumCompatibility
+        launchingTarget = .game(game.appID)
+        statusMessage = "Steam Play · \(game.name)"
+        Task.detached(priority: .userInitiated) { [weak self] in
+            do {
+                try await ExeRunner.run(
+                    exePath: exe, in: SteamInstaller.steamBottle,
+                    arguments: [], config: config
+                )
+                await MainActor.run { [weak self] in self?.statusMessage = "Launched \(game.name)" }
+                LocalOutcomeTracker.record(appID: game.appID, config: config, launchErrored: false)
+            } catch {
+                await MainActor.run { [weak self] in self?.errorMessage = error.localizedDescription }
+                LocalOutcomeTracker.record(appID: game.appID, config: config, launchErrored: true)
+            }
+            await MainActor.run { [weak self] in self?.launchingTarget = nil }
+        }
     }
 
     func openMacSteamApp() {
@@ -374,30 +399,28 @@ final class AppModel: ObservableObject {
         SteamPlaySupport.openMacSteam()
     }
 
-    func installNotProton() {
-        guard !isInstallingNotProton else { return }
-        if SteamPlaySupport.notProtonAppExists {
-            notProtonInstallMessage = "NotProton is already in /Applications."
-            SteamPlaySupport.openNotProton()
+    func setupSteamPlay() {
+        guard !isSettingUpSteamPlay else { return }
+        guard SteamPlaySupport.nativeSteamAppExists else {
+            errorMessage = "Steam Play needs Steam in /Applications."
             return
         }
-        isInstallingNotProton = true
-        notProtonInstallMessage = "Installing NotProton…"
+        isSettingUpSteamPlay = true
+        steamPlaySetupMessage = "Setting up Steam Play…"
         Task { [self] in
             do {
-                try await SteamPlaySupport.installNotProton { message in
-                    Task { @MainActor in
-                        self.notProtonInstallMessage = message
-                    }
+                let result = try SteamPlaySupport.enable()
+                if result.needsSteamRestart {
+                    steamPlaySetupMessage = "Steam Play is on. Steam is restarting so Windows games download on this Mac."
+                    SteamPlaySupport.restartMacSteam()
+                } else {
+                    steamPlaySetupMessage = "Steam Play is on. Download Windows games in Steam; Playdock Wine runs them."
                 }
-                notProtonInstallMessage = "NotProton is installed. Open it and tap Install, then download Windows games in Steam."
-                SteamPlaySupport.openNotProton()
             } catch {
-                notProtonInstallMessage = nil
+                steamPlaySetupMessage = nil
                 errorMessage = error.localizedDescription
-                SteamPlaySupport.openNotProtonDownloadPage()
             }
-            isInstallingNotProton = false
+            isSettingUpSteamPlay = false
         }
     }
 

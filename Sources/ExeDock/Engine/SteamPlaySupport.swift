@@ -1,35 +1,59 @@
 import Foundation
 import AppKit
 
-enum SteamPlayInstallError: Error, LocalizedError {
-    case brewMissing
-    case brewFailed(String)
+struct SteamPlayPaths {
+    var steamRoot: String
+    var appBundleMacOS: String
+    var toolSupport: String
+
+    static var live: SteamPlayPaths {
+        let root = ("~/Library/Application Support/Steam" as NSString).expandingTildeInPath
+        return SteamPlayPaths(
+            steamRoot: root,
+            appBundleMacOS: (root as NSString).appendingPathComponent("Steam.AppBundle/Steam/Contents/MacOS"),
+            toolSupport: SikarugirEngine.supportFile("SteamPlay")
+        )
+    }
+
+    var steamDevCfg: String {
+        (appBundleMacOS as NSString).appendingPathComponent("steam_dev.cfg")
+    }
+
+    var toolRoots: [String] {
+        [
+            (appBundleMacOS as NSString).appendingPathComponent("compatibilitytools.d/\(SteamPlayTool.toolID)"),
+            (appBundleMacOS as NSString).appendingPathComponent("compatibilitytool.d/\(SteamPlayTool.toolID)"),
+            (steamRoot as NSString).appendingPathComponent("compatibilitytools.d/\(SteamPlayTool.toolID)"),
+        ]
+    }
+}
+
+struct SteamPlayEnableResult: Equatable {
+    var wroteDevCfg: Bool
+    var needsSteamRestart: Bool { wroteDevCfg }
+}
+
+enum SteamPlaySetupError: Error, LocalizedError {
+    case missingSteam
+    case missingEngine(String)
 
     var errorDescription: String? {
         switch self {
-        case .brewMissing:
-            return "Homebrew is not installed. Download NotProton from GitHub, then open it and tap Install."
-        case .brewFailed(let detail):
-            let trimmed = detail.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty {
-                return "NotProton did not install. Download it from GitHub, then open it and tap Install."
-            }
-            return "NotProton did not install: \(trimmed)"
+        case .missingSteam:
+            return "Steam Play needs Steam in /Applications."
+        case .missingEngine(let detail):
+            return "Steam Play needs Playdock's Wine engine. \(detail)"
         }
     }
 }
 
-/// Steam Play is NotProton: Mac Steam downloads and runs Windows games on this Mac.
-/// Playdock installs and opens NotProton; it does not vendor NotProton's code.
+/// Playdock's own Steam Play. Mac Steam downloads Windows games on this Mac; Playdock Wine runs them.
+/// `steam_dev.cfg` is Steam's documented platform override. The compatibility tool is ours.
 enum SteamPlaySupport {
     static let nativeSteamAppPath = "/Applications/Steam.app"
-    static let nativeSteamRoot = ("~/Library/Application Support/Steam" as NSString).expandingTildeInPath
-    static let notProtonAppPath = "/Applications/NotProton.app"
-    static let notProtonRoot = ("~/Library/Application Support/notproton" as NSString).expandingTildeInPath
-    static let notProtonBundleID = "com.notproton.NotProton"
-    static let brewCask = "notprotonnot/notproton/notproton"
-    static let notProtonURL = URL(string: "https://github.com/NotProtonNot/NotProton")!
-    static let notProtonReleasesURL = URL(string: "https://github.com/NotProtonNot/NotProton/releases")!
+    static let nativeSteamRoot = SteamPlayPaths.live.steamRoot
+    static let steamDevCfgLine = "@sSteamCmdForcePlatformType windows"
+    static let steamBundleID = "com.valvesoftware.steam"
 
     static var nativeSteamAppExists: Bool {
         FileManager.default.fileExists(atPath: nativeSteamAppPath)
@@ -39,54 +63,32 @@ enum SteamPlaySupport {
         URL(fileURLWithPath: nativeSteamAppPath)
     }
 
-    static var notProtonAppExists: Bool {
-        FileManager.default.fileExists(atPath: notProtonAppPath)
-            || NSWorkspace.shared.urlForApplication(withBundleIdentifier: notProtonBundleID) != nil
+    static var isEnabled: Bool {
+        isEnabled(paths: .live)
     }
 
-    static var notProtonAppURL: URL? {
-        if FileManager.default.fileExists(atPath: notProtonAppPath) {
-            return URL(fileURLWithPath: notProtonAppPath)
-        }
-        return NSWorkspace.shared.urlForApplication(withBundleIdentifier: notProtonBundleID)
+    static func isEnabled(paths: SteamPlayPaths) -> Bool {
+        guard let text = try? String(contentsOfFile: paths.steamDevCfg, encoding: .utf8),
+              text.contains(steamDevCfgLine) else { return false }
+        return paths.toolRoots.contains { SteamPlayTool.isInstalled(in: $0) }
     }
-
-    /// NotProton has installed its Steam Play pieces, so Mac Steam can fetch Windows titles here.
-    static var isSteamPlayEnabled: Bool {
-        let fm = FileManager.default
-        let dylib = (notProtonRoot as NSString).appendingPathComponent("notproton.dylib")
-        if fm.fileExists(atPath: dylib) { return true }
-        let wine = (notProtonRoot as NSString).appendingPathComponent("wine")
-        if fm.fileExists(atPath: wine) { return true }
-        let runners = (notProtonRoot as NSString).appendingPathComponent("runners")
-        if let items = try? fm.contentsOfDirectory(atPath: runners), items.contains(where: { $0 != ".DS_Store" }) {
-            return true
-        }
-        return false
-    }
-
-    static var externalSteamPlayInstalled: Bool { isSteamPlayEnabled }
 
     static var statusLine: String {
         if !nativeSteamAppExists {
             return "Steam Play needs Steam in /Applications."
         }
-        if isSteamPlayEnabled {
-            return "NotProton is ready. Mac Steam can download and run Windows games on this Mac."
+        if isEnabled {
+            return "Steam Play is on. Mac Steam downloads Windows games on this Mac. Playdock Wine runs them."
         }
-        if notProtonAppExists {
-            return "Open NotProton and tap Install. Until that finishes, Steam will send Windows games to another computer."
-        }
-        return "Install NotProton so Mac Steam can download Windows games here and launch them."
+        return "Set up Steam Play so Mac Steam downloads Windows games here instead of another computer."
     }
 
     static func isMacBuild(_ game: SteamGame) -> Bool {
         game.source == .nativeMac && windowsExecutable(for: game) == nil
     }
 
-    /// `steam://` is safe for a Mac build, or after NotProton has enabled Steam Play.
-    /// A Windows title without NotProton made Steam download GTA IV on another computer.
-    static func usesMacSteamClient(for game: SteamGame, steamPlayEnabled: Bool = isSteamPlayEnabled) -> Bool {
+    /// After Steam Play is on, `steam://` is safe for Windows titles — they install on this Mac.
+    static func usesMacSteamClient(for game: SteamGame, steamPlayEnabled: Bool = isEnabled) -> Bool {
         if steamPlayEnabled { return true }
         return isMacBuild(game)
     }
@@ -99,9 +101,57 @@ enum SteamPlaySupport {
         URL(string: "steam://install/\(appID)")
     }
 
+    static func enable(paths: SteamPlayPaths = .live) throws -> SteamPlayEnableResult {
+        guard nativeSteamAppExists || FileManager.default.fileExists(atPath: paths.appBundleMacOS) else {
+            throw SteamPlaySetupError.missingSteam
+        }
+        try FileManager.default.createDirectory(atPath: paths.appBundleMacOS, withIntermediateDirectories: true)
+        let wroteDevCfg = try writeSteamDevCfg(paths: paths)
+        for root in paths.toolRoots {
+            try SteamPlayTool.install(into: root)
+        }
+        try writeWineEnvironment(supportDir: paths.toolSupport)
+        return SteamPlayEnableResult(wroteDevCfg: wroteDevCfg)
+    }
+
+    static func writeSteamDevCfg(paths: SteamPlayPaths) throws -> Bool {
+        let body = steamDevCfgLine + "\n"
+        if let existing = try? String(contentsOfFile: paths.steamDevCfg, encoding: .utf8),
+           existing.contains(steamDevCfgLine) {
+            return false
+        }
+        try body.write(toFile: paths.steamDevCfg, atomically: true, encoding: .utf8)
+        return true
+    }
+
+    static func writeWineEnvironment(supportDir: String) throws {
+        let wineBinary: String
+        let libraryPath: String
+        do {
+            wineBinary = try SikarugirEngine.wineBinaryPath()
+            libraryPath = try SikarugirEngine.runtimeEnvironment()["DYLD_FALLBACK_LIBRARY_PATH"] ?? ""
+        } catch {
+            throw SteamPlaySetupError.missingEngine(error.localizedDescription)
+        }
+        let loader = ExeRunner.unixLoaderPath(wineBinary: wineBinary)
+        try SteamPlayTool.writeEnvironment(
+            to: supportDir,
+            wineLoader: loader,
+            prefixPath: BottleManager.shared.steamBottle.prefixPath,
+            libraryPath: libraryPath,
+            extra: GameModeConfig.maximumCompatibility.environment
+        )
+    }
+
     @discardableResult
     static func openInSteam(appID: String) -> Bool {
         guard let url = runURL(appID: appID) else { return false }
+        return openMacSteam(with: url)
+    }
+
+    @discardableResult
+    static func openInstallInSteam(appID: String) -> Bool {
+        guard let url = installURL(appID: appID) else { return false }
         return openMacSteam(with: url)
     }
 
@@ -125,59 +175,16 @@ enum SteamPlaySupport {
         return false
     }
 
-    @discardableResult
-    static func openNotProton() -> Bool {
-        guard let url = notProtonAppURL else { return false }
-        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in }
-        return true
+    static var isMacSteamRunning: Bool {
+        NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == steamBundleID }
     }
 
-    static func openNotProtonDownloadPage() {
-        NSWorkspace.shared.open(notProtonReleasesURL)
-    }
-
-    static func brewPath() -> String? {
-        let candidates = [
-            "/opt/homebrew/bin/brew",
-            "/usr/local/bin/brew",
-        ]
-        return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
-    }
-
-    static func installNotProton(progress: @escaping (String) -> Void) async throws {
-        if notProtonAppExists {
-            progress("NotProton is already in /Applications.")
-            return
+    static func restartMacSteam() {
+        let running = NSWorkspace.shared.runningApplications.filter { $0.bundleIdentifier == steamBundleID }
+        for app in running { app.terminate() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            openMacSteam()
         }
-        guard let brew = brewPath() else {
-            throw SteamPlayInstallError.brewMissing
-        }
-        progress("Installing NotProton…")
-        let output: String = try await Task.detached(priority: .userInitiated) {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: brew)
-            process.arguments = ["install", "--cask", brewCask]
-            var env = ProcessInfo.processInfo.environment
-            env["HOMEBREW_NO_AUTO_UPDATE"] = "1"
-            env["HOMEBREW_NO_ANALYTICS"] = "1"
-            env["NONINTERACTIVE"] = "1"
-            process.environment = env
-            let pipe = Pipe()
-            process.standardOutput = pipe
-            process.standardError = pipe
-            try process.run()
-            process.waitUntilExit()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let text = String(data: data, encoding: .utf8) ?? ""
-            if process.terminationStatus != 0 {
-                throw SteamPlayInstallError.brewFailed(text)
-            }
-            return text
-        }.value
-        if !notProtonAppExists {
-            throw SteamPlayInstallError.brewFailed(output)
-        }
-        progress("NotProton is installed.")
     }
 
     static func windowsExecutable(for game: SteamGame) -> String? {

@@ -1,7 +1,7 @@
 import Foundation
 
-/// How Playdock starts a Steam game. Steam Play is NotProton: Mac Steam downloads and runs the
-/// Windows title on this Mac. Playdock Wine is the Sikarugir bottle. Native is a Mac build.
+/// How Playdock starts a Steam game. Steam Play is Playdock's own: Mac Steam downloads the Windows
+/// title on this Mac, Playdock Wine runs it. Native is a Mac build.
 enum LaunchBackend: String, CaseIterable, Identifiable, Codable {
     case playdockWine
     case steamPlay
@@ -20,7 +20,7 @@ enum LaunchBackend: String, CaseIterable, Identifiable, Codable {
     var summary: String {
         switch self {
         case .playdockWine: return "Windows Steam inside Playdock's bottle."
-        case .steamPlay: return "NotProton. Mac Steam downloads and runs the Windows game on this Mac."
+        case .steamPlay: return "Mac Steam downloads the Windows game on this Mac. Playdock Wine runs it."
         case .nativeMac: return "The Mac Steam app, for a Mac build."
         }
     }

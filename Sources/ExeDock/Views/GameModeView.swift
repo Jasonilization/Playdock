@@ -2430,7 +2430,7 @@ private struct LaunchOverlayView: View {
     private var engineSummary: String {
         let backend = LaunchBackendStore.backend(for: game)
         if backend == .nativeMac { return LaunchBackend.nativeMac.displayName }
-        if backend == .steamPlay { return "Steam Play · NotProton" }
+        if backend == .steamPlay { return "Steam Play · Playdock" }
         guard game.source == .wineBottle else { return "" }
         var parts = [config.engineName ?? "Sikarugir"]
         if config.d3dMetal {

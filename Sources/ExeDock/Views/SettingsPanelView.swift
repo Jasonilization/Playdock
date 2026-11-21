@@ -188,7 +188,7 @@ struct SettingsPanelView: View {
         case skin(String)
         case setupWizard
         case layout, cardArt, showSteamIcon, showSettingsButton, hideBadges
-        case hardRefresh, engineUpdate, installNotProton, openNotProton, openSteamPlaySteam
+        case hardRefresh, engineUpdate, setupSteamPlay, openSteamPlaySteam
         case unhide(String)
         case wineEngine, d3dMetal, moltenVK, dxvk, dxmt, fastSync
         case language(String)
@@ -208,7 +208,7 @@ struct SettingsPanelView: View {
         case .personalization:
             return [.layout, .cardArt, .showSteamIcon, .showSettingsButton, .hideBadges]
         case .games:
-            var items: [PaneControl] = [.hardRefresh, .engineUpdate, .installNotProton, .openNotProton, .openSteamPlaySteam]
+            var items: [PaneControl] = [.hardRefresh, .engineUpdate, .setupSteamPlay, .openSteamPlaySteam]
             items += sortedHidden(curation.hidden).map { .unhide($0.id) }
             if isAdvancedMode {
                 items += [.wineEngine, .d3dMetal, .moltenVK, .dxvk, .dxmt, .fastSync]
@@ -370,10 +370,8 @@ struct SettingsPanelView: View {
                 model.hardRefreshGameInfo()
             case .engineUpdate:
                 engineActivate = UUID()
-            case .installNotProton:
-                model.installNotProton()
-            case .openNotProton:
-                model.openNotProton()
+            case .setupSteamPlay:
+                model.setupSteamPlay()
             case .openSteamPlaySteam:
                 model.openMacSteamApp()
             case .unhide(let id):
@@ -615,34 +613,26 @@ struct SettingsPanelView: View {
                     Text(SteamPlaySupport.statusLine)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Install NotProton, open it, tap Install, then download Windows games in Steam and launch them from there.")
+                    Text("Playdock turns on Windows downloads in Mac Steam, then runs the game with Playdock Wine. Steam will not send the title to another computer.")
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     VStack(alignment: .leading, spacing: 10) {
                         Button {
-                            model.installNotProton()
+                            model.setupSteamPlay()
                         } label: {
-                            if model.isInstallingNotProton {
+                            if model.isSettingUpSteamPlay {
                                 HStack(spacing: 8) {
                                     ProgressView().controlSize(.small)
-                                    Text("Installing NotProton…")
+                                    Text("Setting up Steam Play…")
                                 }
                             } else {
-                                Label(SteamPlaySupport.notProtonAppExists ? "NotProton Installed" : "Install NotProton", systemImage: "arrow.down.app")
+                                Label(SteamPlaySupport.isEnabled ? "Steam Play Is On" : "Set up Steam Play", systemImage: "play.display")
                             }
                         }
                         .buttonStyle(PlaydockButtonStyle(skinOverride: skin))
-                        .disabled(model.isInstallingNotProton || SteamPlaySupport.notProtonAppExists)
-                        .focusRing(isPaneFocused(.installNotProton))
-                        .id(PaneControl.installNotProton)
-                        Button {
-                            model.openNotProton()
-                        } label: {
-                            Label("Open NotProton", systemImage: "play.rectangle")
-                        }
-                        .buttonStyle(PlaydockButtonStyle(prominent: false, skinOverride: skin))
-                        .focusRing(isPaneFocused(.openNotProton))
-                        .id(PaneControl.openNotProton)
+                        .disabled(model.isSettingUpSteamPlay)
+                        .focusRing(isPaneFocused(.setupSteamPlay))
+                        .id(PaneControl.setupSteamPlay)
                         Button {
                             model.openMacSteamApp()
                         } label: {
@@ -652,13 +642,12 @@ struct SettingsPanelView: View {
                         .focusRing(isPaneFocused(.openSteamPlaySteam))
                         .id(PaneControl.openSteamPlaySteam)
                     }
-                    if let message = model.notProtonInstallMessage {
+                    if let message = model.steamPlaySetupMessage {
                         Text(message)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Link("NotProton on GitHub", destination: SteamPlaySupport.notProtonURL)
                 }
                 .font(.callout)
             }
