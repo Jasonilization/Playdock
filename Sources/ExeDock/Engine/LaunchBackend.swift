@@ -1,8 +1,7 @@
 import Foundation
 
-/// How Playdock starts a Steam game. Playdock Wine is the existing Sikarugir bottle path and
-/// stays the default for titles installed there. Steam Play asks the Mac Steam app to run the
-/// game. Native is a Mac build through that same Steam app.
+/// How Playdock starts a Steam game. Steam Play is NotProton: Mac Steam downloads and runs the
+/// Windows title on this Mac. Playdock Wine is the Sikarugir bottle. Native is a Mac build.
 enum LaunchBackend: String, CaseIterable, Identifiable, Codable {
     case playdockWine
     case steamPlay
@@ -21,7 +20,7 @@ enum LaunchBackend: String, CaseIterable, Identifiable, Codable {
     var summary: String {
         switch self {
         case .playdockWine: return "Windows Steam inside Playdock's bottle."
-        case .steamPlay: return "Starts the game from the Steam app."
+        case .steamPlay: return "NotProton. Mac Steam downloads and runs the Windows game on this Mac."
         case .nativeMac: return "The Mac Steam app, for a Mac build."
         }
     }

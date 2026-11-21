@@ -94,9 +94,9 @@ missing, Playdock just tells you and waits.
   store API, cached locally), your account name/avatar read straight out of Steam's own local
   config, double-click the Steam icon to launch it. Games installed through the real, separate
   macOS Steam client show up right alongside your Windows-via-Wine library too.
-- **Steam Play** - each game can start with Playdock Wine, Steam Play, or Native macOS. Steam Play
-  asks the Mac Steam app to run the game, the same launch path NotProton uses. Playdock Wine still
-  uses the bottle.
+- **Steam Play** - NotProton, from Playdock. Install NotProton, open it, tap Install, then download
+  Windows games in the Mac Steam app and launch them from Steam. Without that step, Steam sends the
+  Windows title to another computer.
 - **Custom Game Library** - import any Windows game folder (or a lone `.exe`) that isn't on Steam.
   Import moves it into Playdock's own managed bottle automatically, so it launches through the same
   engine as everything else - no per-game setup.

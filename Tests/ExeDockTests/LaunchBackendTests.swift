@@ -68,9 +68,31 @@ struct LaunchBackendTests {
         #expect(SteamPlaySupport.windowsExecutable(for: game) == exe.path)
     }
 
-    @Test func steamPlaySummaryIsFromSteam() {
-        #expect(LaunchBackend.steamPlay.summary == "Starts the game from the Steam app.")
+    @Test func steamPlaySummaryIsNotProton() {
+        #expect(LaunchBackend.steamPlay.summary.contains("NotProton"))
+        #expect(LaunchBackend.steamPlay.summary.contains("Mac Steam"))
         #expect(!LaunchBackend.steamPlay.summary.localizedCaseInsensitiveContains("crossover"))
+    }
+
+    @Test func windowsGameWithoutNotProtonDoesNotUseMacSteam() {
+        #expect(!SteamPlaySupport.usesMacSteamClient(for: wineGame(), steamPlayEnabled: false))
+    }
+
+    @Test func windowsGameWithNotProtonUsesMacSteam() {
+        #expect(SteamPlaySupport.usesMacSteamClient(for: wineGame(), steamPlayEnabled: true))
+    }
+
+    @Test func macNativeGameWithoutWindowsExeUsesMacSteam() {
+        #expect(SteamPlaySupport.usesMacSteamClient(for: nativeGame(), steamPlayEnabled: false))
+    }
+
+    @Test func steamPlayInstallURLAsksSteamToInstall() {
+        #expect(SteamPlaySupport.installURL(appID: "12210")?.absoluteString == "steam://install/12210")
+    }
+
+    @Test func notProtonCaskIsUpstream() {
+        #expect(SteamPlaySupport.brewCask == "notprotonnot/notproton/notproton")
+        #expect(SteamPlaySupport.notProtonAppPath == "/Applications/NotProton.app")
     }
 
     private func wineGame() -> SteamGame {

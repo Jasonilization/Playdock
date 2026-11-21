@@ -194,6 +194,8 @@ final class AppModel: ObservableObject {
     /// True only while `hardRefreshGameInfo()` is doing its cache wipe - drives the Settings
     /// button's spinner and keeps a second tap from stacking.
     @Published private(set) var isHardRefreshingGameInfo = false
+    @Published private(set) var isInstallingNotProton = false
+    @Published private(set) var notProtonInstallMessage: String?
 
     /// Bumped every time a hard refresh finishes. Views that cache a game's resolved art/
     /// description in their own `@State` (keyed on the entry id, which a plain `refreshSteamGames()`
@@ -337,15 +339,66 @@ final class AppModel: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
-    /// Steam Play: the Mac Steam app runs the game (`steam://rungameid`). Same launch path
-    /// NotProton uses. Playdock Wine stays the bottle path.
+    /// Steam Play is NotProton. Mac Steam runs (and, if needed, downloads) the Windows game on
+    /// this Mac. Without NotProton, `steam://` sent GTA IV to another computer — do not do that.
     private func launchSteamPlay(_ game: SteamGame) {
         guard SteamPlaySupport.nativeSteamAppExists else {
             errorMessage = "Steam Play needs Steam in /Applications."
             return
         }
-        statusMessage = "Steam Play · \(game.name)"
-        SteamPlaySupport.openInSteam(appID: game.metadataAppID)
+        if SteamPlaySupport.usesMacSteamClient(for: game) {
+            statusMessage = "Steam Play · \(game.name)"
+            SteamPlaySupport.openInSteam(appID: game.metadataAppID)
+            return
+        }
+        if SteamPlaySupport.notProtonAppExists {
+            SteamPlaySupport.openNotProton()
+            errorMessage = "Finish Install in NotProton so Steam can download Windows games on this Mac, then launch from Steam."
+            return
+        }
+        errorMessage = "Steam Play needs NotProton so Mac Steam can download Windows games here."
+        installNotProton()
+    }
+
+    func openNotProton() {
+        if SteamPlaySupport.openNotProton() { return }
+        SteamPlaySupport.openNotProtonDownloadPage()
+        errorMessage = "NotProton is not installed yet. Install it, open it, and tap Install."
+    }
+
+    func openMacSteamApp() {
+        guard SteamPlaySupport.nativeSteamAppExists else {
+            errorMessage = "Steam is not in /Applications."
+            return
+        }
+        SteamPlaySupport.openMacSteam()
+    }
+
+    func installNotProton() {
+        guard !isInstallingNotProton else { return }
+        if SteamPlaySupport.notProtonAppExists {
+            notProtonInstallMessage = "NotProton is already in /Applications."
+            SteamPlaySupport.openNotProton()
+            return
+        }
+        isInstallingNotProton = true
+        notProtonInstallMessage = "Installing NotProton…"
+        Task { [self] in
+            do {
+                try await SteamPlaySupport.installNotProton { message in
+                    Task { @MainActor in
+                        self.notProtonInstallMessage = message
+                    }
+                }
+                notProtonInstallMessage = "NotProton is installed. Open it and tap Install, then download Windows games in Steam."
+                SteamPlaySupport.openNotProton()
+            } catch {
+                notProtonInstallMessage = nil
+                errorMessage = error.localizedDescription
+                SteamPlaySupport.openNotProtonDownloadPage()
+            }
+            isInstallingNotProton = false
+        }
     }
 
     func openSteamClient() {
