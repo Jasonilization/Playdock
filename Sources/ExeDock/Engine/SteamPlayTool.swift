@@ -17,7 +17,7 @@ enum SteamPlayTool {
               "install_path" "."
               "display_name" "\(displayName)"
               "from_oslist" "windows"
-              "to_oslist" "macos"
+              "to_oslist" "windows"
             }
           }
         }

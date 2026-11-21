@@ -100,7 +100,7 @@ struct LaunchBackendTests {
         let vdf = try String(contentsOfFile: dir.appendingPathComponent("compatibilitytool.vdf").path, encoding: .utf8)
         #expect(vdf.contains("playdock"))
         #expect(vdf.contains("from_oslist\" \"windows"))
-        #expect(vdf.contains("to_oslist\" \"macos"))
+        #expect(vdf.contains("to_oslist\" \"windows"))
         #expect(!vdf.localizedCaseInsensitiveContains("crossover"))
         let run = try String(contentsOfFile: dir.appendingPathComponent("run").path, encoding: .utf8)
         #expect(run.contains("WINELOADER"))
